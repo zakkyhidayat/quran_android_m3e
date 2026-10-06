@@ -41,6 +41,18 @@
   <string name="please_wait">Please wait…</string>
 
   <!-- about -->
+  <string name="about_fork_description">An unofficial version of Quran for Android with a redesigned Material 3 Expressive interface.</string>
+  <string name="about_fork_section">About this version</string>
+  <string name="about_fork_author">Made by Zakky Hidayat</string>
+  <string name="about_fork_author_summary">Created this fork and redesigned its interface</string>
+  <string name="about_fork_author_url" translatable="false">https://github.com/zakkyhidayat</string>
+  <string name="about_fork_changes">What is different</string>
+  <string name="about_fork_changes_summary">A new interface built with Jetpack Compose and Material 3 Expressive, an emerald color scheme, and light, semi sepia and night reading modes. The Quran text, images and data are unchanged.</string>
+  <string name="about_fork_source">Source code</string>
+  <string name="about_fork_source_url" translatable="false">https://github.com/zakkyhidayat/quran_android_m3e</string>
+  <string name="about_original_section">Original project</string>
+  <string name="about_original_title">Quran for Android</string>
+  <string name="about_original_url" translatable="false">https://github.com/quran/quran_android</string>
   <string name="about_description">Quran for Android is a free Quran application. Please do not forget the contributors in your prayers.</string>
   <string name="about_data_sources">Data Sources</string>
   <string name="about_images">Images</string>

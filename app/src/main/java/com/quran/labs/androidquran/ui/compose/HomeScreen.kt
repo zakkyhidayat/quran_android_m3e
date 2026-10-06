@@ -3,6 +3,9 @@ package com.quran.labs.androidquran.ui.compose
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
@@ -39,7 +42,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryScrollableTabRow
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -85,7 +92,6 @@ class HomeActions(
   val onSettings: () -> Unit,
   val onHelp: () -> Unit,
   val onAbout: () -> Unit,
-  val onOtherApps: () -> Unit,
   val onSignIn: () -> Unit,
   val extraItems: List<HomeExtraItem> = emptyList()
 )
@@ -243,17 +249,36 @@ fun HomeScreen(
             scrollBehavior = searchScrollBehavior
           )
         }
-        PrimaryScrollableTabRow(
+        PrimaryTabRow(
           selectedTabIndex = pagerState.currentPage,
-          edgePadding = 12.dp,
-          containerColor = MaterialTheme.colorScheme.surface
+          containerColor = MaterialTheme.colorScheme.surface,
+          indicator = {
+            TabRowDefaults.PrimaryIndicator(
+              modifier = Modifier.tabIndicatorOffset(pagerState.currentPage),
+              width = 40.dp,
+              height = 4.dp,
+              shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
+            )
+          }
         ) {
           TabTitles.forEachIndexed { index, titleResId ->
+            val selectedTab = pagerState.currentPage == index
             Tab(
-              selected = pagerState.currentPage == index,
+              selected = selectedTab,
               onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-              text = { Text(stringResource(titleResId), maxLines = 1) }
-            )
+              selectedContentColor = MaterialTheme.colorScheme.primary,
+              unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ) {
+              Text(
+                text = stringResource(titleResId),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = if (selectedTab) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1,
+                modifier = Modifier
+                  .heightIn(min = 48.dp)
+                  .wrapContentHeight(Alignment.CenterVertically)
+              )
+            }
           }
         }
       }
@@ -277,6 +302,7 @@ fun HomeScreen(
 
         1 -> QuranRowList(
           rows = juzState.rows,
+          separateCards = true,
           listState = juzListState,
           contentPadding = listPadding,
           onRowClick = { _, row -> if (row.page != 0) onRowClick(row) }
@@ -284,6 +310,7 @@ fun HomeScreen(
 
         2 -> QuranRowList(
           rows = hizbState.rows,
+          separateCards = true,
           listState = hizbListState,
           contentPadding = listPadding,
           onRowClick = { _, row -> if (row.page != 0) onRowClick(row) }
@@ -357,25 +384,19 @@ private fun OverflowMenu(actions: HomeActions) {
       contentDescription = stringResource(androidx.appcompat.R.string.abc_action_menu_overflow_description)
     )
   }
-  DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-    @Composable
-    fun Item(@StringRes title: Int, onClick: () -> Unit) {
-      DropdownMenuItem(
-        text = { Text(stringResource(title)) },
-        onClick = {
-          expanded = false
-          onClick()
-        }
-      )
-    }
-
-    Item(R.string.menu_jump, actions.onJumpToPage)
-    Item(R.string.menu_settings, actions.onSettings)
-    Item(R.string.menu_help, actions.onHelp)
-    Item(R.string.menu_about, actions.onAbout)
-    Item(R.string.menu_other_apps, actions.onOtherApps)
-    actions.extraItems.forEach { Item(it.titleResId, it.onClick) }
-  }
+  val main = listOf(
+    MenuEntry(stringResource(R.string.menu_jump), HomeIcons.Numbers, onClick = actions.onJumpToPage),
+    MenuEntry(stringResource(R.string.menu_settings), HomeIcons.Settings, onClick = actions.onSettings)
+  )
+  val info = listOf(
+    MenuEntry(stringResource(R.string.menu_help), HomeIcons.Help, onClick = actions.onHelp),
+    MenuEntry(stringResource(R.string.menu_about), HomeIcons.Info, onClick = actions.onAbout)
+  ) + actions.extraItems.map { MenuEntry(stringResource(it.titleResId), onClick = it.onClick) }
+  ExpressiveMenu(
+    expanded = expanded,
+    onDismiss = { expanded = false },
+    sections = listOf(MenuSection(entries = main), MenuSection(entries = info))
+  )
 }
 
 /** Sort and display options for the bookmarks tab. */
@@ -386,28 +407,45 @@ private fun BookmarkOptionsMenu(bookmarks: BookmarksState) {
   IconButton(onClick = { expanded = true }) {
     Icon(HomeIcons.Sort, contentDescription = stringResource(R.string.menu_sort))
   }
-  DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-    @Composable
-    fun Option(@StringRes title: Int, checked: Boolean, onClick: () -> Unit) {
-      DropdownMenuItem(
-        text = { Text(stringResource(title)) },
-        leadingIcon = {
-          if (checked) Icon(QuranIcons.Check, contentDescription = null)
-        },
-        onClick = onClick
+  ExpressiveMenu(
+    expanded = expanded,
+    onDismiss = { expanded = false },
+    sections = listOf(
+      MenuSection(
+        title = stringResource(R.string.menu_sort),
+        entries = listOf(
+          MenuEntry(
+            stringResource(R.string.menu_sort_date),
+            selected = bookmarks.sortOrder == BookmarkSortOrder.SORT_DATE_ADDED
+          ) { bookmarks.changeSortOrder(BookmarkSortOrder.SORT_DATE_ADDED) },
+          MenuEntry(
+            stringResource(R.string.menu_sort_location),
+            selected = bookmarks.sortOrder == BookmarkSortOrder.SORT_LOCATION
+          ) { bookmarks.changeSortOrder(BookmarkSortOrder.SORT_LOCATION) }
+        )
+      ),
+      MenuSection(
+        entries = listOf(
+          MenuEntry(
+            stringResource(R.string.menu_sort_group_by_tags),
+            selected = bookmarks.isGroupedByTags,
+            keepOpen = true,
+            onClick = bookmarks::toggleGroupByTags
+          ),
+          MenuEntry(
+            stringResource(R.string.menu_show_recents),
+            selected = bookmarks.isShowingRecents,
+            keepOpen = true,
+            onClick = bookmarks::toggleShowRecents
+          ),
+          MenuEntry(
+            stringResource(R.string.menu_show_date),
+            selected = bookmarks.isDateShowing,
+            keepOpen = true,
+            onClick = bookmarks::toggleShowDate
+          )
+        )
       )
-    }
-
-    Option(
-      R.string.menu_sort_date,
-      bookmarks.sortOrder == BookmarkSortOrder.SORT_DATE_ADDED
-    ) { bookmarks.changeSortOrder(BookmarkSortOrder.SORT_DATE_ADDED) }
-    Option(
-      R.string.menu_sort_location,
-      bookmarks.sortOrder == BookmarkSortOrder.SORT_LOCATION
-    ) { bookmarks.changeSortOrder(BookmarkSortOrder.SORT_LOCATION) }
-    Option(R.string.menu_sort_group_by_tags, bookmarks.isGroupedByTags, bookmarks::toggleGroupByTags)
-    Option(R.string.menu_show_recents, bookmarks.isShowingRecents, bookmarks::toggleShowRecents)
-    Option(R.string.menu_show_date, bookmarks.isDateShowing, bookmarks::toggleShowDate)
-  }
+    )
+  )
 }

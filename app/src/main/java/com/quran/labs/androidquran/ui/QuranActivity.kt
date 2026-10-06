@@ -347,14 +347,6 @@ class QuranActivity : AppCompatActivity(),
     onSettings = { startActivity(Intent(this, QuranPreferenceActivity::class.java)) },
     onHelp = { startActivity(Intent(this, HelpActivity::class.java)) },
     onAbout = { startActivity(Intent(this, AboutUsActivity::class.java)) },
-    onOtherApps = {
-      val intent = Intent(Intent.ACTION_VIEW)
-      intent.data = "market://search?q=pub:quran.com".toUri()
-      if (packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) == null) {
-        intent.data = "https://play.google.com/store/search?q=pub:quran.com".toUri()
-      }
-      startActivity(intent)
-    },
     extraItems = extraScreens
       .sortedBy { it.order }
       .map { screen -> HomeExtraItem(screen.titleResId) { screen.onClick(this) } }

@@ -138,23 +138,23 @@ private fun ReaderTitle(state: ReaderBarState, actions: ReaderBarActions) {
     )
   }
 
-  DropdownMenu(expanded = pickerOpen, onDismissRequest = { pickerOpen = false }) {
-    state.translations.forEach { item ->
-      DropdownMenuItem(
-        text = { Text(item.name) },
-        trailingIcon = { Checkbox(checked = item.checked, onCheckedChange = null) },
-        onClick = { actions.onTranslationChecked(item.filename) }
+  ExpressiveMenu(
+    expanded = pickerOpen,
+    onDismiss = { pickerOpen = false },
+    sections = listOf(
+      MenuSection(
+        title = stringResource(R.string.translations),
+        entries = state.translations.map { item ->
+          MenuEntry(item.name, selected = item.checked, keepOpen = true) {
+            actions.onTranslationChecked(item.filename)
+          }
+        }
+      ),
+      MenuSection(
+        entries = listOf(MenuEntry(stringResource(R.string.more_translations), onClick = actions.onMoreTranslations))
       )
-    }
-    HorizontalDivider()
-    DropdownMenuItem(
-      text = { Text(stringResource(R.string.more_translations)) },
-      onClick = {
-        pickerOpen = false
-        actions.onMoreTranslations()
-      }
     )
-  }
+  )
 }
 
 @Composable
@@ -166,44 +166,30 @@ private fun ReaderOverflowMenu(state: ReaderBarState, actions: ReaderBarActions)
       contentDescription = stringResource(androidx.appcompat.R.string.abc_action_menu_overflow_description)
     )
   }
-  DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-    Text(
-      text = stringResource(R.string.prefs_reading_mode_title),
-      style = MaterialTheme.typography.labelLarge,
-      color = MaterialTheme.colorScheme.primary,
-      modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-    )
-    listOf(
-      Constants.READING_MODE_LIGHT to R.string.reading_mode_light,
-      Constants.READING_MODE_SEPIA to R.string.reading_mode_sepia,
-      Constants.READING_MODE_NIGHT to R.string.reading_mode_night
-    ).forEach { (mode, label) ->
-      DropdownMenuItem(
-        text = { Text(stringResource(label)) },
-        leadingIcon = {
-          if (state.readingMode == mode) Icon(QuranIcons.Check, contentDescription = null)
-        },
-        onClick = {
-          expanded = false
-          actions.onReadingMode(mode)
-        }
-      )
-    }
-    HorizontalDivider()
-    ReaderMenuItem(R.string.menu_search, { expanded = false }, actions.onSearch)
-    ReaderMenuItem(R.string.menu_jump, { expanded = false }, actions.onGoToPage)
-    ReaderMenuItem(R.string.menu_settings, { expanded = false }, actions.onSettings)
-    ReaderMenuItem(R.string.menu_help, { expanded = false }, actions.onHelp)
+  val modes = listOf(
+    Constants.READING_MODE_LIGHT to R.string.reading_mode_light,
+    Constants.READING_MODE_SEPIA to R.string.reading_mode_sepia,
+    Constants.READING_MODE_NIGHT to R.string.reading_mode_night
+  ).map { (mode, label) ->
+    MenuEntry(stringResource(label), selected = state.readingMode == mode) { actions.onReadingMode(mode) }
   }
-}
-
-@Composable
-private fun ReaderMenuItem(label: Int, close: () -> Unit, onClick: () -> Unit) {
-  DropdownMenuItem(
-    text = { Text(stringResource(label)) },
-    onClick = {
-      close()
-      onClick()
-    }
+  ExpressiveMenu(
+    expanded = expanded,
+    onDismiss = { expanded = false },
+    sections = listOf(
+      MenuSection(title = stringResource(R.string.prefs_reading_mode_title), entries = modes),
+      MenuSection(
+        entries = listOf(
+          MenuEntry(stringResource(R.string.menu_search), QuranIcons.Search, onClick = actions.onSearch),
+          MenuEntry(stringResource(R.string.menu_jump), HomeIcons.Numbers, onClick = actions.onGoToPage)
+        )
+      ),
+      MenuSection(
+        entries = listOf(
+          MenuEntry(stringResource(R.string.menu_settings), HomeIcons.Settings, onClick = actions.onSettings),
+          MenuEntry(stringResource(R.string.menu_help), HomeIcons.Help, onClick = actions.onHelp)
+        )
+      )
+    )
   )
 }

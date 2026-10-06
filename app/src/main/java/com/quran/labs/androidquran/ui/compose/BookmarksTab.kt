@@ -51,6 +51,7 @@ fun BookmarksTab(
           QuranRowList(
             rows = state.rows,
             isEditable = true,
+            separateCards = true,
             selectedIndices = state.selectedIndices,
             tagMap = state.tagMap,
             showTags = state.showTags,
