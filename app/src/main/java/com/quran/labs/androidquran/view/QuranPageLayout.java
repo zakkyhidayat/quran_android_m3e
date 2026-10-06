@@ -259,10 +259,8 @@ public abstract class QuranPageLayout extends QuranPageWrapperLayout
     if (nightMode) {
       int bgColor = quranSettings.getNightModeBackgroundBrightness();
       setBackgroundColor(Color.rgb(bgColor,bgColor,bgColor));
-    } else if (quranSettings.useNewBackground()) {
-      setBackgroundDrawable((pageNumber % 2 == 0 ? leftGradient : rightGradient));
     } else {
-      setBackgroundColor(ContextCompat.getColor(context, R.color.page_background));
+      setBackgroundDrawable((pageNumber % 2 == 0 ? leftGradient : rightGradient));
     }
   }
 

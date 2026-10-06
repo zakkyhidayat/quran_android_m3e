@@ -23,8 +23,8 @@ import com.quran.labs.androidquran.view.JuzView
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
- * The surah tab's state. This is the logic of the old `SuraListFragment`: the 114 surahs grouped
- * under their juz, with the reading bookmarks (if any) pinned above them.
+ * The surah tab's state: the 114 surahs in one list, with the reading bookmarks (if any) pinned
+ * above them.
  */
 class SuraListState(
   private val context: Context,
@@ -62,43 +62,26 @@ class SuraListState(
     val recentPage = latestPage()
     if (recentPage == Constants.NO_PAGE) return null
     val sura = quranDisplayData.safelyGetSuraOnPage(recentPage)
-    val juz = quranInfo.getJuzFromPage(recentPage)
-    return sura + juz - 1 + readingBookmarkOffset()
+    return sura - 1 + readingBookmarkOffset()
   }
 
   private fun buildRows(): List<QuranRow> {
-    val elements = ArrayList<QuranRow>(SURAS_COUNT + JUZ2_COUNT + readingBookmarkOffset())
+    val elements = ArrayList<QuranRow>(SURAS_COUNT + readingBookmarkOffset())
 
     if (readingBookmarks.isNotEmpty()) {
       elements += quranRowFactory.fromReadingBookmarkHeader(context, readingBookmarks.size)
       readingBookmarks.forEach { elements += quranRowFactory.fromReadingBookmark(context, it) }
     }
 
-    var sura = 1
     val wantPrefix = context.resources.getBoolean(R.bool.show_surat_prefix)
     val wantTranslation = quranSettings.isShowSuraTranslatedName
-    for (juz in 1..JUZ2_COUNT) {
+    for (sura in 1..SURAS_COUNT) {
       elements += QuranRow.Builder()
-        .withType(QuranRow.HEADER)
-        .withText(context.getString(R.string.juz2_description, QuranUtils.getLocalizedNumber(juz)))
-        .withPage(quranInfo.getStartingPageForJuz(juz))
+        .withText(quranDisplayData.getSuraName(context, sura, wantPrefix, wantTranslation))
+        .withMetadata(quranDisplayData.getSuraListMetaString(context, sura))
+        .withSura(sura)
+        .withPage(quranInfo.getPageNumberForSura(sura))
         .build()
-
-      val next = if (juz == JUZ2_COUNT) {
-        quranInfo.numberOfPages + 1
-      } else {
-        quranInfo.getStartingPageForJuz(juz + 1)
-      }
-
-      while (sura <= SURAS_COUNT && quranInfo.getPageNumberForSura(sura) < next) {
-        elements += QuranRow.Builder()
-          .withText(quranDisplayData.getSuraName(context, sura, wantPrefix, wantTranslation))
-          .withMetadata(quranDisplayData.getSuraListMetaString(context, sura))
-          .withSura(sura)
-          .withPage(quranInfo.getPageNumberForSura(sura))
-          .build()
-        sura++
-      }
     }
     return elements
   }

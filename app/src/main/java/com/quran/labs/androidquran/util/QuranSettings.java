@@ -73,10 +73,6 @@ public class QuranSettings {
     return prefs.getBoolean(Constants.PREF_NIGHT_MODE, false);
   }
 
-  public boolean useNewBackground() {
-    return prefs.getBoolean(Constants.PREF_USE_NEW_BACKGROUND, true);
-  }
-
   public boolean highlightBookmarks() {
     return prefs.getBoolean(Constants.PREF_HIGHLIGHT_BOOKMARKS, true);
   }
@@ -231,9 +227,9 @@ public class QuranSettings {
     return prefs.getBoolean(Constants.PREF_SPLIT_PAGE_AND_TRANSLATION, false);
   }
 
+  /** The surah list always shows each surah's translated name. */
   public boolean isShowSuraTranslatedName() {
-    return prefs.getBoolean(Constants.PREF_SURA_TRANSLATED_NAME,
-        appContext.getResources().getBoolean(R.bool.show_sura_names_translation));
+    return true;
   }
 
   public String currentTheme() {

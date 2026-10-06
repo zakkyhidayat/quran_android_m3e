@@ -45,12 +45,6 @@
         android:title="@string/prefs_amoled_title"
         app:iconSpaceReserved="false"/>
 
-    <CheckBoxPreference
-        android:defaultValue="true"
-        android:key="@string/prefs_new_background"
-        android:persistent="true"
-        android:title="@string/prefs_new_background_title"
-        app:iconSpaceReserved="false"/>
 
     <CheckBoxPreference
         android:defaultValue="false"
@@ -71,12 +65,6 @@
         android:title="@string/prefs_landscape_orientation_title"
         app:iconSpaceReserved="false"/>
 
-    <CheckBoxPreference
-        android:key="@string/prefs_sura_translated_name"
-        android:persistent="true"
-        android:summary="@string/prefs_sura_translated_name_summary"
-        android:title="@string/prefs_sura_translated_name_title"
-        app:iconSpaceReserved="false"/>
 
     <CheckBoxPreference
         android:key="@string/prefs_night_mode"

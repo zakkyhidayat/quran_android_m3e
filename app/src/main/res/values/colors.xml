@@ -8,7 +8,6 @@
   <color name="surface">@color/quran_surface</color>
   <color name="accent_color">@color/quran_primary</color>
   <color name="accent_color_dark">@color/color_control_normal</color>
-  <color name="page_background">#FFF4CB</color>
   <color name="secondary_dark_background">@color/quran_surface</color>
   <color name="header_background">@color/quran_surface_container_high</color>
   <color name="header_text_color">@color/sura_number_color</color>
