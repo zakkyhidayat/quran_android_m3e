@@ -32,7 +32,28 @@ This fork of Quran for Android changes three things:
 * **Optional donate link.** The last entry in Settings is *Support Quran.com*, which links to the Quran Foundation donation page.
 * **Dynamic or original colors.** Settings → Display → *Color scheme* picks between dynamic color (from the wallpaper, Android 12+) and the original Quran teal palette. The light, dark and automatic *Appearance* setting still applies on top of either one.
 
+* **No Firebase.** Analytics and Crashlytics are off, because this fork has no Firebase project. Pass `-PenableFirebase` (with your own `google-services.json`) to turn them back on.
+
 The `Fork Build` workflow (`.github/workflows/fork_build.yml`) builds a debug APK on every push and uploads it as an artifact, then runs lint and the unit tests.
+
+### Releasing (GitHub Releases)
+
+Releases are signed with your own keystore and published by `.github/workflows/release.yml`.
+
+1. Create a keystore once, and **back it up somewhere safe**. If you lose it, you can never ship an update to people who installed a release:
+   ```sh
+   keytool -genkeypair -v -keystore quran-m3e-release.jks -alias quran-m3e \
+     -keyalg RSA -keysize 4096 -validity 10000
+   ```
+2. Add four repository secrets (Settings → Secrets and variables → Actions):
+   * `RELEASE_KEYSTORE_BASE64`: the output of `base64 -w0 quran-m3e-release.jks`
+   * `RELEASE_KEYSTORE_PASSWORD`: the keystore password
+   * `RELEASE_KEY_ALIAS`: `quran-m3e`, or whichever alias you chose
+   * `RELEASE_KEY_PASSWORD`: the key password
+3. Tag a commit on `main` and push the tag. The workflow then builds the signed APK and attaches it, with its SHA-256, to a new GitHub Release:
+   ```sh
+   git tag v3.6.4-m3e.1 && git push origin v3.6.4-m3e.1
+   ```
 
 ## Credits
 

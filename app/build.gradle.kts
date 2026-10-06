@@ -14,9 +14,9 @@ plugins {
   alias(libs.plugins.sqldelight)
 }
 
-// whether or not to use Firebase - Firebase is enabled by default, and is only disabled for
-// providing apks for open source distribution stores.
-val useFirebase = !project.hasProperty("disableFirebase")
+// whether or not to use Firebase (analytics and crashlytics). this fork has no Firebase project
+// (no google-services.json), so it is off unless -PenableFirebase is passed.
+val useFirebase = project.hasProperty("enableFirebase")
 // audio playback (recitation audio, qari list, audio manager, Android Auto) is disabled by
 // default in this fork. pass -PenableAudio to bring all of it back.
 val audioEnabled = project.hasProperty("enableAudio")

@@ -53,8 +53,13 @@ jobs:
           path: app/build/reports/lint-results-madaniDebug.html
           retention-days: 3
 
+      # compiles and shrinks the release build without signing it, so R8 / proguard problems show
+      # up here rather than only when cutting a release
+      - name: Check release build
+        run: ./gradlew :app:minifyMadaniReleaseWithR8
+
       - name: Run tests
-        run: ./gradlew testMadaniDebug testReleaseUnitTest -PdisableFirebase
+        run: ./gradlew testMadaniDebug testReleaseUnitTest
 
       - name: Upload test report
         uses: actions/upload-artifact@v7
