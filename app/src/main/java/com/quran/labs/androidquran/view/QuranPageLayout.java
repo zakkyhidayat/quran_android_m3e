@@ -137,7 +137,7 @@ public abstract class QuranPageLayout extends QuranPageWrapperLayout
     if (view != null) {
       int width = MeasureSpec.getSize(widthMeasureSpec);
       int height = MeasureSpec.getSize(heightMeasureSpec);
-      int leftLineWidth = leftBorder == BorderMode.LINE ? 1 : getBorderWidth(leftPageBorder);
+      int leftLineWidth = leftBorder == BorderMode.HIDDEN ? 0 : leftBorder == BorderMode.LINE ? 1 : getBorderWidth(leftPageBorder);
       int rightLineWidth = rightBorder == BorderMode.HIDDEN ?
           0 : getBorderWidth(rightPageBorder);
       width = width - (leftLineWidth + rightLineWidth);
@@ -167,8 +167,8 @@ public abstract class QuranPageLayout extends QuranPageWrapperLayout
     if (view != null) {
       int width = getMeasuredWidth();
       int height = getMeasuredHeight();
-      @Px int leftLineWidth = leftBorder == BorderMode.LINE ?
-          1 : getBorderWidth(leftPageBorder);
+      @Px int leftLineWidth = leftBorder == BorderMode.HIDDEN ? 0 :
+          leftBorder == BorderMode.LINE ? 1 : getBorderWidth(leftPageBorder);
       @Px int rightLineWidth = rightBorder == BorderMode.HIDDEN ?
           0 : getBorderWidth(rightPageBorder);
       int headerFooterHeight = 0;
@@ -184,7 +184,7 @@ public abstract class QuranPageLayout extends QuranPageWrapperLayout
     int width = getWidth();
     if (width > 0) {
       int height = getHeight();
-      if (leftBorder != BorderMode.LINE || !shouldHideLine) {
+      if (leftBorder != BorderMode.HIDDEN && (leftBorder != BorderMode.LINE || !shouldHideLine)) {
         Drawable left = leftBorder == BorderMode.LINE ? lineDrawable :
             leftBorder == BorderMode.LIGHT ? leftPageBorder : leftPageBorderNight;
         left.setBounds(0, 0, getBorderWidth(left), height);
@@ -248,17 +248,9 @@ public abstract class QuranPageLayout extends QuranPageWrapperLayout
       lineColor = 0xFF8D7A5C;
     }
 
-    if ((pageNumber + skippedPages) % 2 == 0) {
-      leftBorder = nightMode ? BorderMode.DARK : BorderMode.LIGHT;
-      rightBorder = BorderMode.HIDDEN;
-    } else {
-      rightBorder = nightMode ? BorderMode.DARK : BorderMode.LIGHT;
-      if (QuranPageLayout.lineColor != lineColor) {
-        QuranPageLayout.lineColor = lineColor;
-        lineDrawable.getPaint().setColor(lineColor);
-      }
-      leftBorder = BorderMode.LINE;
-    }
+    // a clean page: no book edge, no center line
+    leftBorder = BorderMode.HIDDEN;
+    rightBorder = BorderMode.HIDDEN;
 
     updateBackground(nightMode, quranSettings);
   }
@@ -268,9 +260,9 @@ public abstract class QuranPageLayout extends QuranPageWrapperLayout
       int bgColor = quranSettings.getNightModeBackgroundBrightness();
       setBackgroundColor(Color.rgb(bgColor,bgColor,bgColor));
     } else if (quranSettings.isSepiaMode()) {
-      setBackgroundDrawable((pageNumber % 2 == 0 ? leftSepiaGradient : rightSepiaGradient));
+      setBackgroundColor(0xFFF4E8CC);
     } else {
-      setBackgroundDrawable((pageNumber % 2 == 0 ? leftGradient : rightGradient));
+      setBackgroundColor(0xFFFDFBEF);
     }
   }
 

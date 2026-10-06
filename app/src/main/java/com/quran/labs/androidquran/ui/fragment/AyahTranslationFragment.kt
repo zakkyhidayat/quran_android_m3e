@@ -90,7 +90,6 @@ class AyahTranslationFragment : AyahActionFragment(), TranslationScreen {
 
     ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
       val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-      translationControls.updatePadding(bottom = navBarInsets.bottom)
       translationView.updatePadding(bottom = navBarInsets.bottom)
       insets
     }

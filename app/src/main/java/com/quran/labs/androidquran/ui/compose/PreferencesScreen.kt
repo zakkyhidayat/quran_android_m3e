@@ -26,6 +26,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -35,6 +37,8 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -424,7 +428,13 @@ private fun SeekBarItem(
   modifier: Modifier,
   onChanged: () -> Unit
 ) {
-  var value by remember(preference) { mutableIntStateOf(preference.currentValue()) }
+  val sliderState = rememberSliderState(
+    preference.currentValue().toFloat(),
+    0,
+    0f..preference.maxValue.toFloat()
+  )
+  val value = sliderState.value.roundToInt()
+  val sliderInteraction = remember { MutableInteractionSource() }
   val label = QuranUtils.getLocalizedNumber(value) + (preference.suffix ?: "")
 
   SettingsItem(
@@ -438,15 +448,30 @@ private fun SeekBarItem(
       Column {
         preference.summary?.takeIf { it.isNotEmpty() }?.let { Text(it.toString()) }
         Row(verticalAlignment = Alignment.CenterVertically) {
+          // the expressive slider: a thick, rounded track and a tall pill for a handle
           Slider(
-            value = value.toFloat(),
-            onValueChange = { value = it.roundToInt() },
+            state = sliderState,
+            onValueChange = { sliderState.value = it },
             onValueChangeFinished = {
-              preference.commitValue(value)
+              preference.commitValue(sliderState.value.roundToInt())
               onChanged()
             },
             enabled = preference.isEnabled,
-            valueRange = 0f..preference.maxValue.toFloat(),
+            interactionSource = sliderInteraction,
+            thumb = {
+              SliderDefaults.Thumb(
+                sliderInteraction,
+                enabled = preference.isEnabled,
+                thumbSize = DpSize(4.dp, 44.dp)
+              )
+            },
+            track = {
+              SliderDefaults.Track(
+                it,
+                enabled = preference.isEnabled,
+                modifier = Modifier.height(16.dp)
+              )
+            },
             modifier = Modifier.weight(1f)
           )
           Text(

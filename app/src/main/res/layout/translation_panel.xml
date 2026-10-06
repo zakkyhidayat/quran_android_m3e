@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:app="http://schemas.android.com/apk/res-auto"
              android:orientation="vertical"
              android:layout_width="match_parent"
              android:layout_height="match_parent"
@@ -11,52 +12,59 @@
       android:layout_height="match_parent"
       android:orientation="vertical"
       >
-    <com.quran.labs.androidquran.view.QuranSpinner
-        android:id="@+id/translator"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/translation_top_bottom_margin"
+        android:layout_marginTop="4dp"
         android:layout_marginLeft="@dimen/translation_left_right_margin"
         android:layout_marginRight="@dimen/translation_left_right_margin"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:textColor="?attr/colorPrimary"
-        />
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        >
+      <com.quran.labs.androidquran.view.QuranSpinner
+          android:id="@+id/translator"
+          android:layout_width="0dp"
+          android:layout_height="40dp"
+          android:layout_weight="1"
+          android:background="@drawable/bg_translator_pill"
+          android:paddingLeft="4dp"
+          android:paddingRight="36dp"
+          android:paddingStart="4dp"
+          android:paddingEnd="36dp"
+          />
+      <com.quran.labs.androidquran.view.LeftToRightLinearLayout
+          android:id="@+id/controls"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginLeft="8dp"
+          android:layout_marginStart="8dp"
+          >
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/previous_ayah"
+            style="?attr/materialIconButtonFilledTonalStyle"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:icon="@drawable/ic_chevron_left_24"
+            android:contentDescription="@string/previous"
+            />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/next_ayah"
+            style="?attr/materialIconButtonFilledTonalStyle"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="4dp"
+            android:layout_marginStart="4dp"
+            app:icon="@drawable/ic_chevron_right_24"
+            android:contentDescription="@string/next"
+            />
+      </com.quran.labs.androidquran.view.LeftToRightLinearLayout>
+    </LinearLayout>
     <com.quran.labs.androidquran.view.InlineTranslationView
         android:id="@+id/translation_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         />
   </LinearLayout>
-
-  <com.quran.labs.androidquran.view.LeftToRightLinearLayout
-      android:id="@+id/controls"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_gravity="bottom"
-      >
-    <ImageButton
-        android:id="@+id/next_ayah"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_translation_next"
-        android:contentDescription="@string/next"
-        android:padding="12dp"
-        />
-    <Space
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        />
-    <ImageButton
-        android:id="@+id/previous_ayah"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_translation_previous"
-        android:contentDescription="@string/previous"
-        android:padding="12dp"
-        />
-  </com.quran.labs.androidquran.view.LeftToRightLinearLayout>
 
   <LinearLayout
       android:id="@+id/empty_state"

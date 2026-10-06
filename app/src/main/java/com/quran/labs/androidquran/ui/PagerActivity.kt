@@ -1847,6 +1847,6 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
 
     // AYAH ACTION PANEL STUFF
     // Max height of sliding panel (% of screen)
-    private const val PANEL_MAX_HEIGHT = 0.6f
+    private const val PANEL_MAX_HEIGHT = 0.4f
   }
 }
