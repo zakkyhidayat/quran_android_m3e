@@ -6,29 +6,32 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updateLayoutParams
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.DefaultItemAnimator
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.quran.data.core.QuranInfo
 import com.quran.data.dao.ReadingBookmarksDao
 import com.quran.data.model.bookmark.EmptyReadingBookmark
 import com.quran.data.model.bookmark.ReadingBookmark
 import com.quran.labs.androidquran.QuranApplication
 import com.quran.labs.androidquran.R
+import com.quran.labs.androidquran.common.ui.core.QuranTheme
+import com.quran.labs.androidquran.ui.compose.QuranRowList
 import com.quran.labs.androidquran.data.Constants
 import com.quran.labs.androidquran.data.Constants.JUZ2_COUNT
 import com.quran.labs.androidquran.data.Constants.SURAS_COUNT
 import com.quran.labs.androidquran.data.QuranDisplayData
 import com.quran.labs.androidquran.ui.QuranActivity
-import com.quran.labs.androidquran.ui.helpers.QuranListAdapter
-import com.quran.labs.androidquran.ui.helpers.QuranListAdapter.QuranTouchListener
 import com.quran.labs.androidquran.ui.helpers.QuranRow
 import com.quran.labs.androidquran.ui.helpers.QuranRowFactory
 import com.quran.labs.androidquran.util.QuranSettings
@@ -37,7 +40,7 @@ import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
-class SuraListFragment : Fragment(), QuranTouchListener {
+class SuraListFragment : Fragment() {
 
   @Inject
   lateinit var quranInfo: QuranInfo
@@ -54,7 +57,8 @@ class SuraListFragment : Fragment(), QuranTouchListener {
   @Inject
   lateinit var quranRowFactory: QuranRowFactory
 
-  private lateinit var recyclerView: RecyclerView
+  private val listState = LazyListState()
+  private var rows by mutableStateOf<List<QuranRow>>(emptyList())
   private var numberOfPages = 0
   private var showSuraTranslatedName = false
   private var readingBookmarks: List<ReadingBookmark> = emptyList()
@@ -70,16 +74,8 @@ class SuraListFragment : Fragment(), QuranTouchListener {
     container: ViewGroup?,
     savedInstanceState: Bundle?
   ): View {
-    val view: View = inflater.inflate(R.layout.quran_list, container, false)
-    recyclerView = view.findViewById(R.id.recycler_view)
     showSuraTranslatedName = quranSettings.isShowSuraTranslatedName
-    val quranListAdapter = QuranListAdapter(requireActivity(), recyclerView, getSuraList(), false)
-    quranListAdapter.setQuranTouchListener(this)
-    recyclerView.apply {
-      layoutManager = LinearLayoutManager(context)
-      itemAnimator = DefaultItemAnimator()
-      adapter = quranListAdapter
-    }
+    rows = getSuraList().toList()
 
     viewLifecycleOwner.lifecycleScope.launch {
       viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -89,21 +85,19 @@ class SuraListFragment : Fragment(), QuranTouchListener {
       }
     }
 
-    ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { view, windowInsets ->
-      val insets = windowInsets.getInsets(
-        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-      )
-      recyclerView.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-        // top, left, right are handled by QuranActivity
-        view.setPadding(0, 0, 0, insets.bottom)
+    return ComposeView(requireContext()).apply {
+      setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+      setContent {
+        QuranTheme {
+          QuranRowList(
+            rows = rows,
+            listState = listState,
+            contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+            onRowClick = ::onRowClick
+          )
+        }
       }
-
-      // if we return WindowInsetsCompat.CONSUMED, the SnackBar won't
-      // be properly positioned on Android 29 and below (will be under
-      // the navigation bar).
-      windowInsets
     }
-    return view
   }
 
   override fun onResume() {
@@ -123,18 +117,10 @@ class SuraListFragment : Fragment(), QuranTouchListener {
           val sura = quranDisplayData.safelyGetSuraOnPage(recentPage)
           val juz = quranInfo.getJuzFromPage(recentPage)
           val position = sura + juz - 1 + readingBookmarkOffset()
-          recyclerView.scrollToPosition(position)
+          listState.scrollToItem(position)
         }
       }
-
-      if (QuranUtils.isRtl()) {
-        updateScrollBarPositionHoneycomb()
-      }
     }
-  }
-
-  private fun updateScrollBarPositionHoneycomb() {
-    recyclerView.verticalScrollbarPosition = View.SCROLLBAR_POSITION_LEFT
   }
 
   private fun getSuraList(): Array<QuranRow> {
@@ -202,22 +188,18 @@ class SuraListFragment : Fragment(), QuranTouchListener {
   }
 
   private fun updateSuraList() {
-    (recyclerView.adapter as QuranListAdapter).setElements(getSuraList())
+    rows = getSuraList().toList()
   }
 
   private fun readingBookmarkOffset(): Int {
     return if (readingBookmarks.isEmpty()) 0 else readingBookmarks.size + 1
   }
 
-  override fun onClick(row: QuranRow, position: Int) {
+  private fun onRowClick(row: QuranRow) {
     val activity = activity as? QuranActivity
     if (activity != null && row.page != 0) {
       activity.jumpTo(row)
     }
-  }
-
-  override fun onLongClick(row: QuranRow, position: Int): Boolean {
-    return false
   }
 
   companion object {

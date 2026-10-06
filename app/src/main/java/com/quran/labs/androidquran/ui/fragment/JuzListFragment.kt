@@ -6,23 +6,27 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updateLayoutParams
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DefaultItemAnimator
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.quran.data.core.QuranInfo
 import com.quran.labs.androidquran.QuranApplication
 import com.quran.labs.androidquran.R
+import com.quran.labs.androidquran.common.ui.core.QuranTheme
+import com.quran.labs.androidquran.ui.compose.QuranRowList
 import com.quran.labs.androidquran.data.Constants
 import com.quran.labs.androidquran.data.QuranDisplayData
 import com.quran.labs.androidquran.data.QuranFileConstants
 import com.quran.labs.androidquran.presenter.data.JuzListPresenter
 import com.quran.labs.androidquran.ui.QuranActivity
-import com.quran.labs.androidquran.ui.helpers.QuranListAdapter
 import com.quran.labs.androidquran.ui.helpers.QuranRow
 import com.quran.labs.androidquran.ui.helpers.QuranRow.Builder
 import com.quran.labs.androidquran.util.QuranUtils
@@ -33,14 +37,14 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
 /**
- * Fragment that displays a list of all Juz (using [QuranListAdapter], each divided into
+ * Fragment that displays a list of all Juz (using [QuranRowList], each divided into
  * 8 parts (with headings for each Juz).
  * When a Juz part is selected (or a Juz heading), [QuranActivity.jumpTo] is called to
  * jump to that page.
  */
 class JuzListFragment : Fragment() {
-  private var recyclerView: RecyclerView? = null
-  private var adapter: QuranListAdapter? = null
+  private val listState = LazyListState()
+  private var rows by mutableStateOf<List<QuranRow>>(emptyList())
   private val mainScope: CoroutineScope = MainScope()
 
   @Inject
@@ -56,42 +60,20 @@ class JuzListFragment : Fragment() {
     inflater: LayoutInflater,
     container: ViewGroup?,
     savedInstanceState: Bundle?
-  ): View? {
-    val view = inflater.inflate(R.layout.quran_list, container, false)
-
-    val context = requireContext()
-    val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_view).apply {
-      setHasFixedSize(true)
-      layoutManager = LinearLayoutManager(context)
-      itemAnimator = DefaultItemAnimator()
-    }
-
-    val adapter = QuranListAdapter(context, recyclerView, emptyArray(), false)
-    recyclerView.adapter = adapter
-    this.recyclerView = recyclerView
-    this.adapter = adapter
-
-    ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { view, windowInsets ->
-      val insets = windowInsets.getInsets(
-        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-      )
-      recyclerView.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-        // top, left, right are handled by QuranActivity
-        view.setPadding(0, 0, 0, insets.bottom)
+  ): View {
+    return ComposeView(requireContext()).apply {
+      setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+      setContent {
+        QuranTheme {
+          QuranRowList(
+            rows = rows,
+            listState = listState,
+            contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+            onRowClick = ::onRowClick
+          )
+        }
       }
-
-      // if we return WindowInsetsCompat.CONSUMED, the SnackBar won't
-      // be properly positioned on Android 29 and below (will be under
-      // the navigation bar).
-      windowInsets
     }
-    return view
-  }
-
-  override fun onDestroyView() {
-    adapter = null
-    recyclerView = null
-    super.onDestroyView()
   }
 
   override fun onAttach(context: Context) {
@@ -115,19 +97,19 @@ class JuzListFragment : Fragment() {
         if (recentPage != Constants.NO_PAGE) {
           val juz = quranInfo.getJuzFromPage(recentPage)
           val position = (juz - 1) * 9
-          recyclerView?.scrollToPosition(position)
+          listState.scrollToItem(position)
         }
       }
     }
 
-    if (QuranUtils.isRtl()) {
-      updateScrollBarPositionHoneycomb()
-    }
     super.onResume()
   }
 
-  private fun updateScrollBarPositionHoneycomb() {
-    recyclerView?.verticalScrollbarPosition = View.SCROLLBAR_POSITION_LEFT
+  private fun onRowClick(row: QuranRow) {
+    val activity = activity as? QuranActivity
+    if (activity != null && row.page != 0) {
+      activity.jumpTo(row)
+    }
   }
 
   private suspend fun fetchJuz2List() {
@@ -184,7 +166,7 @@ class JuzListFragment : Fragment() {
       }
       elements[ctr++] = builder.build()
     }
-    adapter?.setElements(elements.filterNotNull().toTypedArray())
+    rows = elements.filterNotNull()
   }
 
   companion object {
