@@ -1,33 +1,40 @@
 package com.quran.labs.androidquran.ui.fragment
 
-import android.app.Dialog
 import android.content.Context
-import android.content.DialogInterface
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.AdapterView.OnItemClickListener
-import android.widget.BaseAdapter
-import android.widget.CheckBox
-import android.widget.ImageView
-import android.widget.ListView
-import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AlertDialog.Builder
-import androidx.fragment.app.DialogFragment
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.quran.data.model.bookmark.Tag
 import com.quran.labs.androidquran.QuranApplication
 import com.quran.labs.androidquran.R
 import com.quran.labs.androidquran.common.ui.core.CollectionNames
 import com.quran.labs.androidquran.presenter.bookmark.TagBookmarkPresenter
+import com.quran.labs.androidquran.ui.compose.DialogSurface
+import com.quran.labs.androidquran.ui.compose.HomeIcons
 import dev.zacsweers.metro.HasMemberInjections
 import dev.zacsweers.metro.Inject
+import com.quran.mobile.common.ui.core.R as UiCoreR
 
 @HasMemberInjections
-open class TagBookmarkDialog : DialogFragment() {
-  private var adapter: TagsAdapter? = null
+open class TagBookmarkDialog : ComposeDialogFragment() {
+  private var tags by mutableStateOf<List<Tag>>(emptyList())
+  private var checkedTags by mutableStateOf<Set<String>>(emptySet())
 
   @Inject
   lateinit var tagBookmarkPresenter: TagBookmarkPresenter
@@ -52,29 +59,6 @@ open class TagBookmarkDialog : DialogFragment() {
     }
   }
 
-  private fun createTagsListView(): ListView {
-    val context = requireContext()
-    val adapter = TagsAdapter(context, tagBookmarkPresenter)
-    this.adapter = adapter
-    val listview = ListView(context)
-    listview.adapter = adapter
-    listview.choiceMode = ListView.CHOICE_MODE_MULTIPLE
-    listview.onItemClickListener =
-      OnItemClickListener { _: AdapterView<*>?, view: View, position: Int, _: Long ->
-        if (adapter.isAddTagPosition(position)) {
-          tagBookmarkPresenter.addTag()
-          return@OnItemClickListener
-        }
-        val tag = adapter.getItem(position) ?: return@OnItemClickListener
-        val isChecked = tagBookmarkPresenter.toggleTag(tag.id)
-        val viewTag = view.tag
-        if (viewTag is ViewHolder) {
-          viewTag.checkBox.isChecked = isChecked
-        }
-      }
-    return listview
-  }
-
   open fun showAddTagDialog() {
     val context: Context? = activity
     if (context is OnBookmarkTagsUpdateListener) {
@@ -83,30 +67,13 @@ open class TagBookmarkDialog : DialogFragment() {
   }
 
   fun setData(tags: List<Tag>?, checkedTags: HashSet<String>) {
-    adapter?.setData(tags, checkedTags)
-    adapter?.notifyDataSetChanged()
-  }
-
-  override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-    val builder = Builder(requireActivity(), R.style.QuranDialogTheme)
-    builder.setView(createTagsListView())
-    builder.setPositiveButton(R.string.dialog_ok) { _: DialogInterface?, _: Int -> }
-    builder.setNegativeButton(com.quran.mobile.common.ui.core.R.string.cancel) { _: DialogInterface?, _: Int -> dismiss() }
-    return builder.create()
+    this.tags = tags ?: emptyList()
+    this.checkedTags = checkedTags.toSet()
   }
 
   override fun onStart() {
     super.onStart()
     tagBookmarkPresenter.bind(this)
-
-    val dialog = dialog
-    if (dialog is AlertDialog) {
-      val positive = dialog.getButton(Dialog.BUTTON_POSITIVE)
-      positive.setOnClickListener {
-        tagBookmarkPresenter.saveChanges()
-        dismiss()
-      }
-    }
   }
 
   override fun onStop() {
@@ -114,85 +81,58 @@ open class TagBookmarkDialog : DialogFragment() {
     super.onStop()
   }
 
-  override fun onCreateView(
-    inflater: LayoutInflater,
-    container: ViewGroup?,
-    savedInstanceState: Bundle?
-  ): View? {
-    // If in dialog mode, don't do anything (or else it will cause exception)
-    return if (showsDialog) {
-      super.onCreateView(inflater, container, savedInstanceState)
-    } else createTagsListView()
-    // If not in dialog mode, treat as normal fragment onCreateView
-  }
-
-  class TagsAdapter internal constructor(
-    private val context: Context, presenter: TagBookmarkPresenter
-  ) : BaseAdapter() {
-
-    private val inflater: LayoutInflater = LayoutInflater.from(context)
-    private val tagBookmarkPresenter: TagBookmarkPresenter = presenter
-    private val newTagString: String = context.getString(R.string.new_tag)
-    private var tags: List<Tag> = emptyList()
-    private var checkedTags = HashSet<String>()
-
-    fun setData(tags: List<Tag>?, checkedTags: HashSet<String>) {
-      this.tags = (tags ?: emptyList())
-      this.checkedTags = checkedTags
-    }
-
-    override fun getCount(): Int = tags.size + 1
-
-    override fun getItem(position: Int): Tag? = tags.getOrNull(position)
-
-    override fun getItemId(position: Int): Long = position.toLong()
-
-    override fun hasStableIds(): Boolean = false
-
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-      var holder: ViewHolder
-      val view = if (convertView == null) {
-        val view = inflater.inflate(R.layout.tag_row, parent, false)
-        holder = ViewHolder().apply {
-          checkBox = view.findViewById(R.id.tag_checkbox)
-          tagName = view.findViewById(R.id.tag_name)
-          addImage = view.findViewById(R.id.tag_add_image)
+  @Composable
+  override fun Content() {
+    val context = LocalContext.current
+    DialogSurface(
+      title = stringResource(R.string.tag_bookmark),
+      confirmLabel = stringResource(R.string.dialog_ok),
+      onConfirm = {
+        tagBookmarkPresenter.saveChanges()
+        dismiss()
+      },
+      dismissLabel = stringResource(UiCoreR.string.cancel),
+      onDismiss = ::dismiss
+    ) {
+      tags.forEach { tag ->
+        val checked = tag.id in checkedTags
+        val toggle = {
+          val nowChecked = tagBookmarkPresenter.toggleTag(tag.id)
+          checkedTags = if (nowChecked) checkedTags + tag.id else checkedTags - tag.id
         }
-        view.tag = holder
-        view
-      } else {
-        convertView
-      }
-
-      holder = view.tag as ViewHolder
-      if (isAddTagPosition(position)) {
-        holder.apply {
-          addImage.visibility = View.VISIBLE
-          checkBox.visibility = View.GONE
-          tagName.text = newTagString
-        }
-      } else {
-        val tag = requireNotNull(getItem(position))
-        val id = tag.id
-        val name = CollectionNames.displayName(context, tag)
-        holder.apply {
-          addImage.visibility = View.GONE
-          checkBox.visibility = View.VISIBLE
-          checkBox.isChecked = checkedTags.contains(id)
-          tagName.text = name
-          checkBox.setOnClickListener { tagBookmarkPresenter.toggleTag(id) }
+        TagRow(onClick = toggle) {
+          Checkbox(checked = checked, onCheckedChange = null)
+          Text(
+            text = CollectionNames.displayName(context, tag),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(start = 16.dp)
+          )
         }
       }
-      return view
+      TagRow(onClick = { tagBookmarkPresenter.addTag() }) {
+        Icon(HomeIcons.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Text(
+          text = stringResource(R.string.new_tag),
+          style = MaterialTheme.typography.bodyLarge,
+          color = MaterialTheme.colorScheme.primary,
+          modifier = Modifier.padding(start = 16.dp)
+        )
+      }
     }
-
-    fun isAddTagPosition(position: Int): Boolean = position == tags.size
   }
 
-  internal class ViewHolder {
-    lateinit var checkBox: CheckBox
-    lateinit var tagName: TextView
-    lateinit var addImage: ImageView
+  @Composable
+  private fun TagRow(onClick: () -> Unit, content: @Composable () -> Unit) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .heightIn(min = 48.dp)
+        .clickable(onClick = onClick)
+        .padding(horizontal = 4.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      content()
+    }
   }
 
   interface OnBookmarkTagsUpdateListener {

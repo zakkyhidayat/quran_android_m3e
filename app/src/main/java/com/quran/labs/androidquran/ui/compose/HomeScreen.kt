@@ -351,7 +351,10 @@ private fun SelectionBar(
 private fun OverflowMenu(actions: HomeActions) {
   var expanded by remember { mutableStateOf(false) }
   IconButton(onClick = { expanded = true }) {
-    Icon(HomeIcons.MoreVert, contentDescription = null)
+    Icon(
+      HomeIcons.MoreVert,
+      contentDescription = stringResource(androidx.appcompat.R.string.abc_action_menu_overflow_description)
+    )
   }
   DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
     @Composable

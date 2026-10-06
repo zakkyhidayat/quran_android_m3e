@@ -8,9 +8,15 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.window.DialogProperties
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AlertDialog.Builder
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import androidx.fragment.app.FragmentManager
@@ -87,7 +93,7 @@ import kotlinx.coroutines.launch
 class QuranActivity : AppCompatActivity(),
     OnBookmarkTagsUpdateListener,
     JumpDestination {
-  private var upgradeDialog: AlertDialog? = null
+  private var showTranslationUpgrade by mutableStateOf(false)
   private var showedTranslationUpgradeDialog = false
   private var isRtl = false
   private var isPaused = false
@@ -186,6 +192,28 @@ class QuranActivity : AppCompatActivity(),
           latestPage = ::latestPage,
           onRowClick = ::jumpTo
         )
+
+        if (showTranslationUpgrade) {
+          AlertDialog(
+            onDismissRequest = {},
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+            text = { Text(stringResource(R.string.translation_updates_available)) },
+            confirmButton = {
+              TextButton(onClick = {
+                showTranslationUpgrade = false
+                launchTranslationActivity()
+              }) { Text(stringResource(R.string.translation_dialog_yes)) }
+            },
+            dismissButton = {
+              TextButton(onClick = {
+                showTranslationUpgrade = false
+                // pretend we don't have updated translations.  we'll
+                // check again after 10 days.
+                settings.setHaveUpdatedTranslations(false)
+              }) { Text(stringResource(R.string.translation_dialog_later)) }
+            }
+          )
+        }
       }
     }
 
@@ -358,27 +386,7 @@ class QuranActivity : AppCompatActivity(),
 
   private fun showTranslationsUpgradeDialog() {
     showedTranslationUpgradeDialog = true
-
-    val builder = Builder(this)
-    builder.setMessage(R.string.translation_updates_available)
-    builder.setCancelable(false)
-    builder.setPositiveButton(R.string.translation_dialog_yes) { dialog: DialogInterface, _: Int ->
-      dialog.dismiss()
-      upgradeDialog = null
-      launchTranslationActivity()
-    }
-
-    builder.setNegativeButton(R.string.translation_dialog_later) { dialog: DialogInterface, _: Int ->
-      dialog.dismiss()
-      upgradeDialog = null
-      // pretend we don't have updated translations.  we'll
-      // check again after 10 days.
-      settings.setHaveUpdatedTranslations(false)
-    }
-
-    val dialog = builder.create()
-    dialog.show()
-    upgradeDialog = dialog
+    showTranslationUpgrade = true
   }
 
   private fun launchTranslationActivity() {

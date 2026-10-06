@@ -1,295 +1,240 @@
 package com.quran.labs.androidquran.ui.fragment
 
-import android.annotation.SuppressLint
-import android.app.Activity
-import android.app.Dialog
 import android.content.Context
-import android.content.DialogInterface
-import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
-import android.view.KeyEvent
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.view.WindowManager.LayoutParams
-import android.view.inputmethod.EditorInfo
-import android.widget.BaseAdapter
-import android.widget.EditText
-import android.widget.Filter
-import android.widget.Filterable
-import android.widget.TextView
-import androidx.annotation.LayoutRes
-import androidx.appcompat.app.AlertDialog.Builder
-import androidx.fragment.app.DialogFragment
+import android.view.WindowManager
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenu
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import com.quran.common.search.SearchTextUtil
 import com.quran.data.core.QuranInfo
 import com.quran.labs.androidquran.QuranApplication
 import com.quran.labs.androidquran.R
+import com.quran.labs.androidquran.ui.compose.DialogSurface
 import com.quran.labs.androidquran.ui.helpers.JumpDestination
 import com.quran.labs.androidquran.util.QuranUtils
-import com.quran.labs.androidquran.view.ForceCompleteTextView
 import dev.zacsweers.metro.Inject
 import timber.log.Timber
 import com.quran.mobile.common.ui.core.R as UiCoreR
 
 /**
- * [DialogFragment] of a dialog for quickly selecting and jumping to a particular location in the
- * Quran. A location can be selected by page number or Surah/Ayah.
+ * Dialog for quickly selecting and jumping to a particular location in the Quran. A location can
+ * be selected by page number or Surah/Ayah.
  */
-class JumpFragment : DialogFragment() {
+class JumpFragment : ComposeDialogFragment() {
 
   @Inject
   lateinit var quranInfo: QuranInfo
-  private var suppressJump: Boolean = false
-
-  private lateinit var suraInput: ForceCompleteTextView
-  private lateinit var ayahInput: EditText
-  private lateinit var pageInput: EditText
-
-  override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-    val activity: Activity = requireActivity()
-    val inflater = activity.layoutInflater
-
-    @SuppressLint("InflateParams")
-    val layout = inflater.inflate(R.layout.jump_dialog, null)
-
-    val builder = Builder(activity, R.style.QuranDialogTheme)
-    builder.setTitle(activity.getString(R.string.menu_jump))
-
-    // Sura chooser
-    suraInput = layout.findViewById(R.id.sura_spinner)
-    val suras = activity.resources.getStringArray(UiCoreR.array.sura_names)
-        .mapIndexed { index: Int, sura: String? ->
-          QuranUtils.getLocalizedNumber(index + 1) + ". " + sura
-        }
-
-    val suraAdapter = InfixFilterArrayAdapter(
-        activity,
-        android.R.layout.simple_spinner_dropdown_item, suras
-    )
-    suraInput.setAdapter(suraAdapter)
-
-    // Ayah chooser
-    ayahInput = layout.findViewById(R.id.ayah_spinner)
-
-    // Page chooser
-    pageInput = layout.findViewById(R.id.page_number)
-    pageInput.setOnEditorActionListener { _: TextView?, actionId: Int, _: KeyEvent? ->
-      if (actionId == EditorInfo.IME_ACTION_GO) {
-        dismiss()
-        onSubmit()
-        true
-      } else {
-        false
-      }
-    }
-
-    pageInput.addTextChangedListener(object : TextWatcher {
-      override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
-      override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-
-      override fun afterTextChanged(s: Editable?) {
-        val number = s.toString().toIntOrNull() ?: return
-        val pageNumber = number.coerceIn(1..quranInfo.numberOfPages)
-        val sura = quranInfo.getSuraOnPage(pageNumber)
-        val ayah = quranInfo.getFirstAyahOnPage(pageNumber)
-
-        suppressJump = true
-        suraInput.setText(suras[sura - 1])
-        suraInput.tag = sura
-        ayahInput.setText(ayah.toString())
-        suppressJump = false
-      }
-    })
-
-    suraInput.setOnForceCompleteListener { _: ForceCompleteTextView?, position: Int, _: Long ->
-      val enteredText = suraInput.text.toString()
-
-      val suraName: String? = when {
-        // user selects
-        position >= 0 -> { suraAdapter.getItem(position) }
-        suras.contains(enteredText) -> { enteredText }
-        // leave to the next code
-        suraAdapter.isEmpty -> { null }
-        // maybe first initialization or invalid input
-        else -> { suraAdapter.getItem(0) }
-      }
-
-      var sura = suras.indexOf(suraName) + 1
-      // default to al-Fatiha
-      if (sura == 0) sura = 1
-      suraInput.tag = sura
-      suraInput.setText(suras[sura - 1])
-
-      //  trigger ayah change
-      val ayahValue: CharSequence = ayahInput.text
-      // space is intentional, to differentiate with value set by the user (delete/backspace)
-      ayahInput.setText(ayahValue.ifEmpty { " " })
-    }
-
-    ayahInput.addTextChangedListener(object : TextWatcher {
-      override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-
-      override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-
-      override fun afterTextChanged(s: Editable) {
-        val ayahString = s.toString()
-        var ayah = ayahString.toIntOrNull() ?: 1
-        if (suppressJump) {
-          ayahInput.tag = ayah
-        } else {
-          val suraTag = suraInput.tag
-          if (suraTag != null) {
-            val sura = suraTag as Int
-            val ayahCount = quranInfo.getNumberOfAyahs(sura)
-            // ensure in 1..ayahCount
-            ayah = ayah.coerceIn(1..ayahCount)
-            val page = quranInfo.getPageFromSuraAyah(sura, ayah)
-            pageInput.hint = QuranUtils.getLocalizedNumber(page)
-            pageInput.text = null
-          }
-          ayahInput.tag = ayah
-          // seems numeric IM always use western arabic (not localized)
-          val correctText = ayah.toString()
-          // empty input means the user clears the input, we don't force to fill it, let him type
-          if (s.isNotEmpty() && correctText != ayahString) {
-            s.replace(0, s.length, correctText)
-          }
-        }
-      }
-    })
-
-    builder.setView(layout)
-    builder.setPositiveButton(
-        getString(R.string.dialog_ok)
-    ) { _: DialogInterface?, _: Int ->
-      // trigger sura completion
-      layout.requestFocus()
-      dismiss()
-      onSubmit()
-    }
-    return builder.create()
-  }
-
-  private fun onSubmit() {
-    try {
-      val pageStr = pageInput.text.toString()
-      val page = if (pageStr.isEmpty()) {
-        pageInput.hint.toString().toIntOrNull()
-      } else {
-        pageStr.toIntOrNull()
-      }
-
-      if (page != null) {
-        val selectedSura = suraInput.tag as Int
-        val selectedAyah = ayahInput.tag as Int
-        (activity as? JumpDestination)?.jumpToAndHighlight(page, selectedSura, selectedAyah)
-      }
-    } catch (e: Exception) {
-      Timber.d(e, "Could not jump, something went wrong...")
-    }
-  }
 
   override fun onAttach(context: Context) {
     super.onAttach(context)
     (context.applicationContext as QuranApplication).applicationComponent
-        .inject(this)
+      .inject(this)
   }
 
-  override fun onActivityCreated(savedInstanceState: Bundle?) {
-    super.onActivityCreated(savedInstanceState)
+  override fun onStart() {
+    super.onStart()
     dialog?.window?.setSoftInputMode(
-        LayoutParams.SOFT_INPUT_STATE_VISIBLE or LayoutParams.SOFT_INPUT_ADJUST_PAN
+      WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE or
+        WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
     )
   }
 
-  /**
-   * ListAdapter that supports filtering by using case-insensitive infix (substring).
-   */
-  private class InfixFilterArrayAdapter(
-    context: Context,
-    @LayoutRes private val itemLayoutRes: Int,
-    private val originalItems: List<String>
-  ) : BaseAdapter(), Filterable {
-    private var items: List<String>
-    private val inflater: LayoutInflater
-    private val filter: Filter = ItemFilter()
-    private val isRtl = SearchTextUtil.isRtl(originalItems.first())
-    private val searchPreparedItems = originalItems.map { prepareForSearch(it, isRtl) }
-
-    init {
-      this.items = originalItems
-      inflater = LayoutInflater.from(context)
+  @Composable
+  override fun Content() {
+    val suraNames = remember {
+      resources.getStringArray(UiCoreR.array.sura_names)
+        .mapIndexed { index, sura -> QuranUtils.getLocalizedNumber(index + 1) + ". " + sura }
     }
-
-    override fun getCount() = items.size
-
-    override fun getItem(position: Int) = items[position]
-
-    override fun getItemId(position: Int) = position.toLong()
-
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-      val view = convertView ?: inflater.inflate(itemLayoutRes, parent, false)
-
-      // As no fieldId is known/assigned, assume it is a TextView
-      val text = view as TextView
-      text.text = getItem(position)
-      return view
-    }
-
-    override fun getFilter() = filter
-
-    private fun prepareForSearch(input: String, isRtl: Boolean): String {
-      return SearchTextUtil.asSearchableString(input, isRtl)
-    }
-
-    /**
-     * Filter that do filtering by matching case-insensitive infix of the input.
-     */
-    private inner class ItemFilter : Filter() {
-      override fun performFiltering(constraint: CharSequence?): FilterResults {
-        val results = FilterResults()
-
-        // The items never change after construction, not sure if really needs to copy
-        if (constraint == null || constraint.isEmpty()) {
-          results.values = originalItems
-          results.count = originalItems.size
-        } else {
-          val infix = cleanUpQueryString(constraint.toString())
-          val filteredIndex = infix.toIntOrNull()?.toString()
-          val filteredCopy = originalItems.filterIndexed { index, sura ->
-            searchPreparedItems[index].contains(infix) ||
-                // support English numbers in Arabic mode
-                filteredIndex != null && (index + 1).toString().contains(filteredIndex)
-          }
-          results.values = filteredCopy
-          results.count = filteredCopy.size
+    JumpDialogContent(
+      quranInfo = quranInfo,
+      suraNames = suraNames,
+      onJump = { page, sura, ayah ->
+        dismiss()
+        try {
+          (activity as? JumpDestination)?.jumpToAndHighlight(page, sura, ayah)
+        } catch (e: Exception) {
+          Timber.d(e, "Could not jump, something went wrong...")
         }
-        return results
-      }
-
-      private fun cleanUpQueryString(query: String): String {
-        return if (SearchTextUtil.isRtl(query)) {
-          SearchTextUtil.asSearchableString(query, true)
-        } else {
-          query.lowercase()
-        }
-      }
-
-      override fun publishResults(constraint: CharSequence, results: FilterResults) {
-        items = results.values as List<String>
-        if (results.count > 0) {
-          notifyDataSetChanged()
-        } else {
-          notifyDataSetInvalidated()
-        }
-      }
-    }
+      },
+      onCancel = ::dismiss
+    )
   }
 
   companion object {
     const val TAG = "JumpFragment"
+  }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun JumpDialogContent(
+  quranInfo: QuranInfo,
+  suraNames: List<String>,
+  onJump: (page: Int, sura: Int, ayah: Int) -> Unit,
+  onCancel: () -> Unit
+) {
+  var sura by remember { mutableIntStateOf(1) }
+  var ayah by remember { mutableIntStateOf(1) }
+  var ayahText by remember { mutableStateOf("1") }
+  var pageText by remember { mutableStateOf("") }
+  var suraQuery by remember { mutableStateOf(suraNames.first()) }
+  // while the sura field is being typed in, the menu lists only the matches
+  var filtering by remember { mutableStateOf(false) }
+  var menuOpen by remember { mutableStateOf(false) }
+
+  val isRtl = remember { SearchTextUtil.isRtl(suraNames.first()) }
+  val searchable = remember { suraNames.map { SearchTextUtil.asSearchableString(it, isRtl) } }
+  val shown = if (!filtering || suraQuery.isEmpty()) {
+    suraNames.indices.toList()
+  } else {
+    val infix = if (SearchTextUtil.isRtl(suraQuery)) {
+      SearchTextUtil.asSearchableString(suraQuery, true)
+    } else {
+      suraQuery.lowercase()
+    }
+    val number = infix.toIntOrNull()?.toString()
+    suraNames.indices.filter { i ->
+      searchable[i].contains(infix) ||
+        // support English numbers in Arabic mode
+        (number != null && (i + 1).toString().contains(number))
+    }
+  }
+
+  val pageFocus = remember { FocusRequester() }
+  LaunchedEffect(Unit) { pageFocus.requestFocus() }
+
+  val pageHint = quranInfo.getPageFromSuraAyah(sura, ayah)
+  fun typedPage(): Int? = pageText.toIntOrNull()?.coerceIn(1..quranInfo.numberOfPages)
+  val submit = { onJump(typedPage() ?: pageHint, sura, ayah) }
+
+  fun selectSura(newSura: Int) {
+    sura = newSura
+    suraQuery = suraNames[newSura - 1]
+    filtering = false
+    ayah = ayah.coerceIn(1..quranInfo.getNumberOfAyahs(newSura))
+    ayahText = ayah.toString()
+    pageText = ""
+  }
+
+  DialogSurface(
+    title = stringResource(R.string.menu_jump),
+    confirmLabel = stringResource(R.string.dialog_ok),
+    onConfirm = submit,
+    dismissLabel = stringResource(UiCoreR.string.cancel),
+    onDismiss = onCancel
+  ) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+      OutlinedTextField(
+        value = pageText,
+        onValueChange = { raw ->
+          val digits = raw.filter { it.isDigit() }.take(4)
+          pageText = digits
+          digits.toIntOrNull()?.let { number ->
+            val page = number.coerceIn(1..quranInfo.numberOfPages)
+            sura = quranInfo.getSuraOnPage(page)
+            ayah = quranInfo.getFirstAyahOnPage(page)
+            ayahText = ayah.toString()
+            suraQuery = suraNames[sura - 1]
+            filtering = false
+          }
+        },
+        label = { Text(stringResource(R.string.gotoPage)) },
+        placeholder = { Text(QuranUtils.getLocalizedNumber(pageHint)) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Go),
+        keyboardActions = KeyboardActions(onGo = { submit() }),
+        modifier = Modifier
+          .fillMaxWidth()
+          .focusRequester(pageFocus)
+      )
+
+      Text(
+        text = stringResource(R.string.sura_and_ayah),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 8.dp)
+      )
+      Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        ExposedDropdownMenuBox(
+          expanded = menuOpen,
+          onExpandedChange = { menuOpen = it },
+          modifier = Modifier.weight(2f)
+        ) {
+          OutlinedTextField(
+            value = suraQuery,
+            onValueChange = { text ->
+              suraQuery = text
+              filtering = true
+              menuOpen = true
+              suraNames.indexOf(text).takeIf { it >= 0 }?.let { sura = it + 1 }
+            },
+            singleLine = true,
+            modifier = Modifier
+              .fillMaxWidth()
+              .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
+          )
+          ExposedDropdownMenu(
+            expanded = menuOpen && shown.isNotEmpty(),
+            onDismissRequest = {
+              menuOpen = false
+              // leaving the field with a half typed name puts the chosen sura back
+              suraQuery = suraNames[sura - 1]
+              filtering = false
+            }
+          ) {
+            shown.forEach { i ->
+              DropdownMenuItem(
+                text = { Text(suraNames[i]) },
+                onClick = {
+                  selectSura(i + 1)
+                  menuOpen = false
+                }
+              )
+            }
+          }
+        }
+        OutlinedTextField(
+          value = ayahText,
+          onValueChange = { raw ->
+            val digits = raw.filter { it.isDigit() }.take(3)
+            val value = (digits.toIntOrNull() ?: 1).coerceIn(1..quranInfo.getNumberOfAyahs(sura))
+            ayah = value
+            // an empty field is the user clearing it to type a new number, so don't fill it in
+            ayahText = if (digits.isEmpty()) "" else value.toString()
+            pageText = ""
+          },
+          singleLine = true,
+          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Go),
+          keyboardActions = KeyboardActions(onGo = { submit() }),
+          modifier = Modifier.weight(1f)
+        )
+      }
+    }
   }
 }
