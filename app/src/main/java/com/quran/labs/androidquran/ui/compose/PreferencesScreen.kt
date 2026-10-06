@@ -36,6 +36,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -272,7 +273,17 @@ private fun PreferenceItem(
           preference.performClick()
           onChanged()
         },
-        trailing = { Switch(checked = preference.isChecked, onCheckedChange = null) }
+        trailing = {
+          Switch(
+            checked = preference.isChecked,
+            onCheckedChange = null,
+            thumbContent = if (preference.isChecked) {
+              { Icon(QuranIcons.Check, contentDescription = null, modifier = Modifier.size(SwitchDefaults.IconSize)) }
+            } else {
+              null
+            }
+          )
+        }
       )
     }
 
