@@ -6,7 +6,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
-import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
@@ -62,7 +61,6 @@ class BookmarksFragment : Fragment(), QuranTouchListener {
   override fun onAttach(context: Context) {
     super.onAttach(context)
     (context.applicationContext as QuranApplication).applicationComponent.inject(this)
-    setHasOptionsMenu(true)
   }
 
   override fun onCreateView(
@@ -166,73 +164,27 @@ class BookmarksFragment : Fragment(), QuranTouchListener {
     }
   }
 
-  override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-    super.onCreateOptionsMenu(menu, inflater)
-    val sortItem = menu.findItem(R.id.sort)
-    if (sortItem != null) {
-      sortItem.isVisible = true
-      sortItem.isEnabled = true
+  // the sort / grouping options live in the home screen's top app bar, which drives them here
+  val sortOrder: Int get() = bookmarkPresenter.getSortOrder()
+  val isGroupedByTags: Boolean get() = bookmarkPresenter.isGroupedByTags
+  val isShowingRecents: Boolean get() = bookmarkPresenter.isShowingRecents
+  val isDateShowing: Boolean get() = bookmarkPresenter.isDateShowing
 
-      val bookmarkPresenter = bookmarkPresenter
-      if (BookmarkSortOrder.SORT_DATE_ADDED == bookmarkPresenter.getSortOrder()) {
-        val sortByDate = menu.findItem(R.id.sort_date)
-        sortByDate.isChecked = true
-      } else {
-        val sortByLocation = menu.findItem(R.id.sort_location)
-        sortByLocation.isChecked = true
-      }
-
-      val groupByTags = menu.findItem(R.id.group_by_tags)
-      groupByTags.isVisible = true
-      groupByTags.isEnabled = true
-      groupByTags.isChecked = bookmarkPresenter.isGroupedByTags
-
-      val showRecents = menu.findItem(R.id.show_recents)
-      showRecents.isChecked = bookmarkPresenter.isShowingRecents
-
-      val showDates = menu.findItem(R.id.show_date)
-      showDates.isChecked = bookmarkPresenter.isDateShowing
-    }
+  fun setSortOrder(order: Int) {
+    bookmarkPresenter.setSortOrder(order)
   }
 
-  override fun onOptionsItemSelected(item: MenuItem): Boolean {
-    val itemId = item.itemId
-    val bookmarkPresenter = bookmarkPresenter
+  fun toggleGroupByTags() {
+    bookmarkPresenter.toggleGroupByTags()
+  }
 
-    when (itemId) {
-      R.id.sort_date -> {
-        bookmarkPresenter.setSortOrder(BookmarkSortOrder.SORT_DATE_ADDED)
-        item.isChecked = true
-        return true
-      }
+  fun toggleShowRecents() {
+    bookmarkPresenter.toggleShowRecents()
+  }
 
-      R.id.sort_location -> {
-        bookmarkPresenter.setSortOrder(BookmarkSortOrder.SORT_LOCATION)
-        item.isChecked = true
-        return true
-      }
-
-      R.id.group_by_tags -> {
-        bookmarkPresenter.toggleGroupByTags()
-        item.isChecked = bookmarkPresenter.isGroupedByTags
-        return true
-      }
-
-      R.id.show_recents -> {
-        bookmarkPresenter.toggleShowRecents()
-        item.isChecked = bookmarkPresenter.isShowingRecents
-        return true
-      }
-
-      R.id.show_date -> {
-        bookmarkPresenter.toggleShowDate()
-        bookmarksAdapter?.setShowDate(bookmarkPresenter.isDateShowing)
-        item.isChecked = bookmarkPresenter.isDateShowing
-        return true
-      }
-    }
-
-    return super.onOptionsItemSelected(item)
+  fun toggleShowDate() {
+    bookmarkPresenter.toggleShowDate()
+    bookmarksAdapter?.setShowDate(bookmarkPresenter.isDateShowing)
   }
 
   fun onNewRawData(rawItems: BookmarkRawResult) {

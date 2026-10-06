@@ -269,6 +269,8 @@ dependencies {
   implementation(libs.androidx.window)
 
   // compose
+  implementation(libs.androidx.activity.compose)
+  implementation(libs.androidx.fragment.compose)
   implementation(libs.compose.foundation)
   implementation(libs.compose.material3)
   implementation(libs.compose.ui)
