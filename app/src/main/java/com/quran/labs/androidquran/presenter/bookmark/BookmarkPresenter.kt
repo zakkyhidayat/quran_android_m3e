@@ -30,7 +30,6 @@ import com.quran.labs.androidquran.dao.bookmark.BookmarkRowData.RecentPageHeader
 import com.quran.labs.androidquran.dao.bookmark.BookmarkRowData.TagHeader
 import com.quran.labs.androidquran.model.translation.ArabicDatabaseUtils
 import com.quran.labs.androidquran.presenter.Presenter
-import com.quran.labs.androidquran.ui.fragment.BookmarksFragment
 import com.quran.labs.androidquran.ui.helpers.QuranRow
 import com.quran.labs.androidquran.util.QuranSettings
 import dev.zacsweers.metro.Inject
@@ -58,7 +57,7 @@ open class BookmarkPresenter @Inject internal constructor(
   private val highlightsDao: HighlightsDao,
   private val quranSettings: QuranSettings,
   private val arabicDatabaseUtils: Provider<ArabicDatabaseUtils>,
-) : Presenter<BookmarksFragment> {
+) : Presenter<BookmarksView> {
   private var sortOrder: Int = quranSettings.bookmarksSortOrder
   var isGroupedByTags: Boolean = quranSettings.bookmarksGroupedByTags
     private set
@@ -72,7 +71,7 @@ open class BookmarkPresenter @Inject internal constructor(
   private var isHighlightsCollapsed: Boolean = quranSettings.isHighlightsCollapsed(true)
 
   private var cachedData: BookmarkRawResult? = null
-  private var fragment: BookmarksFragment? = null
+  private var fragment: BookmarksView? = null
 
   private var pendingRemoval: DisposableSingleObserver<BookmarkRawResult>? = null
   private var itemsToRemove: MutableList<QuranRow>? = null
@@ -631,12 +630,12 @@ open class BookmarkPresenter @Inject internal constructor(
     return tags.associateByTo(mutableMapOf()) { it.id }
   }
 
-  override fun bind(fragment: BookmarksFragment) {
+  override fun bind(fragment: BookmarksView) {
     this.fragment = fragment
     requestData(true)
   }
 
-  override fun unbind(fragment: BookmarksFragment) {
+  override fun unbind(fragment: BookmarksView) {
     if (fragment == this.fragment) {
       this.fragment = null
     }

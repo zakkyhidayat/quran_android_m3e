@@ -329,7 +329,6 @@ class QuranListAdapter(
     val number: TextView = itemView.findViewById(R.id.suraNumber)
     val image: ImageView = itemView.findViewById(R.id.rowIcon)
     val tags: TagsViewGroup = itemView.findViewById(R.id.tags)
-    val date: TextView? = itemView.findViewById(R.id.show_date)
   }
 
   private inner class CollectionHeaderHolder(itemView: View) : HeaderHolder(itemView) {

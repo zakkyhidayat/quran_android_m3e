@@ -23,6 +23,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -30,8 +34,8 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,16 +44,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.dp
 import androidx.fragment.compose.AndroidFragment
 import com.quran.data.dao.BookmarkSortOrder
 import com.quran.labs.androidquran.R
 import com.quran.labs.androidquran.common.ui.core.QuranIcons
-import com.quran.labs.androidquran.ui.fragment.BookmarksFragment
+import com.quran.labs.androidquran.presenter.bookmark.BookmarkPresenter
 import com.quran.labs.androidquran.ui.fragment.JuzListFragment
 import com.quran.labs.androidquran.ui.fragment.SuraListFragment
+import com.quran.labs.androidquran.util.QuranUtils
+import com.quran.mobile.feature.sync.QuranSyncManager
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** What the home screen's app bar can trigger. The activity owns what each of these does. */
@@ -61,6 +69,7 @@ class HomeActions(
   val onHelp: () -> Unit,
   val onAbout: () -> Unit,
   val onOtherApps: () -> Unit,
+  val onSignIn: () -> Unit,
   val extraItems: List<HomeExtraItem> = emptyList()
 )
 
@@ -71,59 +80,104 @@ private const val BOOKMARKS_TAB = 2
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(actions: HomeActions) {
+fun HomeScreen(
+  actions: HomeActions,
+  bookmarks: BookmarksState,
+  bookmarkActions: BookmarksActions,
+  syncManager: QuranSyncManager
+) {
+  val context = LocalContext.current
   val pagerState = rememberPagerState(pageCount = { TabTitles.size })
   val scope = rememberCoroutineScope()
+  val snackbarHostState = remember { SnackbarHostState() }
   var searching by rememberSaveable { mutableStateOf(false) }
-  var bookmarksFragment by remember { mutableStateOf<BookmarksFragment?>(null) }
+  val selecting = bookmarks.isSelecting
 
   BackHandler(enabled = searching) { searching = false }
+  BackHandler(enabled = selecting) { bookmarks.clearSelection() }
+  // selection belongs to the bookmarks tab, so swiping to another tab drops it
+  LaunchedEffect(pagerState.currentPage) {
+    if (pagerState.currentPage != BOOKMARKS_TAB) bookmarks.clearSelection()
+  }
+
+  val deleteSelected: () -> Unit = {
+    val count = bookmarks.deleteSelected()
+    val message = context.resources.getQuantityString(R.plurals.bookmark_tag_deleted, count, count)
+    val undo = context.getString(R.string.undo)
+    scope.launch {
+      // an indefinite snackbar that this timer dismisses, since the delay before the deletion is
+      // really applied is the presenter's, not one of the standard snackbar durations
+      val dismisser = launch {
+        delay(BookmarkPresenter.DELAY_DELETION_DURATION_IN_MS.toLong())
+        snackbarHostState.currentSnackbarData?.dismiss()
+      }
+      val result = snackbarHostState.showSnackbar(
+        message = message,
+        actionLabel = undo,
+        duration = SnackbarDuration.Indefinite
+      )
+      dismisser.cancel()
+      if (result == SnackbarResult.ActionPerformed) bookmarks.undoDelete()
+    }
+  }
 
   Scaffold(
     contentWindowInsets = WindowInsets.systemBars
       .union(WindowInsets.displayCutout)
       .only(WindowInsetsSides.Horizontal),
+    snackbarHost = { SnackbarHost(snackbarHostState) },
     topBar = {
       Column {
-        TopAppBar(
-          title = {
-            if (searching) {
-              SearchField(onSearch = {
-                searching = false
-                actions.onSearch(it)
-              })
-            } else {
-              Text(stringResource(R.string.app_name))
-            }
-          },
-          navigationIcon = {
-            if (searching) {
-              IconButton(onClick = { searching = false }) {
-                Icon(QuranIcons.ArrowBack, contentDescription = stringResource(R.string.download_cancel))
-              }
-            }
-          },
-          actions = {
-            if (!searching) {
-              if (pagerState.currentPage == BOOKMARKS_TAB) {
-                BookmarkOptionsMenu(bookmarksFragment)
-              }
-              IconButton(onClick = { searching = true }) {
-                Icon(QuranIcons.Search, contentDescription = stringResource(R.string.menu_search))
-              }
-              IconButton(onClick = actions.onLastPage) {
-                Icon(
-                  QuranIcons.MenuBook,
-                  contentDescription = stringResource(R.string.menu_jump_last_page)
-                )
-              }
-              OverflowMenu(actions)
-            }
-          },
-          colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        if (selecting) {
+          SelectionBar(
+            bookmarks = bookmarks,
+            actions = bookmarkActions,
+            onDelete = deleteSelected
           )
-        )
+        } else {
+          TopAppBar(
+            title = {
+              if (searching) {
+                SearchField(onSearch = {
+                  searching = false
+                  actions.onSearch(it)
+                })
+              } else {
+                Text(stringResource(R.string.app_name))
+              }
+            },
+            navigationIcon = {
+              if (searching) {
+                IconButton(onClick = { searching = false }) {
+                  Icon(
+                    QuranIcons.ArrowBack,
+                    contentDescription = stringResource(R.string.download_cancel)
+                  )
+                }
+              }
+            },
+            actions = {
+              if (!searching) {
+                if (pagerState.currentPage == BOOKMARKS_TAB) {
+                  BookmarkOptionsMenu(bookmarks)
+                }
+                IconButton(onClick = { searching = true }) {
+                  Icon(QuranIcons.Search, contentDescription = stringResource(R.string.menu_search))
+                }
+                IconButton(onClick = actions.onLastPage) {
+                  Icon(
+                    QuranIcons.MenuBook,
+                    contentDescription = stringResource(R.string.menu_jump_last_page)
+                  )
+                }
+                OverflowMenu(actions)
+              }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+              containerColor = MaterialTheme.colorScheme.surfaceContainer
+            )
+          )
+        }
         PrimaryTabRow(
           selectedTabIndex = pagerState.currentPage,
           containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -149,10 +203,59 @@ fun HomeScreen(actions: HomeActions) {
       when (page) {
         0 -> AndroidFragment<SuraListFragment>()
         1 -> AndroidFragment<JuzListFragment>()
-        else -> AndroidFragment<BookmarksFragment>(onUpdate = { bookmarksFragment = it })
+        else -> BookmarksTab(
+          state = bookmarks,
+          actions = bookmarkActions,
+          syncManager = syncManager,
+          onSignIn = actions.onSignIn
+        )
       }
     }
   }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SelectionBar(
+  bookmarks: BookmarksState,
+  actions: BookmarksActions,
+  onDelete: () -> Unit
+) {
+  val operations = bookmarks.operations
+  TopAppBar(
+    title = { Text(QuranUtils.getLocalizedNumber(bookmarks.selectedCount)) },
+    navigationIcon = {
+      IconButton(onClick = bookmarks::clearSelection) {
+        Icon(QuranIcons.Close, contentDescription = stringResource(R.string.download_cancel))
+      }
+    },
+    actions = {
+      if (operations[2]) {
+        IconButton(onClick = { bookmarks.tagSelectedBookmarks(actions) }) {
+          Icon(HomeIcons.Label, contentDescription = stringResource(R.string.tag_bookmark))
+        }
+      }
+      if (operations[0]) {
+        IconButton(onClick = { bookmarks.editSelectedTag(actions) }) {
+          Icon(HomeIcons.Edit, contentDescription = stringResource(R.string.edit_tag))
+        }
+      }
+      if (operations[1]) {
+        IconButton(onClick = onDelete) {
+          Icon(HomeIcons.Delete, contentDescription = stringResource(R.string.delete_tag))
+        }
+      }
+      IconButton(onClick = actions.onAddTag) {
+        Icon(HomeIcons.Add, contentDescription = stringResource(R.string.new_tag))
+      }
+    },
+    colors = TopAppBarDefaults.topAppBarColors(
+      containerColor = MaterialTheme.colorScheme.secondaryContainer,
+      titleContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+      navigationIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+      actionIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    )
+  )
 }
 
 @Composable
@@ -169,12 +272,12 @@ private fun SearchField(onSearch: (String) -> Unit) {
     colors = TextFieldDefaults.colors(
       focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
       unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-      focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-      unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent
+      focusedIndicatorColor = Color.Transparent,
+      unfocusedIndicatorColor = Color.Transparent
     ),
     modifier = Modifier.focusRequester(focusRequester)
   )
-  androidx.compose.runtime.LaunchedEffect(Unit) { focusRequester.requestFocus() }
+  LaunchedEffect(Unit) { focusRequester.requestFocus() }
 }
 
 @Composable
@@ -204,13 +307,10 @@ private fun OverflowMenu(actions: HomeActions) {
   }
 }
 
-/** Sort and display options for the bookmarks tab, which the fragment still owns. */
+/** Sort and display options for the bookmarks tab. */
 @Composable
-private fun BookmarkOptionsMenu(fragment: BookmarksFragment?) {
-  if (fragment == null) return
+private fun BookmarkOptionsMenu(bookmarks: BookmarksState) {
   var expanded by remember { mutableStateOf(false) }
-  // the fragment's options aren't observable, so re-read them every time one is toggled
-  var version by remember { mutableIntStateOf(0) }
 
   IconButton(onClick = { expanded = true }) {
     Icon(HomeIcons.Sort, contentDescription = stringResource(R.string.menu_sort))
@@ -223,34 +323,20 @@ private fun BookmarkOptionsMenu(fragment: BookmarksFragment?) {
         leadingIcon = {
           if (checked) Icon(QuranIcons.Check, contentDescription = null)
         },
-        onClick = {
-          onClick()
-          version++
-        }
+        onClick = onClick
       )
     }
 
-    // reading `version` makes this block re-run after a toggle
-    val sortOrder = remember(version) { fragment.sortOrder }
     Option(
       R.string.menu_sort_date,
-      sortOrder == BookmarkSortOrder.SORT_DATE_ADDED
-    ) { fragment.setSortOrder(BookmarkSortOrder.SORT_DATE_ADDED) }
+      bookmarks.sortOrder == BookmarkSortOrder.SORT_DATE_ADDED
+    ) { bookmarks.changeSortOrder(BookmarkSortOrder.SORT_DATE_ADDED) }
     Option(
       R.string.menu_sort_location,
-      sortOrder == BookmarkSortOrder.SORT_LOCATION
-    ) { fragment.setSortOrder(BookmarkSortOrder.SORT_LOCATION) }
-    Option(
-      R.string.menu_sort_group_by_tags,
-      remember(version) { fragment.isGroupedByTags }
-    ) { fragment.toggleGroupByTags() }
-    Option(
-      R.string.menu_show_recents,
-      remember(version) { fragment.isShowingRecents }
-    ) { fragment.toggleShowRecents() }
-    Option(
-      R.string.menu_show_date,
-      remember(version) { fragment.isDateShowing }
-    ) { fragment.toggleShowDate() }
+      bookmarks.sortOrder == BookmarkSortOrder.SORT_LOCATION
+    ) { bookmarks.changeSortOrder(BookmarkSortOrder.SORT_LOCATION) }
+    Option(R.string.menu_sort_group_by_tags, bookmarks.isGroupedByTags, bookmarks::toggleGroupByTags)
+    Option(R.string.menu_show_recents, bookmarks.isShowingRecents, bookmarks::toggleShowRecents)
+    Option(R.string.menu_show_date, bookmarks.isDateShowing, bookmarks::toggleShowDate)
   }
 }

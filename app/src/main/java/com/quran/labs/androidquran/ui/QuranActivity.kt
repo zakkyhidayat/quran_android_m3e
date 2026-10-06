@@ -6,21 +6,15 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.view.View
-import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AlertDialog.Builder
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.view.ActionMode
-import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.R as MaterialR
-import com.google.android.material.color.MaterialColors
 import com.quran.data.dao.RecentPagesDao
 import com.quran.data.model.Page
 import com.quran.data.model.SuraAyah
@@ -30,6 +24,12 @@ import com.quran.labs.androidquran.HelpActivity
 import com.quran.labs.androidquran.QuranApplication
 import com.quran.labs.androidquran.QuranPreferenceActivity
 import com.quran.labs.androidquran.R
+import com.quran.labs.androidquran.presenter.bookmark.BookmarkPresenter
+import com.quran.labs.androidquran.ui.compose.BookmarksActions
+import com.quran.labs.androidquran.ui.compose.BookmarksState
+import com.quran.labs.androidquran.ui.helpers.BookmarkUIConverter
+import com.quran.mobile.feature.sync.QuranSyncActivity
+import com.quran.mobile.feature.sync.QuranSyncManager
 import com.quran.labs.androidquran.common.ui.core.QuranTheme
 import com.quran.labs.androidquran.ui.compose.HomeActions
 import com.quran.labs.androidquran.ui.compose.HomeExtraItem
@@ -83,7 +83,6 @@ class QuranActivity : AppCompatActivity(),
   private var showedTranslationUpgradeDialog = false
   private var isRtl = false
   private var isPaused = false
-  private var supportActionMode: ActionMode? = null
   private val compositeDisposable = CompositeDisposable()
   private val latestPageFlow: Flow<Int> by lazy {
     combine(
@@ -104,7 +103,6 @@ class QuranActivity : AppCompatActivity(),
   }
 
   private var backStackListener: FragmentManager.OnBackStackChangedListener? = null
-  private lateinit var supportActionModeClearingCallback: OnBackPressedCallback
 
   @Inject lateinit var quranNavigator: QuranNavigator
 
@@ -122,6 +120,16 @@ class QuranActivity : AppCompatActivity(),
   lateinit var quranIndexEventLogger: QuranIndexEventLogger
   @Inject
   lateinit var extraScreens: Set<@JvmSuppressWildcards ExtraScreenProvider>
+  @Inject
+  lateinit var bookmarkPresenter: BookmarkPresenter
+  @Inject
+  lateinit var bookmarkUIConverter: BookmarkUIConverter
+  @Inject
+  lateinit var syncManager: QuranSyncManager
+
+  private val bookmarksState by lazy {
+    BookmarksState(applicationContext, bookmarkPresenter, bookmarkUIConverter)
+  }
 
   public override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
@@ -139,7 +147,7 @@ class QuranActivity : AppCompatActivity(),
 
     setContent {
       QuranTheme {
-        HomeScreen(homeActions())
+        HomeScreen(homeActions(), bookmarksState, bookmarksActions(), syncManager)
       }
     }
 
@@ -165,6 +173,16 @@ class QuranActivity : AppCompatActivity(),
     }
     updateTranslationsListAsNeeded()
     quranIndexEventLogger.logAnalytics()
+  }
+
+  override fun onStart() {
+    super.onStart()
+    bookmarksState.bind()
+  }
+
+  override fun onStop() {
+    bookmarksState.unbind()
+    super.onStop()
   }
 
   public override fun onResume() {
@@ -232,19 +250,22 @@ class QuranActivity : AppCompatActivity(),
       backStackListener = listener
       supportFragmentManager.addOnBackStackChangedListener(listener)
     }
-
-    // clear the action mode if it's active on back press
-    val supportActionModeEnabled = supportActionMode != null
-    supportActionModeClearingCallback = object : OnBackPressedCallback(supportActionModeEnabled) {
-      override fun handleOnBackPressed() {
-        supportActionMode?.finish()
-      }
-    }
   }
 
   private fun isRtl(): Boolean {
     return QuranUtils.isRtl()
   }
+
+  private fun bookmarksActions() = BookmarksActions(
+    onJumpTo = ::jumpTo,
+    onOpenCollection = { row ->
+      row.tagId?.let { startActivity(BookmarkListActivity.collectionIntent(this, it, row.text)) }
+    },
+    onOpenHighlightColor = { startActivity(BookmarkListActivity.highlightsIntent(this, it)) },
+    onAddTag = ::addTag,
+    onEditTag = ::editTag,
+    onTagBookmarks = ::tagBookmarks
+  )
 
   private fun homeActions() = HomeActions(
     onSearch = { query ->
@@ -254,6 +275,7 @@ class QuranActivity : AppCompatActivity(),
           .putExtra(SearchManager.QUERY, query)
       )
     },
+    onSignIn = { startActivity(Intent(this, QuranSyncActivity::class.java)) },
     onLastPage = ::jumpToLastPage,
     onJumpToPage = ::gotoPageDialog,
     onSettings = { startActivity(Intent(this, QuranPreferenceActivity::class.java)) },
@@ -271,42 +293,6 @@ class QuranActivity : AppCompatActivity(),
       .sortedBy { it.order }
       .map { screen -> HomeExtraItem(screen.titleResId) { screen.onClick(this) } }
   )
-
-  override fun onSupportActionModeFinished(mode: ActionMode) {
-    supportActionMode = null
-    supportActionModeClearingCallback.isEnabled = false
-    super.onSupportActionModeFinished(mode)
-  }
-
-  override fun onSupportActionModeStarted(mode: ActionMode) {
-    supportActionMode = mode
-    supportActionModeClearingCallback.isEnabled = true
-    super.onSupportActionModeStarted(mode)
-
-    /**
-     * hack to fix the status bar color when action mode starts.
-     * unfortunately, despite being edge to edge, switching to contextual action mode causes
-     * [androidx.appcompat.app.AppCompatDelegate] and its implementation to set a status guard
-     * under the status bar (white in light mode, black in dark mode). this breaks the edge to
-     * edge look and feel, so we manually set the status guard's background color.
-     */
-    val abRoot = findViewById<ViewGroup>(androidx.appcompat.R.id.action_bar_root)
-    // has to be .post otherwise the background is set to the default color overriding this
-    abRoot.post {
-      val statusGuard = abRoot.getChildAt(abRoot.childCount - 1)
-      statusGuard?.let {
-        // not using `is` here because i literally want a View, not a subclass of View.
-        // checking top to be 0 is just a second just in case check.
-        if (statusGuard::class == View::class && statusGuard.top == 0) {
-          statusGuard.setBackgroundColor(
-            MaterialColors.getColor(
-              this, MaterialR.attr.colorSurfaceContainer, ContextCompat.getColor(this, R.color.toolbar)
-            )
-          )
-        }
-      }
-    }
-  }
 
   override fun onSaveInstanceState(outState: Bundle) {
     outState.putBoolean(

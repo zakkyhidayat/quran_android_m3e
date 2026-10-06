@@ -93,7 +93,7 @@ class SuraListFragment : Fragment() {
             rows = rows,
             listState = listState,
             contentPadding = WindowInsets.navigationBars.asPaddingValues(),
-            onRowClick = ::onRowClick
+            onRowClick = { _, row -> onRowClick(row) }
           )
         }
       }
