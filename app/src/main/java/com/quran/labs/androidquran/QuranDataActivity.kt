@@ -716,7 +716,7 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
   }
 
   /**
-   * The opening of Ayat al-Kursi in each style: cut from the downloaded page when there is one,
+   * The Basmalah (1:1) in each style: cut from the downloaded page when there is one,
    * otherwise the small sample image the style is advertised with.
    */
   private fun loadPagePreviews() {
@@ -731,9 +731,9 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
               AyahPreview.load(
                 quranFileUtils,
                 quranScreenInfo.widthParam,
-                quranInfo.getPageFromSuraAyah(AYAT_AL_KURSI_SURA, AYAT_AL_KURSI_AYAH),
-                AYAT_AL_KURSI_SURA,
-                AYAT_AL_KURSI_AYAH
+                quranInfo.getPageFromSuraAyah(PREVIEW_SURA, PREVIEW_AYAH),
+                PREVIEW_SURA,
+                PREVIEW_AYAH
               )
             } else {
               null
@@ -850,8 +850,8 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
   }
 
   companion object {
-    private const val AYAT_AL_KURSI_SURA = 2
-    private const val AYAT_AL_KURSI_AYAH = 255
+    private const val PREVIEW_SURA = 1
+    private const val PREVIEW_AYAH = 1
     private const val PAGE_STYLE_SAMPLES_URL = "https://quran.app/data/pagetypes/snips"
     const val ACTION_OPEN_PAGE = "com.quran.labs.androidquran.open_page"
     const val PAGES_DOWNLOAD_KEY = "PAGES_DOWNLOAD_KEY"

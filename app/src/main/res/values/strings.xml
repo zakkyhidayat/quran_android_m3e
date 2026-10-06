@@ -503,6 +503,8 @@
   <string name="page_style_use">Use</string>
   <string name="page_style_download">Download</string>
   <string name="page_style_remove">Remove</string>
-  <string name="page_style_preview">Ayat al-Kursi in this style</string>
+  <string name="search_translations_hint">Search translations or languages</string>
+  <string name="translation_drag_to_reorder">Drag to reorder</string>
+  <string name="page_style_preview">The Basmalah in this style</string>
   <string name="page_style_last_one">This is your only page style. Download another one before removing it.</string>
 </resources>

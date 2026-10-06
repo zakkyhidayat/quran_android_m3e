@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -612,49 +614,58 @@ private fun TranslationStep(state: OnboardingState, translations: TranslationDow
   val downloaded = remember(items) { items.filter { it.exists() }.sortedBy { it.displayOrder } }
   val available = remember(items, query) { items.filter { !it.exists() && it.matches(query) } }
 
-  Column(Modifier.fillMaxSize()) {
-    Column(Modifier.padding(horizontal = 24.dp)) {
-      StepHeader(Step.TRANSLATION, centered = false)
-    }
-    TranslationFilterField(
-      query = query,
-      onQueryChange = { query = it },
-      modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-    )
-    when {
-      items.isEmpty() && translations.refreshing -> Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(32.dp)
-      ) { LoadingIndicator() }
-
-      items.isEmpty() && state.translationsFailed -> Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(24.dp)
-      ) {
-        Text(
-          stringResource(R.string.onboarding_translation_error),
-          textAlign = TextAlign.Center,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        FilledTonalButton(onClick = { translations.refresh() }, modifier = Modifier.padding(top = 12.dp)) {
-          Text(stringResource(R.string.onboarding_retry))
-        }
+  val header: LazyListScope.() -> Unit = {
+    item(key = "header") {
+      Column(Modifier.padding(horizontal = 24.dp)) {
+        StepHeader(Step.TRANSLATION, centered = false)
       }
-
-      else -> TranslationList(
-        downloaded = downloaded,
-        available = available,
-        downloadingId = translations.downloadingId,
-        contentPadding = PaddingValues(bottom = 16.dp),
-        onDownload = translations::download,
-        onMove = translations::move,
-        onRemove = { confirmRemoval = it }
+    }
+    item(key = "filter") {
+      TranslationFilterField(
+        query = query,
+        onQueryChange = { query = it },
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
       )
     }
+  }
+
+  when {
+    items.isEmpty() && translations.refreshing -> LazyColumn(Modifier.fillMaxSize()) {
+      header()
+      item { Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { LoadingIndicator() } }
+    }
+
+    items.isEmpty() && state.translationsFailed -> LazyColumn(Modifier.fillMaxSize()) {
+      header()
+      item {
+        Column(
+          horizontalAlignment = Alignment.CenterHorizontally,
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+        ) {
+          Text(
+            stringResource(R.string.onboarding_translation_error),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+          FilledTonalButton(onClick = { translations.refresh() }, modifier = Modifier.padding(top = 12.dp)) {
+            Text(stringResource(R.string.onboarding_retry))
+          }
+        }
+      }
+    }
+
+    else -> TranslationList(
+      downloaded = downloaded,
+      available = available,
+      downloadingId = translations.downloadingId,
+      contentPadding = PaddingValues(bottom = 16.dp),
+      onDownload = translations::download,
+      onMove = translations::move,
+      onRemove = { confirmRemoval = it },
+      header = header
+    )
   }
 
   confirmRemoval?.let { item ->
@@ -756,7 +767,7 @@ private fun PageStyles(state: OnboardingState, actions: OnboardingActions) {
 }
 
 /**
- * How the style writes the opening of Ayat al-Kursi, on paper whatever the theme, since that is
+ * How the style writes the Basmalah, on paper whatever the theme, since that is
  * how the pages themselves are shown.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -770,20 +781,13 @@ private fun PageStylePreview(preview: ImageBitmap?) {
       .padding(top = 12.dp)
   ) {
     Column(Modifier.padding(12.dp)) {
-      Text(
-        stringResource(R.string.page_style_preview),
-        style = MaterialTheme.typography.labelMedium,
-        color = Color(0xFF5B6B5F)
-      )
       if (preview != null) {
         Image(
           bitmap = preview,
           contentDescription = stringResource(R.string.page_style_preview),
           contentScale = ContentScale.FillWidth,
           colorFilter = ColorFilter.tint(Color(0xFF1B1B1B)),
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp)
+          modifier = Modifier.fillMaxWidth()
         )
       } else {
         Box(

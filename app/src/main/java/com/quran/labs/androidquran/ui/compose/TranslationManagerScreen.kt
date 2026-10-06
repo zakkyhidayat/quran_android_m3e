@@ -1,6 +1,14 @@
 package com.quran.labs.androidquran.ui.compose
 
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -152,21 +161,38 @@ fun TranslationList(
   modifier: Modifier = Modifier,
   onDownload: (TranslationItem) -> Unit,
   onMove: ((TranslationItem, Int) -> Unit)? = null,
-  onRemove: ((TranslationItem) -> Unit)? = null
+  onRemove: ((TranslationItem) -> Unit)? = null,
+  header: (LazyListScope.() -> Unit)? = null
 ) {
+  val listState = rememberLazyListState()
+  // the translation being dragged to a new place, and how far it has been dragged
+  var draggingKey by remember { mutableStateOf<String?>(null) }
+  var dragOffset by remember { mutableFloatStateOf(0f) }
+
   LazyColumn(
+    state = listState,
     modifier = modifier.fillMaxSize(),
     contentPadding = contentPadding,
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
+    header?.invoke(this)
     if (downloaded.isNotEmpty()) {
       item(key = "header-downloaded") { ListHeader(stringResource(R.string.downloaded_translations)) }
       items(downloaded.size, key = { "d-${downloaded[it].translation.id}" }) { index ->
         val item = downloaded[index]
+        val key = "d-${item.translation.id}"
+        val dragged = draggingKey == key
         TranslationCard(
           item = item,
           downloading = downloadingId == item.translation.id,
-          onClick = { if (item.needsUpgrade()) onDownload(item) }
+          onClick = { if (item.needsUpgrade()) onDownload(item) },
+          modifier = if (dragged) {
+            Modifier
+              .zIndex(1f)
+              .graphicsLayer { translationY = dragOffset }
+          } else {
+            Modifier.animateItem()
+          }
         ) {
           if (item.needsUpgrade() && downloadingId != item.translation.id) {
             IconButton(onClick = { onDownload(item) }) {
@@ -174,12 +200,46 @@ fun TranslationList(
             }
           }
           if (onMove != null && downloaded.size > 1) {
-            IconButton(onClick = { onMove(item, -1) }, enabled = index > 0) {
-              Icon(HomeIcons.ArrowUp, contentDescription = null)
-            }
-            IconButton(onClick = { onMove(item, 1) }, enabled = index < downloaded.lastIndex) {
-              Icon(HomeIcons.ArrowDown, contentDescription = null)
-            }
+            val currentDownloaded by rememberUpdatedState(downloaded)
+            Icon(
+              HomeIcons.DragHandle,
+              contentDescription = stringResource(R.string.translation_drag_to_reorder),
+              tint = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier
+                .size(48.dp)
+                .padding(12.dp)
+                .pointerInput(key) {
+                  detectDragGestures(
+                    onDragStart = {
+                      draggingKey = key
+                      dragOffset = 0f
+                    },
+                    onDragEnd = { draggingKey = null; dragOffset = 0f },
+                    onDragCancel = { draggingKey = null; dragOffset = 0f },
+                    onDrag = { change, amount ->
+                      change.consume()
+                      dragOffset += amount.y
+                      val visible = listState.layoutInfo.visibleItemsInfo
+                      val own = visible.firstOrNull { it.key == key } ?: return@detectDragGestures
+                      val center = own.offset + own.size / 2f + dragOffset
+                      val target = visible.firstOrNull {
+                        it.key != key && (it.key as? String)?.startsWith("d-") == true &&
+                          center >= it.offset && center < it.offset + it.size
+                      }
+                      if (target != null) {
+                        val list = currentDownloaded
+                        val from = list.indexOfFirst { "d-${it.translation.id}" == key }
+                        val to = list.indexOfFirst { "d-${it.translation.id}" == target.key }
+                        if (from >= 0 && to >= 0 && from != to) {
+                          onMove(list[from], to - from)
+                          // the dragged card takes the target's place, so the finger stays on it
+                          dragOffset += own.offset - target.offset
+                        }
+                      }
+                    }
+                  )
+                }
+            )
           }
           if (onRemove != null) {
             IconButton(onClick = { onRemove(item) }) {
@@ -225,6 +285,7 @@ private fun TranslationCard(
   item: TranslationItem,
   downloading: Boolean,
   onClick: () -> Unit,
+  modifier: Modifier = Modifier,
   actions: @Composable () -> Unit
 ) {
   val translation = item.translation
@@ -245,7 +306,7 @@ private fun TranslationCard(
     colors = ListItemDefaults.segmentedColors(
       containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
     ),
-    modifier = Modifier.padding(horizontal = 16.dp),
+    modifier = modifier.padding(horizontal = 16.dp),
     leadingContent = {
       Icon(
         HomeIcons.Translate,
@@ -303,7 +364,7 @@ fun TranslationFilterField(query: String, onQueryChange: (String) -> Unit, modif
     value = query,
     onValueChange = onQueryChange,
     singleLine = true,
-    placeholder = { Text(stringResource(R.string.search_hint)) },
+    placeholder = { Text(stringResource(R.string.search_translations_hint)) },
     leadingIcon = { Icon(QuranIcons.Search, contentDescription = null) },
     trailingIcon = {
       if (query.isNotEmpty()) {
