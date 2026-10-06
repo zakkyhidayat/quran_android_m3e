@@ -2,7 +2,6 @@ package com.quran.labs.androidquran.ui.fragment
 
 import android.app.Activity
 import android.app.Dialog
-import android.app.ProgressDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -28,6 +27,7 @@ import com.quran.labs.androidquran.BuildConfig
 import com.quran.labs.androidquran.QuranAdvancedPreferenceActivity
 import com.quran.labs.androidquran.QuranApplication
 import com.quran.labs.androidquran.QuranImportActivity
+import com.quran.labs.androidquran.ui.compose.QuranProgressDialog
 import com.quran.labs.androidquran.R
 import com.quran.labs.androidquran.data.Constants
 import com.quran.labs.androidquran.model.bookmark.BookmarkImportExportModel
@@ -411,8 +411,9 @@ class QuranAdvancedSettingsFragment : QuranPreferenceFragment() {
     val context = context
     if (context != null) {
       lifecycle.coroutineScope.launch {
-        val progressDialog: ProgressDialog = ProgressDialog(activity).apply {
+        val progressDialog = QuranProgressDialog(requireActivity()).apply {
           setMessage(appContext.getString(R.string.prefs_copying_app_files))
+          setIndeterminate(true)
           setCancelable(false)
         }
         progressDialog.show()

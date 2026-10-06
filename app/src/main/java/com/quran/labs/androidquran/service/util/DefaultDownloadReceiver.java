@@ -1,6 +1,5 @@
 package com.quran.labs.androidquran.service.util;
 
-import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -10,6 +9,7 @@ import android.os.Message;
 
 import com.quran.labs.androidquran.R;
 import com.quran.labs.androidquran.service.QuranDownloadService;
+import com.quran.labs.androidquran.ui.compose.QuranProgressDialog;
 
 import java.lang.ref.WeakReference;
 import java.text.DecimalFormat;
@@ -18,7 +18,7 @@ public class DefaultDownloadReceiver extends BroadcastReceiver {
 
   private final int mDownloadType;
   private SimpleDownloadListener mListener;
-  private ProgressDialog mProgressDialog;
+  private QuranProgressDialog mProgressDialog;
   private final Context mContext;
   private boolean mDidReceiveBroadcast;
   private boolean mCanCancelDownload;
@@ -162,8 +162,7 @@ public class DefaultDownloadReceiver extends BroadcastReceiver {
 
   private void makeProgressDialog() {
     if (mProgressDialog == null) {
-      mProgressDialog = new ProgressDialog(mContext);
-      mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+      mProgressDialog = new QuranProgressDialog(mContext);
       mProgressDialog.setCancelable(mCanCancelDownload);
       mProgressDialog.setCanceledOnTouchOutside(false);
       if (mCanCancelDownload) {
