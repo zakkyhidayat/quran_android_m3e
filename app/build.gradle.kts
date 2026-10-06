@@ -91,6 +91,7 @@ android {
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard.cfg")
       signingConfig = signingConfigs.getByName("release")
+      applicationIdSuffix = ".beta"
       versionNameSuffix = "-beta"
       matchingFallbacks += listOf("debug", "release")
     }

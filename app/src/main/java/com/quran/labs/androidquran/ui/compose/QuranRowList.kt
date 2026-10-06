@@ -1,7 +1,7 @@
 package com.quran.labs.androidquran.ui.compose
 
-import android.widget.ImageView
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -22,19 +22,26 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -42,7 +49,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.unit.sp
 import androidx.core.content.res.ResourcesCompat
 import com.quran.data.model.bookmark.Tag
 import com.quran.labs.androidquran.R
@@ -55,13 +62,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 /**
- * The Material 3 replacement for the RecyclerView based `QuranListAdapter`. rows come straight
- * from the existing presenters, so data loading stays unchanged.
+ * The Material 3 Expressive replacement for the RecyclerView based `QuranListAdapter`.
  *
- * the surah and juz tabs only need [onRowClick]. the bookmarks tab also passes [isEditable] (some
+ * rows between two headers form one group: a run of segmented list items whose outer corners are
+ * large and whose inner corners are small, so each group reads as a single rounded container.
+ * the surah and juz tabs only need [onRowClick]; the bookmarks tab also passes [isEditable] (some
  * rows, like plain headers, aren't tappable there), [selectedIndices] and the long press / open
  * callbacks.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun QuranRowList(
   rows: List<QuranRow>,
@@ -77,14 +86,17 @@ fun QuranRowList(
   onOpenClick: (Int, QuranRow) -> Unit = { _, _ -> },
   onRowClick: (Int, QuranRow) -> Unit
 ) {
+  val groups = remember(rows) { segmentGroups(rows) }
+
   LazyColumn(
     modifier = modifier,
     state = listState,
-    contentPadding = contentPadding
+    contentPadding = contentPadding,
+    verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
   ) {
     itemsIndexed(rows) { index, row ->
       val enabled = !isEditable || row.isTappableWhenEditable()
-      val click: (() -> Unit)? = if (enabled) ({ onRowClick(index, row) }) else null
+      val click: () -> Unit = if (enabled) ({ onRowClick(index, row) }) else ({})
       val longClick: (() -> Unit)? =
         if (isEditable && enabled && onRowLongClick != null) ({ onRowLongClick(index, row) }) else null
       val selected = index in selectedIndices
@@ -93,95 +105,105 @@ fun QuranRowList(
         row.isBookmarkHeader || row.isHighlightsHeader ->
           CollectionHeader(row, selected, click, longClick) { onOpenClick(index, row) }
 
-        row.isHeader -> SectionHeader(row, selected, click, longClick)
-        row.isHighlightColor -> HighlightColorRow(row, selected, click, longClick) {
-          onOpenClick(index, row)
+        row.isHeader -> SectionLabel(row)
+        else -> {
+          val shapes = ListItemDefaults.segmentedShapes(
+            index = groups.positionOf(index),
+            count = groups.sizeOf(index)
+          )
+          if (row.isHighlightColor) {
+            HighlightColorRow(row, selected, shapes, click, longClick) { onOpenClick(index, row) }
+          } else {
+            QuranRowItem(row, selected, shapes, tagMap, showTags, showDate, click, longClick)
+          }
         }
-
-        else -> QuranRowItem(row, selected, tagMap, showTags, showDate, click, longClick)
       }
     }
   }
+}
+
+/** Where each row sits in its run of non-header rows, so the right corners can be rounded. */
+private class SegmentGroups(private val position: IntArray, private val size: IntArray) {
+  fun positionOf(index: Int) = position[index]
+  fun sizeOf(index: Int) = size[index]
+}
+
+private fun segmentGroups(rows: List<QuranRow>): SegmentGroups {
+  val position = IntArray(rows.size)
+  val size = IntArray(rows.size)
+  var start = 0
+  while (start < rows.size) {
+    if (rows[start].isHeader) {
+      start++
+      continue
+    }
+    var end = start
+    while (end < rows.size && !rows[end].isHeader) end++
+    for (i in start until end) {
+      position[i] = i - start
+      size[i] = end - start
+    }
+    start = end
+  }
+  return SegmentGroups(position, size)
 }
 
 private fun QuranRow.isTappableWhenEditable(): Boolean =
   isBookmark || isReadingBookmark || rowType == QuranRow.NONE || isHighlightsHeader ||
     isHighlightColor || isHighlightedAyah || isBookmarkHeader
 
-@OptIn(ExperimentalFoundationApi::class)
+/** A juz heading: just a label above its group, rather than a band across the screen. */
 @Composable
-private fun SelectableRow(
-  selected: Boolean,
-  onClick: (() -> Unit)?,
-  onLongClick: (() -> Unit)?,
-  containerColor: Color,
-  modifier: Modifier = Modifier,
-  content: @Composable () -> Unit
-) {
-  val color = if (selected) MaterialTheme.colorScheme.secondaryContainer else containerColor
-  Surface(
-    color = color,
-    modifier = modifier
-      .fillMaxWidth()
-      .then(
-        if (onClick != null) {
-          Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick)
-        } else {
-          Modifier
-        }
-      )
-  ) {
-    content()
-  }
-}
-
-@Composable
-private fun SectionHeader(
-  row: QuranRow,
-  selected: Boolean,
-  onClick: (() -> Unit)?,
-  onLongClick: (() -> Unit)?
-) {
+private fun SectionLabel(row: QuranRow) {
   val trailing = row.itemCount ?: row.page
-  SelectableRow(selected, onClick, onLongClick, MaterialTheme.colorScheme.surfaceContainerLow) {
-    Row(
-      modifier = Modifier
-        .heightIn(min = 48.dp)
-        .padding(horizontal = 16.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.SpaceBetween
-    ) {
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(start = 28.dp, end = 28.dp, top = 20.dp, bottom = 8.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Text(
+      text = row.text.orEmpty(),
+      style = MaterialTheme.typography.titleSmall,
+      color = MaterialTheme.colorScheme.primary,
+      modifier = Modifier.weight(1f)
+    )
+    if (trailing != 0) {
       Text(
-        text = row.text.orEmpty(),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.weight(1f)
+        text = QuranUtils.getLocalizedNumber(trailing),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
       )
-      if (trailing != 0) {
-        Text(
-          text = QuranUtils.getLocalizedNumber(trailing),
-          style = MaterialTheme.typography.labelLarge,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-      }
     }
   }
 }
 
 /** A bookmark collection (or the highlights group): collapsible, with a chevron to open it. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CollectionHeader(
   row: QuranRow,
   selected: Boolean,
-  onClick: (() -> Unit)?,
+  onClick: () -> Unit,
   onLongClick: (() -> Unit)?,
   onOpen: () -> Unit
 ) {
-  SelectableRow(selected, onClick, onLongClick, MaterialTheme.colorScheme.surfaceContainerLow) {
+  Surface(
+    shape = MaterialTheme.shapes.large,
+    color = if (selected) {
+      MaterialTheme.colorScheme.secondaryContainer
+    } else {
+      MaterialTheme.colorScheme.surfaceContainerHigh
+    },
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(horizontal = 16.dp, vertical = 8.dp)
+      .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+  ) {
     Row(
       modifier = Modifier
-        .heightIn(min = 48.dp)
-        .padding(start = 16.dp),
+        .heightIn(min = 56.dp)
+        .padding(start = 20.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
       if (row.isCollapsible) {
@@ -193,15 +215,15 @@ private fun CollectionHeader(
           ),
           tint = MaterialTheme.colorScheme.primary,
           modifier = Modifier
-            .padding(end = 8.dp)
+            .padding(end = 12.dp)
             .size(20.dp)
             .rotate(rotation)
         )
       }
       Text(
         text = row.text.orEmpty(),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurface,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.weight(1f)
@@ -210,7 +232,7 @@ private fun CollectionHeader(
         Text(
           text = QuranUtils.getLocalizedNumber(it),
           style = MaterialTheme.typography.labelLarge,
-          color = MaterialTheme.colorScheme.primary,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
           modifier = Modifier.padding(start = 8.dp)
         )
       }
@@ -229,41 +251,43 @@ private fun CollectionHeader(
   }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun HighlightColorRow(
   row: QuranRow,
   selected: Boolean,
-  onClick: (() -> Unit)?,
+  shapes: ListItemShapes,
+  onClick: () -> Unit,
   onLongClick: (() -> Unit)?,
   onOpen: () -> Unit
 ) {
   val context = LocalContext.current
   val count = row.itemCount ?: 0
   // a color with nothing in it stays in the list, but dims rather than shouting
-  val dim = if (count == 0) ResourcesCompat.getFloat(context.resources, R.dimen.empty_highlight_alpha) else 1f
-  SelectableRow(selected, onClick, onLongClick, MaterialTheme.colorScheme.surface) {
-    Row(
-      modifier = Modifier
-        .heightIn(min = 56.dp)
-        .padding(start = 16.dp, end = 4.dp)
-        .alpha(dim),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+  val dim = if (count == 0) {
+    ResourcesCompat.getFloat(context.resources, R.dimen.empty_highlight_alpha)
+  } else {
+    1f
+  }
+  SegmentedListItem(
+    onClick = onClick,
+    onLongClick = onLongClick,
+    selected = selected,
+    shapes = shapes,
+    colors = ListItemDefaults.segmentedColors(),
+    modifier = Modifier
+      .padding(horizontal = 16.dp)
+      .alpha(dim),
+    leadingContent = {
       val swatch = row.imageFilterColorResource?.let { colorResource(it) }
         ?: MaterialTheme.colorScheme.primary
       Box(
         modifier = Modifier
-          .size(24.dp)
-          .background(swatch, CircleShape)
+          .size(32.dp)
+          .background(swatch, MaterialShapes.Cookie6Sided.toShape())
       )
-      Text(
-        text = row.text.orEmpty(),
-        style = MaterialTheme.typography.titleMedium,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.weight(1f)
-      )
+    },
+    trailingContent = {
       Text(
         text = QuranUtils.getLocalizedNumber(count),
         style = MaterialTheme.typography.labelLarge,
@@ -273,18 +297,26 @@ private fun HighlightColorRow(
         Icon(QuranIcons.ChevronRight, contentDescription = null)
       }
     }
+  ) {
+    Text(
+      text = row.text.orEmpty(),
+      style = MaterialTheme.typography.titleMedium,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
   }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun QuranRowItem(
   row: QuranRow,
   selected: Boolean,
+  shapes: ListItemShapes,
   tagMap: Map<String, Tag>,
   showTags: Boolean,
   showDate: Boolean,
-  onClick: (() -> Unit)?,
+  onClick: () -> Unit,
   onLongClick: (() -> Unit)?
 ) {
   val context = LocalContext.current
@@ -303,54 +335,54 @@ private fun QuranRowItem(
   } else {
     emptyList()
   }
+  val trailing = row.itemCount ?: row.page
 
-  SelectableRow(selected, onClick, onLongClick, MaterialTheme.colorScheme.surface) {
-    Row(
-      modifier = Modifier
-        .heightIn(min = 72.dp)
-        .padding(horizontal = 16.dp, vertical = 8.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-      QuranRowLeading(row)
-
-      Column(modifier = Modifier.weight(1f)) {
-        Text(
-          text = row.text.orEmpty(),
-          style = MaterialTheme.typography.titleMedium,
-          color = MaterialTheme.colorScheme.onSurface,
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis
-        )
-        if (!metadata.isNullOrEmpty()) {
-          Text(
-            text = metadata,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-          )
-        }
-        if (tags.isNotEmpty()) {
-          FlowRow(
-            modifier = Modifier.padding(top = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-          ) {
-            tags.forEach { TagChip(it) }
+  SegmentedListItem(
+    onClick = onClick,
+    onLongClick = onLongClick,
+    selected = selected,
+    shapes = shapes,
+    colors = ListItemDefaults.segmentedColors(),
+    modifier = Modifier.padding(horizontal = 16.dp),
+    leadingContent = { QuranRowLeading(row) },
+    supportingContent = if (metadata.isNullOrEmpty() && tags.isEmpty()) {
+      null
+    } else {
+      {
+        Column {
+          if (!metadata.isNullOrEmpty()) {
+            Text(text = metadata, maxLines = 2, overflow = TextOverflow.Ellipsis)
+          }
+          if (tags.isNotEmpty()) {
+            FlowRow(
+              modifier = Modifier.padding(top = 4.dp),
+              horizontalArrangement = Arrangement.spacedBy(4.dp),
+              verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+              tags.forEach { TagChip(it) }
+            }
           }
         }
       }
-
-      val trailing = row.itemCount ?: row.page
-      if (trailing != 0) {
+    },
+    trailingContent = if (trailing != 0) {
+      {
         Text(
           text = QuranUtils.getLocalizedNumber(trailing),
           style = MaterialTheme.typography.labelLarge,
           color = MaterialTheme.colorScheme.onSurfaceVariant
         )
       }
+    } else {
+      null
     }
+  ) {
+    Text(
+      text = row.text.orEmpty(),
+      style = MaterialTheme.typography.titleMedium,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
   }
 }
 
@@ -373,18 +405,16 @@ private fun QuranRowLeading(row: QuranRow) {
   val juzType = row.juzType
   val imageResource = row.imageResource
   when {
-    juzType != null -> {
-      val context = LocalContext.current
-      AndroidView(
-        modifier = Modifier.size(48.dp),
-        factory = { ImageView(it).apply { scaleType = ImageView.ScaleType.CENTER } },
-        update = { it.setImageDrawable(JuzView(context, juzType, row.juzOverlayText)) }
-      )
-    }
+    juzType != null -> JuzProgressIcon(juzType, row.juzOverlayText)
 
     imageResource != null -> {
       val tint = row.imageFilterColorResource?.let { ColorFilter.tint(colorResource(it)) }
-      Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+      Box(
+        modifier = Modifier
+          .size(48.dp)
+          .background(MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.shapes.medium),
+        contentAlignment = Alignment.Center
+      ) {
         Image(
           painter = painterResource(imageResource),
           contentDescription = row.imageContentDescription,
@@ -393,20 +423,64 @@ private fun QuranRowLeading(row: QuranRow) {
       }
     }
 
-    else -> {
-      Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        modifier = Modifier.size(48.dp)
-      ) {
-        Box(contentAlignment = Alignment.Center) {
-          Text(
-            text = QuranUtils.getLocalizedNumber(row.sura),
-            style = MaterialTheme.typography.titleMedium
-          )
-        }
-      }
+    else -> SuraNumberBadge(QuranUtils.getLocalizedNumber(row.sura))
+  }
+}
+
+/** The surah number, in a scalloped "cookie" shape from the expressive shape library. */
+@Composable
+private fun SuraNumberBadge(number: String) {
+  Box(
+    modifier = Modifier
+      .size(48.dp)
+      .background(
+        MaterialTheme.colorScheme.secondaryContainer,
+        MaterialShapes.Cookie9Sided.toShape()
+      ),
+    contentAlignment = Alignment.Center
+  ) {
+    Text(
+      text = number,
+      style = MaterialTheme.typography.titleMedium,
+      color = MaterialTheme.colorScheme.onSecondaryContainer
+    )
+  }
+}
+
+/**
+ * The circle on the juz tab that fills up by quarters: a full juz, three quarters, a half or a
+ * quarter. a plain Canvas, so scrolling the 240 rows doesn't allocate a drawable per bind.
+ */
+@Composable
+private fun JuzProgressIcon(type: Int, overlayText: String?) {
+  val fraction = when (type) {
+    JuzView.TYPE_JUZ -> 1f
+    JuzView.TYPE_THREE_QUARTERS -> 0.75f
+    JuzView.TYPE_HALF -> 0.5f
+    JuzView.TYPE_QUARTER -> 0.25f
+    else -> 0f
+  }
+  val track = MaterialTheme.colorScheme.primaryContainer
+  val fill = MaterialTheme.colorScheme.primary
+
+  Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+    Canvas(modifier = Modifier.size(40.dp)) {
+      drawCircle(color = track)
+      drawArc(
+        color = fill,
+        startAngle = -90f,
+        sweepAngle = 360f * fraction,
+        useCenter = true,
+        topLeft = Offset.Zero,
+        size = Size(size.width, size.height)
+      )
+    }
+    if (!overlayText.isNullOrEmpty()) {
+      Text(
+        text = overlayText,
+        fontSize = 12.sp,
+        color = MaterialTheme.colorScheme.onPrimary
+      )
     }
   }
 }

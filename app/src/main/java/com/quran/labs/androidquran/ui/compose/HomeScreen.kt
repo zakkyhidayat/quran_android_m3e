@@ -3,6 +3,18 @@ package com.quran.labs.androidquran.ui.compose
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
@@ -48,13 +60,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.fragment.compose.AndroidFragment
 import com.quran.data.dao.BookmarkSortOrder
 import com.quran.labs.androidquran.R
 import com.quran.labs.androidquran.common.ui.core.QuranIcons
+import com.quran.labs.androidquran.data.Constants
 import com.quran.labs.androidquran.presenter.bookmark.BookmarkPresenter
-import com.quran.labs.androidquran.ui.fragment.JuzListFragment
-import com.quran.labs.androidquran.ui.fragment.SuraListFragment
+import com.quran.labs.androidquran.ui.helpers.QuranRow
 import com.quran.labs.androidquran.util.QuranUtils
 import com.quran.mobile.feature.sync.QuranSyncManager
 import kotlinx.coroutines.delay
@@ -78,20 +89,48 @@ class HomeExtraItem(@StringRes val titleResId: Int, val onClick: () -> Unit)
 private val TabTitles = listOf(R.string.quran_sura, R.string.quran_juz2, R.string.menu_bookmarks)
 private const val BOOKMARKS_TAB = 2
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HomeScreen(
   actions: HomeActions,
+  suraState: SuraListState,
+  juzState: JuzListState,
   bookmarks: BookmarksState,
   bookmarkActions: BookmarksActions,
-  syncManager: QuranSyncManager
+  syncManager: QuranSyncManager,
+  latestPage: suspend () -> Int,
+  onRowClick: (QuranRow) -> Unit
 ) {
   val context = LocalContext.current
   val pagerState = rememberPagerState(pageCount = { TabTitles.size })
   val scope = rememberCoroutineScope()
   val snackbarHostState = remember { SnackbarHostState() }
+  val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
   var searching by rememberSaveable { mutableStateOf(false) }
   val selecting = bookmarks.isSelecting
+
+  // the lists live here, not in their tabs, so a tab keeps its scroll position while off screen
+  val suraListState = rememberLazyListState()
+  val juzListState = rememberLazyListState()
+  val lifecycle = LocalLifecycleOwner.current.lifecycle
+
+  LaunchedEffect(suraState) {
+    lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { suraState.observeReadingBookmarks() }
+  }
+  LaunchedEffect(suraState) {
+    lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+      suraState.onResume(latestPage)?.let { suraListState.scrollToItem(it) }
+    }
+  }
+  LaunchedEffect(juzState) {
+    juzState.load()
+    lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+      val page = latestPage()
+      if (page != Constants.NO_PAGE) {
+        juzListState.scrollToItem(juzState.positionFor(page))
+      }
+    }
+  }
 
   BackHandler(enabled = searching) { searching = false }
   BackHandler(enabled = selecting) { bookmarks.clearSelection() }
@@ -121,66 +160,77 @@ fun HomeScreen(
     }
   }
 
+  val navigationBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+  // leave room under the lists for the continue-reading button
+  val listPadding = PaddingValues(top = 4.dp, bottom = navigationBarPadding + 96.dp)
+
   Scaffold(
+    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+    containerColor = MaterialTheme.colorScheme.surface,
     contentWindowInsets = WindowInsets.systemBars
       .union(WindowInsets.displayCutout)
       .only(WindowInsetsSides.Horizontal),
     snackbarHost = { SnackbarHost(snackbarHostState) },
+    floatingActionButton = {
+      if (!selecting && !searching) {
+        ExtendedFloatingActionButton(
+          onClick = actions.onLastPage,
+          icon = { Icon(QuranIcons.MenuBook, contentDescription = null) },
+          text = { Text(stringResource(R.string.menu_jump_last_page)) },
+          modifier = Modifier.padding(bottom = navigationBarPadding)
+        )
+      }
+    },
     topBar = {
       Column {
-        if (selecting) {
-          SelectionBar(
+        when {
+          selecting -> SelectionBar(
             bookmarks = bookmarks,
             actions = bookmarkActions,
             onDelete = deleteSelected
           )
-        } else {
-          TopAppBar(
+
+          searching -> TopAppBar(
             title = {
-              if (searching) {
-                SearchField(onSearch = {
-                  searching = false
-                  actions.onSearch(it)
-                })
-              } else {
-                Text(stringResource(R.string.app_name))
-              }
+              SearchField(onSearch = {
+                searching = false
+                actions.onSearch(it)
+              })
             },
             navigationIcon = {
-              if (searching) {
-                IconButton(onClick = { searching = false }) {
-                  Icon(
-                    QuranIcons.ArrowBack,
-                    contentDescription = stringResource(R.string.download_cancel)
-                  )
-                }
-              }
-            },
-            actions = {
-              if (!searching) {
-                if (pagerState.currentPage == BOOKMARKS_TAB) {
-                  BookmarkOptionsMenu(bookmarks)
-                }
-                IconButton(onClick = { searching = true }) {
-                  Icon(QuranIcons.Search, contentDescription = stringResource(R.string.menu_search))
-                }
-                IconButton(onClick = actions.onLastPage) {
-                  Icon(
-                    QuranIcons.MenuBook,
-                    contentDescription = stringResource(R.string.menu_jump_last_page)
-                  )
-                }
-                OverflowMenu(actions)
+              IconButton(onClick = { searching = false }) {
+                Icon(
+                  QuranIcons.ArrowBack,
+                  contentDescription = stringResource(R.string.download_cancel)
+                )
               }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-              containerColor = MaterialTheme.colorScheme.surfaceContainer
+              containerColor = MaterialTheme.colorScheme.surface
             )
+          )
+
+          else -> LargeFlexibleTopAppBar(
+            title = { Text(stringResource(R.string.app_name)) },
+            actions = {
+              if (pagerState.currentPage == BOOKMARKS_TAB) {
+                BookmarkOptionsMenu(bookmarks)
+              }
+              IconButton(onClick = { searching = true }) {
+                Icon(QuranIcons.Search, contentDescription = stringResource(R.string.menu_search))
+              }
+              OverflowMenu(actions)
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+              containerColor = MaterialTheme.colorScheme.surface,
+              scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            scrollBehavior = scrollBehavior
           )
         }
         PrimaryTabRow(
           selectedTabIndex = pagerState.currentPage,
-          containerColor = MaterialTheme.colorScheme.surfaceContainer
+          containerColor = MaterialTheme.colorScheme.surface
         ) {
           TabTitles.forEachIndexed { index, titleResId ->
             Tab(
@@ -195,19 +245,32 @@ fun HomeScreen(
   ) { innerPadding ->
     HorizontalPager(
       state = pagerState,
-      beyondViewportPageCount = TabTitles.size,
+      beyondViewportPageCount = 1,
       modifier = Modifier
         .fillMaxSize()
         .padding(innerPadding)
     ) { page ->
       when (page) {
-        0 -> AndroidFragment<SuraListFragment>()
-        1 -> AndroidFragment<JuzListFragment>()
+        0 -> QuranRowList(
+          rows = suraState.rows,
+          listState = suraListState,
+          contentPadding = listPadding,
+          onRowClick = { _, row -> if (row.page != 0) onRowClick(row) }
+        )
+
+        1 -> QuranRowList(
+          rows = juzState.rows,
+          listState = juzListState,
+          contentPadding = listPadding,
+          onRowClick = { _, row -> if (row.page != 0) onRowClick(row) }
+        )
+
         else -> BookmarksTab(
           state = bookmarks,
           actions = bookmarkActions,
           syncManager = syncManager,
-          onSignIn = actions.onSignIn
+          onSignIn = actions.onSignIn,
+          contentPadding = listPadding
         )
       }
     }

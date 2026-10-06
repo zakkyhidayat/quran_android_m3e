@@ -23,7 +23,14 @@ import com.quran.labs.androidquran.BuildConfig
 import com.quran.labs.androidquran.HelpActivity
 import com.quran.labs.androidquran.QuranApplication
 import com.quran.labs.androidquran.QuranPreferenceActivity
+import com.quran.data.core.QuranInfo
+import com.quran.data.dao.ReadingBookmarksDao
 import com.quran.labs.androidquran.R
+import com.quran.labs.androidquran.data.QuranDisplayData
+import com.quran.labs.androidquran.presenter.data.JuzListPresenter
+import com.quran.labs.androidquran.ui.compose.JuzListState
+import com.quran.labs.androidquran.ui.compose.SuraListState
+import com.quran.labs.androidquran.ui.helpers.QuranRowFactory
 import com.quran.labs.androidquran.presenter.bookmark.BookmarkPresenter
 import com.quran.labs.androidquran.ui.compose.BookmarksActions
 import com.quran.labs.androidquran.ui.compose.BookmarksState
@@ -66,8 +73,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
- * The home screen activity for the app. The Compose [HomeScreen] shows an app bar, tabs and 3
- * fragments: the surah list, the juz list and the bookmarks.
+ * The home screen activity for the app. The Compose [HomeScreen] shows an app bar and three tabs:
+ * the surah list, the juz list and the bookmarks.
  *
  * When this activity is created, it may run a background check to see if updated translations
  * are available, and if so, show a dialog asking the user if they want to download them.
@@ -127,6 +134,23 @@ class QuranActivity : AppCompatActivity(),
   @Inject
   lateinit var syncManager: QuranSyncManager
 
+  @Inject
+  lateinit var quranInfo: QuranInfo
+  @Inject
+  lateinit var quranDisplayData: QuranDisplayData
+  @Inject
+  lateinit var readingBookmarksDao: ReadingBookmarksDao
+  @Inject
+  lateinit var quranRowFactory: QuranRowFactory
+  @Inject
+  lateinit var juzListPresenter: JuzListPresenter
+
+  private val suraListState by lazy {
+    SuraListState(this, quranInfo, quranDisplayData, settings, readingBookmarksDao, quranRowFactory)
+  }
+  private val juzListState by lazy {
+    JuzListState(this, quranInfo, quranDisplayData, juzListPresenter)
+  }
   private val bookmarksState by lazy {
     BookmarksState(applicationContext, bookmarkPresenter, bookmarkUIConverter)
   }
@@ -147,7 +171,16 @@ class QuranActivity : AppCompatActivity(),
 
     setContent {
       QuranTheme {
-        HomeScreen(homeActions(), bookmarksState, bookmarksActions(), syncManager)
+        HomeScreen(
+          actions = homeActions(),
+          suraState = suraListState,
+          juzState = juzListState,
+          bookmarks = bookmarksState,
+          bookmarkActions = bookmarksActions(),
+          syncManager = syncManager,
+          latestPage = ::latestPage,
+          onRowClick = ::jumpTo
+        )
       }
     }
 

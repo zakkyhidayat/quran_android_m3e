@@ -24,10 +24,8 @@ import com.quran.labs.androidquran.ui.BookmarkListActivity
 import com.quran.labs.androidquran.ui.TranslationManagerActivity
 import com.quran.labs.androidquran.ui.fragment.AddTagDialog
 import com.quran.labs.androidquran.ui.fragment.JumpFragment
-import com.quran.labs.androidquran.ui.fragment.JuzListFragment
 import com.quran.labs.androidquran.ui.fragment.QuranAdvancedSettingsFragment
 import com.quran.labs.androidquran.ui.fragment.QuranSettingsFragment
-import com.quran.labs.androidquran.ui.fragment.SuraListFragment
 import com.quran.labs.androidquran.ui.fragment.TagBookmarkDialog
 import com.quran.labs.androidquran.ui.helpers.QuranNavigator
 import com.quran.labs.androidquran.widget.BookmarksWidget
@@ -81,8 +79,6 @@ interface ApplicationComponent : QuranApplicationComponent {
   fun inject(fragment: QuranSettingsFragment)
   fun inject(translationManagerActivity: TranslationManagerActivity)
   fun inject(quranAdvancedSettingsFragment: QuranAdvancedSettingsFragment)
-  fun inject(suraListFragment: SuraListFragment)
-  fun inject(juzListFragment: JuzListFragment)
   fun inject(jumpFragment: JumpFragment)
 
   // dialogs
