@@ -10,7 +10,27 @@ import android.os.Bundle
 import android.text.TextUtils
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
+import androidx.compose.ui.graphics.asImageBitmap
+import com.quran.data.core.QuranInfo
+import com.quran.data.source.PageProvider
+import com.quran.labs.androidquran.data.AyahPreview
+import com.quran.labs.androidquran.common.ui.core.QuranTheme
+import com.quran.labs.androidquran.common.ui.core.QuranThemeSettings
+import com.quran.labs.androidquran.presenter.translation.TranslationManagerPresenter
+import com.quran.labs.androidquran.ui.TranslationDownloads
+import com.quran.labs.androidquran.ui.compose.OnboardingActions
+import com.quran.labs.androidquran.ui.compose.OnboardingScreen
+import com.quran.labs.androidquran.ui.compose.OnboardingState
+import com.quran.labs.androidquran.ui.compose.PageStyleItem
+import com.quran.labs.androidquran.ui.compose.PagesDownload
+import com.quran.labs.androidquran.util.QuranUtils
+import com.quran.labs.androidquran.util.ThemeUtil
+import java.text.DecimalFormat
 import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityCompat.OnRequestPermissionsResultCallback
 import androidx.core.content.ContextCompat
@@ -79,6 +99,23 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
   @Inject
   lateinit var preferencesUpgrade: PreferencesUpgrade
 
+  @Inject
+  lateinit var translationManagerPresenter: TranslationManagerPresenter
+
+  @Inject
+  lateinit var quranInfo: QuranInfo
+
+  @Inject
+  lateinit var pageTypes: Map<@JvmSuppressWildcards String, @JvmSuppressWildcards PageProvider>
+
+  private val onboardingState = OnboardingState()
+  private var showingOnboarding = false
+  private val translationDownloads by lazy {
+    TranslationDownloads(this, translationManagerPresenter, quranFileUtils, quranSettings, scope) {
+      onboardingState.translationsFailed = true
+    }
+  }
+
   private lateinit var quranSettings: QuranSettings
 
   private var errorDialog: AlertDialog? = null
@@ -115,7 +152,7 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
             downloadReceiver,
             IntentFilter(action)
         )
-    downloadReceiver.setListener(this)
+    downloadReceiver.setListener(if (showingOnboarding) onboardingListener else this)
     this.downloadReceiver = downloadReceiver
 
     disposable = Single.timer(100, MILLISECONDS)
@@ -161,6 +198,9 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
 
     promptForDownloadDialog?.dismiss()
     promptForDownloadDialog = null
+    if (showingOnboarding) {
+      translationDownloads.stop()
+    }
 
     errorDialog?.dismiss()
     errorDialog = null
@@ -254,6 +294,11 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
   }
 
   override fun handleDownloadSuccess() {
+    markPagesDownloaded()
+    runListView()
+  }
+
+  private fun markPagesDownloaded() {
     if (quranDataStatus != null && !quranDataStatus!!.havePages()) {
       // didn't have pages before and the download succeeded, which means
       // full zip download was done - let's mark partial pages checker as
@@ -266,7 +311,7 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
           .cancelUniqueWork(WorkerConstants.CLEANUP_PREFIX + pageType)
     }
     quranSettings.removeShouldFetchPages()
-    runListView()
+    quranSettings.setSkippedPagesDownload(false)
   }
 
   override fun handleDownloadFailure(errId: Int) {
@@ -315,6 +360,18 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
     hideMigrationDialog()
 
     this.quranDataStatus = quranDataStatus
+    if (shouldShowOnboarding()) {
+      showOnboarding(quranDataStatus)
+      return
+    }
+
+    if (!quranDataStatus.havePages() && quranSettings.didSkipPagesDownload() &&
+      quranDataPresenter.canProceedWithoutDownload()) {
+      // the pages come one by one as they are read, as chosen during the setup
+      runListView()
+      return
+    }
+
     if (!quranDataStatus.havePages()) {
       val lastErrorItem = quranSettings.lastDownloadItemWithError
       Timber.d("checkPages: need to download pages... lastError: %s", lastErrorItem)
@@ -552,7 +609,250 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
     }
   }
 
+  private fun shouldShowOnboarding(): Boolean {
+    val isNormalLaunch = intent?.action == null || intent?.action == Intent.ACTION_MAIN
+    return isNormalLaunch && !quranSettings.isOnboardingDone()
+  }
+
+  /**
+   * The first-run setup. It lives here because this screen already knows whether the pages are on
+   * the phone and how to download them.
+   */
+  private fun showOnboarding(status: QuranDataStatus) {
+    val state = onboardingState
+    if (state.pages !is PagesDownload.Downloading && state.pages !is PagesDownload.Unpacking) {
+      state.pages = when {
+        status.havePages() && status.patchParam.isNullOrEmpty() -> PagesDownload.Done
+        downloadReceiver?.didReceiveBroadcast() == true -> PagesDownload.Waiting
+        else -> PagesDownload.NotStarted
+      }
+    }
+    state.theme = quranSettings.currentTheme()
+    state.amoled = quranSettings.useAmoled()
+    state.arabic = QuranUtils.getCurrentLocale().language == "ar"
+    state.dyslexicFont = quranSettings.wantDyslexicFontInTranslationView()
+    state.arabicBeforeTranslation = quranSettings.wantArabicInTranslationView()
+    refreshPageStyles()
+
+    if (!showingOnboarding) {
+      showingOnboarding = true
+      downloadReceiver?.setListener(onboardingListener)
+      val actions = OnboardingActions(
+        onDownloadPages = {
+          onboardingState.pages = PagesDownload.Waiting
+          quranSettings.setShouldFetchPages(true)
+          downloadQuranImages(true)
+        },
+        onTheme = { theme ->
+          onboardingState.theme = theme
+          quranSettings.setAppTheme(theme)
+          ThemeUtil.setTheme(theme)
+        },
+        onAmoled = ::setAmoled,
+        onArabic = ::setArabic,
+        onDyslexicFont = { enabled ->
+          onboardingState.dyslexicFont = enabled
+          quranSettings.setUseDyslexicFont(enabled)
+        },
+        onArabicBeforeTranslation = { enabled ->
+          onboardingState.arabicBeforeTranslation = enabled
+          quranSettings.setAyahBeforeTranslation(enabled)
+        },
+        onTranslationsShown = {
+          if (translationDownloads.items.isEmpty()) {
+            onboardingState.translationsFailed = false
+            translationDownloads.refresh()
+          }
+        },
+        onUsePageStyle = ::usePageStyle,
+        onDownloadPageStyle = { key ->
+          // switching styles re-checks which pages are on the phone, which needs a fresh start
+          quranSettings.pageType = key
+          recreate()
+        },
+        onRemovePageStyle = ::removePageStyle,
+        onFinish = ::finishOnboarding
+      )
+      enableEdgeToEdge()
+      setContent {
+        QuranTheme {
+          OnboardingScreen(onboardingState, translationDownloads, actions)
+        }
+      }
+    }
+  }
+
+  private fun setAmoled(enabled: Boolean) {
+    onboardingState.amoled = enabled
+    quranSettings.setUseAmoled(enabled)
+    QuranThemeSettings.useAmoled = enabled
+  }
+
+  private fun setArabic(enabled: Boolean) {
+    onboardingState.arabic = enabled
+    val localeList = if (enabled) {
+      LocaleListCompat.forLanguageTags("ar-EG")
+    } else {
+      val tags = LocaleListCompat.getDefault().toLanguageTags().split(",")
+        .filter { it != "ar" && !it.startsWith("ar-") }
+      LocaleListCompat.forLanguageTags(tags.joinToString(",").ifEmpty { "en" })
+    }
+    AppCompatDelegate.setApplicationLocales(localeList)
+  }
+
+  private fun refreshPageStyles() {
+    val current = quranSettings.pageType
+    val havePages = onboardingState.pages == PagesDownload.Done
+    onboardingState.pageStyles = pageTypes.map { (key, provider) ->
+      PageStyleItem(
+        key = key,
+        title = provider.getPreviewTitle(),
+        description = provider.getPreviewDescription(),
+        inUse = key == current,
+        downloaded = if (key == current) havePages else pageStyleDirectory(provider).isNonEmptyDirectory()
+      )
+    }
+    loadPagePreviews()
+  }
+
+  /**
+   * The opening of Ayat al-Kursi in each style: cut from the downloaded page when there is one,
+   * otherwise the small sample image the style is advertised with.
+   */
+  private fun loadPagePreviews() {
+    val current = quranSettings.pageType
+    val haveCurrentPages = onboardingState.pages == PagesDownload.Done
+    pageTypes.keys
+      .filter { it !in onboardingState.pagePreviews || (it == current && haveCurrentPages) }
+      .forEach { key ->
+        scope.launch {
+          val bitmap = withContext(Dispatchers.IO) {
+            val cut = if (key == current && haveCurrentPages) {
+              AyahPreview.load(
+                quranFileUtils,
+                quranScreenInfo.widthParam,
+                quranInfo.getPageFromSuraAyah(AYAT_AL_KURSI_SURA, AYAT_AL_KURSI_AYAH),
+                AYAT_AL_KURSI_SURA,
+                AYAT_AL_KURSI_AYAH
+              )
+            } else {
+              null
+            }
+            cut ?: pageStyleSample(key)
+          }
+          if (bitmap != null) {
+            onboardingState.pagePreviews = onboardingState.pagePreviews + (key to bitmap.asImageBitmap())
+          }
+        }
+      }
+  }
+
+  private fun pageStyleSample(key: String): android.graphics.Bitmap? {
+    val directory = File(File(quranFileUtils.quranInternalStorage, "pagetypes"), "snips")
+    val file = File(directory, "$key.png")
+    if (!file.exists()) {
+      try {
+        directory.mkdirs()
+        val connection = java.net.URL("$PAGE_STYLE_SAMPLES_URL/$key.png").openConnection()
+        connection.connectTimeout = 10_000
+        connection.readTimeout = 10_000
+        connection.getInputStream().use { input -> file.outputStream().use { input.copyTo(it) } }
+      } catch (e: Exception) {
+        Timber.d(e, "unable to fetch the sample for %s", key)
+        file.delete()
+        return null
+      }
+    }
+    return android.graphics.BitmapFactory.decodeFile(file.absolutePath)
+  }
+
+  private fun pageStyleDirectory(provider: PageProvider): File =
+    File(
+      File(quranFileUtils.quranInternalStorage, provider.getImagesDirectoryName()),
+      "width" + quranScreenInfo.widthParam
+    )
+
+  private fun File.isNonEmptyDirectory(): Boolean = isDirectory && (list()?.isNotEmpty() == true)
+
+  private fun usePageStyle(key: String) {
+    if (key != quranSettings.pageType) {
+      quranSettings.pageType = key
+      recreate()
+    }
+  }
+
+  /** Removes a style's page images, but never the last style that is on the phone. */
+  private fun removePageStyle(key: String) {
+    val others = onboardingState.pageStyles.filter { it.key != key && it.downloaded }
+    val provider = pageTypes[key] ?: return
+    if (others.isEmpty()) return
+
+    if (key == quranSettings.pageType) {
+      quranSettings.pageType = others.first().key
+    }
+    scope.launch {
+      withContext(Dispatchers.IO) { pageStyleDirectory(provider).deleteRecursively() }
+      recreate()
+    }
+  }
+
+  private fun finishOnboarding() {
+    quranSettings.setOnboardingDone(true)
+    showingOnboarding = false
+    translationDownloads.stop()
+    downloadReceiver?.setListener(this)
+
+    when (onboardingState.pages) {
+      PagesDownload.Done -> runListView()
+      PagesDownload.NotStarted, is PagesDownload.Failed -> {
+        // read now, and let each page download as it is opened
+        quranSettings.setShouldFetchPages(false)
+        quranSettings.setSkippedPagesDownload(true)
+        runListViewWithoutPages()
+      }
+      // the download carries on in the background, with its notification
+      else -> runListView()
+    }
+  }
+
+  private val onboardingListener = object : DefaultDownloadReceiver.DownloadListener {
+    private val sizeFormat = DecimalFormat("###.0")
+
+    private fun megabytes(bytes: Long): String =
+      getString(R.string.prefs_megabytes_str, sizeFormat.format(bytes / (1024.0 * 1024.0)))
+
+    override fun updateDownloadProgress(progress: Int, downloadedSize: Long, totalSize: Long) {
+      onboardingState.pages = if (progress < 0 || totalSize <= 0) {
+        PagesDownload.Waiting
+      } else {
+        PagesDownload.Downloading(progress, megabytes(downloadedSize), megabytes(totalSize))
+      }
+    }
+
+    override fun updateProcessingProgress(progress: Int, processFiles: Int, totalFiles: Int) {
+      onboardingState.pages = PagesDownload.Unpacking(progress)
+    }
+
+    override fun handleDownloadTemporaryError(errorId: Int) {
+      onboardingState.pages = PagesDownload.Waiting
+    }
+
+    override fun handleDownloadSuccess() {
+      markPagesDownloaded()
+      onboardingState.pages = PagesDownload.Done
+      refreshPageStyles()
+    }
+
+    override fun handleDownloadFailure(errId: Int) {
+      removeErrorPreferences()
+      onboardingState.pages = PagesDownload.Failed(getString(errId))
+    }
+  }
+
   companion object {
+    private const val AYAT_AL_KURSI_SURA = 2
+    private const val AYAT_AL_KURSI_AYAH = 255
+    private const val PAGE_STYLE_SAMPLES_URL = "https://quran.app/data/pagetypes/snips"
     const val ACTION_OPEN_PAGE = "com.quran.labs.androidquran.open_page"
     const val PAGES_DOWNLOAD_KEY = "PAGES_DOWNLOAD_KEY"
     private const val REQUEST_POST_NOTIFICATION_PERMISSIONS = 1

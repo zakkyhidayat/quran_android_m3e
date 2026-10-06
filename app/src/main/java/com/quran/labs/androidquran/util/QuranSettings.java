@@ -252,6 +252,40 @@ public class QuranSettings {
     return true;
   }
 
+  /** Whether the first-run setup has been finished (or skipped) on this install. */
+  public boolean isOnboardingDone() {
+    return perInstallationPrefs.getBoolean(Constants.PREF_ONBOARDING_DONE, false);
+  }
+
+  public void setOnboardingDone(boolean done) {
+    perInstallationPrefs.edit().putBoolean(Constants.PREF_ONBOARDING_DONE, done).apply();
+  }
+
+  /** Set when the first-run setup moved on without the page images, so we do not keep asking. */
+  public boolean didSkipPagesDownload() {
+    return perInstallationPrefs.getBoolean(Constants.PREF_SKIPPED_PAGES_DOWNLOAD, false);
+  }
+
+  public void setSkippedPagesDownload(boolean skipped) {
+    perInstallationPrefs.edit().putBoolean(Constants.PREF_SKIPPED_PAGES_DOWNLOAD, skipped).apply();
+  }
+
+  public void setAppTheme(String theme) {
+    prefs.edit().putString(Constants.PREF_APP_THEME, theme).apply();
+  }
+
+  public void setUseAmoled(boolean useAmoled) {
+    prefs.edit().putBoolean(Constants.PREF_AMOLED, useAmoled).apply();
+  }
+
+  public void setUseDyslexicFont(boolean useDyslexicFont) {
+    prefs.edit().putBoolean(Constants.PREF_USE_DYSLEXIC_FONT, useDyslexicFont).apply();
+  }
+
+  public void setAyahBeforeTranslation(boolean ayahBeforeTranslation) {
+    prefs.edit().putBoolean(Constants.PREF_AYAH_BEFORE_TRANSLATION, ayahBeforeTranslation).apply();
+  }
+
   public String currentTheme() {
     final String theme = prefs.getString(Constants.PREF_APP_THEME, null);
     if (theme == null) {
