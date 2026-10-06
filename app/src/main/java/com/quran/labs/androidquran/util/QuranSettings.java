@@ -274,6 +274,10 @@ public class QuranSettings {
     prefs.edit().putString(Constants.PREF_APP_THEME, theme).apply();
   }
 
+  public void setColorScheme(String colorScheme) {
+    prefs.edit().putString(Constants.PREF_APP_COLOR_SCHEME, colorScheme).apply();
+  }
+
   public void setUseAmoled(boolean useAmoled) {
     prefs.edit().putBoolean(Constants.PREF_AMOLED, useAmoled).apply();
   }

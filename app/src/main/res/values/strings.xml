@@ -480,6 +480,11 @@
   <string name="onboarding_theme_dark">Dark</string>
   <string name="onboarding_theme_title">Choose a theme</string>
   <string name="onboarding_theme_body">Follow your phone, or always use light or dark.</string>
+  <string name="onboarding_colors_title">Colors</string>
+  <string name="onboarding_colors_original">Original green</string>
+  <string name="onboarding_colors_original_summary">The emerald and gold of the mushaf</string>
+  <string name="onboarding_colors_dynamic">Dynamic colors</string>
+  <string name="onboarding_colors_dynamic_summary">Taken from your wallpaper</string>
   <string name="onboarding_amoled_summary">A true black background in the dark theme, easier on OLED screens at night</string>
   <string name="onboarding_language_title">App language</string>
   <string name="onboarding_language_body">Use Arabic for the app’s menus and labels. The Quran itself is always in Arabic.</string>

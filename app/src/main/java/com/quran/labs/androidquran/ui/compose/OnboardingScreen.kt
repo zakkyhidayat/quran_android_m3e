@@ -1,6 +1,7 @@
 package com.quran.labs.androidquran.ui.compose
 
 import androidx.activity.compose.BackHandler
+import android.os.Build
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -11,6 +12,9 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +37,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -80,6 +86,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.quran.labs.androidquran.R
 import com.quran.labs.androidquran.common.ui.core.QuranIcons
+import com.quran.labs.androidquran.common.ui.core.QuranThemeSettings
+import com.quran.labs.androidquran.common.ui.core.darkPrimary
+import com.quran.labs.androidquran.common.ui.core.darkPrimaryContainer
+import com.quran.labs.androidquran.common.ui.core.darkTertiary
+import com.quran.labs.androidquran.common.ui.core.lightPrimary
+import com.quran.labs.androidquran.common.ui.core.lightPrimaryContainer
+import com.quran.labs.androidquran.common.ui.core.lightTertiary
 import com.quran.labs.androidquran.dao.translation.TranslationItem
 import com.quran.labs.androidquran.data.Constants
 import com.quran.labs.androidquran.ui.TranslationDownloads
@@ -109,6 +122,7 @@ class OnboardingState {
   var pages by mutableStateOf<PagesDownload>(PagesDownload.NotStarted)
   var theme by mutableStateOf(Constants.THEME_DEFAULT)
   var amoled by mutableStateOf(false)
+  var dynamicColor by mutableStateOf(false)
   var arabic by mutableStateOf(false)
   var dyslexicFont by mutableStateOf(false)
   var arabicBeforeTranslation by mutableStateOf(true)
@@ -122,6 +136,7 @@ class OnboardingActions(
   val onDownloadPages: () -> Unit,
   val onTheme: (String) -> Unit,
   val onAmoled: (Boolean) -> Unit,
+  val onDynamicColor: (Boolean) -> Unit,
   val onArabic: (Boolean) -> Unit,
   val onDyslexicFont: (Boolean) -> Unit,
   val onArabicBeforeTranslation: (Boolean) -> Unit,
@@ -538,12 +553,88 @@ private fun ThemeChoice(state: OnboardingState, actions: OnboardingActions) {
       )
     }
   }
+  if (QuranThemeSettings.isDynamicColorAvailable) {
+    ColorSchemeChoice(state, actions)
+  }
   SwitchCard(
     title = stringResource(R.string.prefs_amoled_title),
     summary = stringResource(R.string.onboarding_amoled_summary),
     checked = state.amoled,
     onCheckedChange = actions.onAmoled
   )
+}
+
+/** Wallpaper colors or the original emerald, each shown by the swatches it would paint the app with. */
+@Composable
+private fun ColorSchemeChoice(state: OnboardingState, actions: OnboardingActions) {
+  val context = LocalContext.current
+  val dark = isSystemInDarkTheme()
+  val original = if (dark) darkSwatches else lightSwatches
+  val dynamic = remember(dark) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      val scheme = if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+      listOf(scheme.primary, scheme.primaryContainer, scheme.tertiary)
+    } else {
+      original
+    }
+  }
+  Text(
+    stringResource(R.string.onboarding_colors_title),
+    style = MaterialTheme.typography.labelLarge,
+    color = MaterialTheme.colorScheme.primary,
+    modifier = Modifier.padding(top = 8.dp, start = 4.dp)
+  )
+  ColorOption(
+    selected = !state.dynamicColor,
+    title = R.string.onboarding_colors_original,
+    summary = R.string.onboarding_colors_original_summary,
+    swatches = original
+  ) { actions.onDynamicColor(false) }
+  ColorOption(
+    selected = state.dynamicColor,
+    title = R.string.onboarding_colors_dynamic,
+    summary = R.string.onboarding_colors_dynamic_summary,
+    swatches = dynamic
+  ) { actions.onDynamicColor(true) }
+}
+
+private val lightSwatches = listOf(lightPrimary, lightPrimaryContainer, lightTertiary)
+private val darkSwatches = listOf(darkPrimary, darkPrimaryContainer, darkTertiary)
+
+@Composable
+private fun ColorOption(
+  selected: Boolean,
+  @StringRes title: Int,
+  @StringRes summary: Int,
+  swatches: List<Color>,
+  onClick: () -> Unit
+) {
+  ChoiceCard(selected = selected, onClick = onClick) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Column(Modifier.weight(1f)) {
+        Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
+        Text(
+          stringResource(summary),
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.padding(top = 2.dp)
+        )
+      }
+      Row(
+        horizontalArrangement = Arrangement.spacedBy((-8).dp),
+        modifier = Modifier.padding(start = 12.dp)
+      ) {
+        swatches.forEach { color ->
+          Box(
+            Modifier
+              .size(28.dp)
+              .background(color, CircleShape)
+              .border(2.dp, MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape)
+          )
+        }
+      }
+    }
+  }
 }
 
 @Composable

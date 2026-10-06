@@ -629,6 +629,7 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
     }
     state.theme = quranSettings.currentTheme()
     state.amoled = quranSettings.useAmoled()
+    state.dynamicColor = QuranThemeSettings.isDynamicColorAvailable && quranSettings.useDynamicColors()
     state.arabic = QuranUtils.getCurrentLocale().language == "ar"
     state.dyslexicFont = quranSettings.wantDyslexicFontInTranslationView()
     state.arabicBeforeTranslation = quranSettings.wantArabicInTranslationView()
@@ -649,6 +650,7 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
           ThemeUtil.setTheme(theme)
         },
         onAmoled = ::setAmoled,
+        onDynamicColor = ::setDynamicColor,
         onArabic = ::setArabic,
         onDyslexicFont = { enabled ->
           onboardingState.dyslexicFont = enabled
@@ -686,6 +688,16 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
     onboardingState.amoled = enabled
     quranSettings.setUseAmoled(enabled)
     QuranThemeSettings.useAmoled = enabled
+  }
+
+  /**
+   * Compose reads the choice live. The view based screens pick it up as they open, since the
+   * wallpaper colors are layered onto each activity's theme when it is created.
+   */
+  private fun setDynamicColor(enabled: Boolean) {
+    onboardingState.dynamicColor = enabled
+    quranSettings.setColorScheme(if (enabled) Constants.COLOR_SCHEME_DYNAMIC else Constants.COLOR_SCHEME_ORIGINAL)
+    QuranThemeSettings.useDynamicColor = enabled
   }
 
   private fun setArabic(enabled: Boolean) {
