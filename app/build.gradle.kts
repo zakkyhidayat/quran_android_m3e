@@ -81,7 +81,7 @@ android {
     create("madani") {
       // this fork's own application id, so it installs next to the official Quran for Android
       // instead of replacing it. the kotlin namespace stays com.quran.labs.androidquran.
-      applicationId = "io.github.zakkyhidayat.quranm3e"
+      applicationId = "com.android.quran.m3e"
     }
   }
 
