@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:gravity="bottom"
     app:panelHeight="@dimen/sliding_panel_min_height"
-    app:shadowHeight="4dp"
+    app:shadowHeight="0dp"
     app:overlay="true"
     app:dragView="@+id/ayah_action_bar">
 
