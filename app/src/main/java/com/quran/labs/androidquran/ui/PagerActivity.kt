@@ -37,6 +37,13 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import com.quran.labs.androidquran.common.ui.core.QuranTheme
+import com.quran.labs.androidquran.ui.compose.ReaderBarActions
+import com.quran.labs.androidquran.ui.compose.ReaderBarState
+import com.quran.labs.androidquran.ui.compose.ReaderTopBar
+import com.quran.labs.androidquran.ui.compose.ReaderTranslationItem
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
@@ -187,7 +194,6 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
   ActivityCompat.OnRequestPermissionsResultCallback, AudioPresenterScreen,
   ReadingBookmarkPresenter.Screen {
   private var lastPopupTime: Long = 0
-  private var isActionBarHidden = true
   private var shouldReconnect = false
   private var showingTranslation = false
   private var needsPermissionToDownloadOver3g = true
@@ -197,14 +203,13 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
   private var progressDialog: ProgressDialog? = null
   private var isFoldableDeviceOpenAndVertical = false
 
-  private var bookmarksMenuItem: MenuItem? = null
+  private val readerBar = ReaderBarState()
   private var isCurrentPageReadingBookmarked = false
   private var readingBookmarkToastView: View? = null
 
   private var translationNames: Array<String> = emptyArray()
   private var translations: List<LocalTranslation>? = null
   private var activeTranslationsFilesNames: Set<String?>? = null
-  private var translationsSpinnerAdapter: TranslationsSpinnerAdapter? = null
 
   private lateinit var audioStatusBar: AudioBarWrapper
   private lateinit var viewPager: ViewPager
@@ -213,9 +218,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
   private lateinit var slidingPanel: SlidingUpPanelLayout
   private lateinit var slidingPager: ViewPager
   private lateinit var slidingPagerAdapter: SlidingPagerAdapter
-  private lateinit var translationsSpinner: QuranSpinner
   private lateinit var overlay: FrameLayout
-  private lateinit var toolBarArea: View
 
   private var requestPermissionLauncher: ActivityResultLauncher<String>? = null
 
@@ -272,23 +275,6 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       .generate(this)
       .pagerActivityComponentFactory()
       .generate(this)
-  }
-
-  private val handler = PagerHandler(this)
-
-  private class PagerHandler(activity: PagerActivity) : Handler(Looper.getMainLooper()) {
-    private val activity = WeakReference(activity)
-
-    override fun handleMessage(msg: Message) {
-      val activity = activity.get()
-      if (activity != null) {
-        if (msg.what == MSG_HIDE_ACTIONBAR) {
-          activity.toggleActionBarVisibility(false)
-        } else {
-          super.handleMessage(msg)
-        }
-      }
-    }
   }
 
   public override fun onCreate(savedInstanceState: Bundle?) {
@@ -417,15 +403,11 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     window.setBackgroundDrawable(null)
 
     var page = -1
-    isActionBarHidden = true
     if (savedInstanceState != null) {
       Timber.d("non-null saved instance state!")
       page = savedInstanceState.getInt(LAST_READ_PAGE, -1)
       showingTranslation = savedInstanceState
         .getBoolean(LAST_READING_MODE_IS_TRANSLATION, false)
-      if (savedInstanceState.containsKey(LAST_ACTIONBAR_STATE)) {
-        isActionBarHidden = !savedInstanceState.getBoolean(LAST_ACTIONBAR_STATE)
-      }
       val lastWasDualPages = savedInstanceState.getBoolean(LAST_WAS_DUAL_PAGES, isDualPages)
       shouldAdjustPageNumber = (lastWasDualPages != isDualPages)
     } else {
@@ -453,25 +435,9 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
 
     audioStatusBar = findViewById(R.id.audio_area)
 
-    toolBarArea = findViewById(R.id.toolbar_area)
-    translationsSpinner = findViewById(R.id.spinner)
     overlay = findViewById(R.id.overlay)
 
-    ViewCompat.setOnApplyWindowInsetsListener(toolBarArea) { view, windowInsets ->
-      val insets = windowInsets.getInsets(
-        WindowInsetsCompat.Type.statusBars() or
-            WindowInsetsCompat.Type.displayCutout() or
-            WindowInsetsCompat.Type.navigationBars()
-      )
-      view.updatePadding(insets.left, insets.top, insets.right, 0)
-      windowInsets
-    }
-
-    val toolbar = findViewById<Toolbar>(R.id.toolbar)
-    setSupportActionBar(toolbar)
-
-    supportActionBar?.setDisplayShowHomeEnabled(true)
-    supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    setupReaderBar()
 
     initAyahActionPanel()
 
@@ -507,7 +473,9 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
             WindowInsetsCompat.Type.displayCutout() or
             WindowInsetsCompat.Type.navigationBars()
       )
-      ayahToolBar.insets = insets
+      // the page area starts under the top bar, so the status bar is already cleared
+      // the page area already clears the system bars
+      ayahToolBar.insets = androidx.core.graphics.Insets.NONE
       windowInsets
     }
 
@@ -590,10 +558,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     }
     viewPager.addOnPageChangeListener(onPageChangeListener)
 
-    setUiVisibilityListener()
     audioStatusBar.visibility = if (BuildConfig.AUDIO_ENABLED) View.VISIBLE else View.GONE
-    toggleActionBarVisibility(true)
-
     if (shouldAdjustPageNumber) {
       // when going from two page per screen to one or vice versa, we adjust the page number,
       // such that the first page is always selected.
@@ -739,17 +704,8 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     }
   }
 
-  override fun onWindowFocusChanged(hasFocus: Boolean) {
-    super.onWindowFocusChanged(hasFocus)
-    if (hasFocus) {
-      handler.sendEmptyMessageDelayed(MSG_HIDE_ACTIONBAR, DEFAULT_HIDE_AFTER_TIME)
-    } else {
-      handler.removeMessages(MSG_HIDE_ACTIONBAR)
-    }
-  }
-
   private fun onPageClicked() {
-    toggleActionBar()
+    // the top bar is permanent, so tapping the page no longer shows or hides it
   }
 
   private fun onAudioPlaybackAyahChanged(suraAyah: SuraAyah?) {
@@ -790,94 +746,6 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
         null
       }
     }
-  }
-
-  private fun setUiVisibility(isVisible: Boolean) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      setUiVisibilityR(isVisible)
-    } else {
-      setUiVisibilityKitKat(isVisible)
-    }
-  }
-
-  private fun setUiVisibilityR(isVisible: Boolean) {
-    if (isVisible) {
-      windowInsetsController.show(
-        WindowInsetsCompat.Type.statusBars() or
-            WindowInsetsCompat.Type.navigationBars()
-      )
-    } else {
-      windowInsetsController.hide(
-        WindowInsetsCompat.Type.statusBars() or
-            WindowInsetsCompat.Type.navigationBars()
-      )
-      windowInsetsController.systemBarsBehavior =
-        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-    }
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isInMultiWindowMode) {
-      animateToolBar(isVisible)
-    }
-  }
-
-  private fun setUiVisibilityKitKat(isVisible: Boolean) {
-    var flags = (View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)
-    if (!isVisible) {
-      flags = flags or (View.SYSTEM_UI_FLAG_LOW_PROFILE
-          or View.SYSTEM_UI_FLAG_FULLSCREEN
-          or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-          or View.SYSTEM_UI_FLAG_IMMERSIVE)
-    }
-    viewPager.systemUiVisibility = flags
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isInMultiWindowMode) {
-      animateToolBar(isVisible)
-    }
-  }
-
-  private fun setUiVisibilityListener() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets ->
-        val isStatusBarVisible = insets.isVisible(WindowInsetsCompat.Type.statusBars())
-        // on devices with "hide full screen indicator" or "hide the bottom bar,"
-        // this always returns false, which causes the touches to not work.
-        val isNavigationBarVisible = insets.isVisible(WindowInsetsCompat.Type.navigationBars())
-
-        // as a fix for the aforementioned point, make either one's visibility suggest
-        // visibility (instead of requiring both to agree).
-        val isVisible = isStatusBarVisible || isNavigationBarVisible
-
-        animateToolBar(isVisible)
-        insets
-      }
-    } else {
-      viewPager.setOnSystemUiVisibilityChangeListener { flags: Int ->
-        val visible = (flags and View.SYSTEM_UI_FLAG_FULLSCREEN) == 0
-        animateToolBar(visible)
-      }
-    }
-  }
-
-  private fun clearUiVisibilityListener() {
-    viewPager.setOnSystemUiVisibilityChangeListener(null)
-  }
-
-  private fun animateToolBar(visible: Boolean) {
-    isActionBarHidden = !visible
-
-    // animate toolbar
-    toolBarArea.animate()
-      .translationY((if (visible) 0 else -toolBarArea.height).toFloat())
-      .setDuration(250)
-      .start()
-
-    // and audio bar
-    audioStatusBar.animate()
-      .translationY((if (visible) 0 else audioStatusBar.height).toFloat())
-      .setDuration(250)
-      .start()
   }
 
   override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
@@ -989,9 +857,6 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     var downloadType = QuranDownloadService.DOWNLOAD_TYPE_AUDIO
     if (audioStatusRepositoryBridge.audioRequest() == null) {
       // if we're not playing any audio, use audio download bar as our progress bar
-      if (isActionBarHidden) {
-        toggleActionBar()
-      }
     } else {
       // if audio is playing, let's not disrupt it - do this using a
       // different type so the broadcast receiver ignores it.
@@ -1081,7 +946,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
           onShowingTranslationBackCallback.isEnabled = false
         }
 
-        supportInvalidateOptionsMenu()
+        updateReaderBar()
       }
 
       if (highlightedAyah > 0 && highlightedSura > 0) {
@@ -1124,14 +989,12 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
 
   override fun onDestroy() {
     Timber.d("onDestroy()")
-    clearUiVisibilityListener()
 
     translationJob?.cancel(CancellationException())
     compositeDisposable.dispose()
     audioStatusRepositoryBridge.dispose()
     readingEventPresenterBridge.dispose()
     downloadBridge.unsubscribe()
-    handler.removeCallbacksAndMessages(null)
     scope.cancel()
     dismissProgressDialog()
     super.onDestroy()
@@ -1146,121 +1009,67 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     val lastPage = quranInfo.getPageFromPosition(viewPager.currentItem, isDualPageVisible)
     state.putInt(LAST_READ_PAGE, lastPage)
     state.putBoolean(LAST_READING_MODE_IS_TRANSLATION, showingTranslation)
-    state.putBoolean(LAST_ACTIONBAR_STATE, isActionBarHidden)
     state.putBoolean(LAST_WAS_DUAL_PAGES, isDualPages)
     state.putBoolean(LAST_FOLDING_STATE, isFoldableDeviceOpenAndVertical)
     super.onSaveInstanceState(state)
   }
 
-  override fun onCreateOptionsMenu(menu: Menu): Boolean {
-    super.onCreateOptionsMenu(menu)
-    val inflater = menuInflater
-    inflater.inflate(R.menu.quran_menu, menu)
-    val item = menu.findItem(R.id.search)
-    val searchView = item.actionView as SearchView
-    val searchManager = getSystemService(SEARCH_SERVICE) as SearchManager
-    searchView.queryHint = getString(R.string.search_hint)
-    searchView.setSearchableInfo(
-      searchManager.getSearchableInfo(
-        ComponentName(this, SearchActivity::class.java)
-      )
-    )
-
-    // cache because invalidateOptionsMenu in a toolbar world always calls both
-    // onCreateOptionsMenu and onPrepareOptionsMenu, which can be expensive both
-    // due to inflation plus due to the search view specific setup work. we can
-    // directly modify the bookmark item using a reference to this instead.
-    bookmarksMenuItem = menu.findItem(R.id.favorite_item)
-    return true
-  }
-
-  override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-    super.onPrepareOptionsMenu(menu)
-
-    if (bookmarksMenuItem != null) {
-      refreshBookmarksMenu()
-    }
-
-    val quran = menu.findItem(R.id.goto_quran)
-    val translation = menu.findItem(R.id.goto_translation)
-    if (quran != null && translation != null) {
-      if (!showingTranslation) {
-        quran.isVisible = false
-        translation.isVisible = true
-      } else {
-        quran.isVisible = true
-        translation.isVisible = false
-      }
-    }
-
-    menu.findItem(R.id.night_mode)?.let { updateReadingModeItem(it) }
-    return true
-  }
-
-  private fun updateReadingModeItem(item: MenuItem) {
-    val mode = QuranSettings.getInstance(this).readingMode
-    item.setIcon(
-      when (mode) {
-        Constants.READING_MODE_NIGHT -> R.drawable.ic_night_mode
-        Constants.READING_MODE_SEPIA -> R.drawable.ic_sepia_mode
-        else -> R.drawable.ic_day_mode
-      }
-    )
-    item.title = getString(
-      when (mode) {
-        Constants.READING_MODE_NIGHT -> R.string.reading_mode_night
-        Constants.READING_MODE_SEPIA -> R.string.reading_mode_sepia
-        else -> R.string.reading_mode_light
-      }
-    )
-  }
-
-  override fun onOptionsItemSelected(item: MenuItem): Boolean {
-    val itemId = item.itemId
-    if (itemId == R.id.favorite_item) {
-      showReadingBookmarkSheet(ReadingBookmarkTarget.Page(currentPage))
-      return true
-    } else if (itemId == R.id.goto_quran) {
-      switchToQuran()
-      return true
-    } else if (itemId == R.id.goto_translation) {
-      if (translations != null) {
-        quranEventLogger.switchToTranslationMode(translations!!.size)
-        switchToTranslation()
-      }
-      return true
-    } else if (itemId == R.id.night_mode) {
-      // light, then sepia, then night, then back to light
-      val settings = QuranSettings.getInstance(this)
-      settings.setReadingMode(
-        when (settings.readingMode) {
-          Constants.READING_MODE_LIGHT -> Constants.READING_MODE_SEPIA
-          Constants.READING_MODE_SEPIA -> Constants.READING_MODE_NIGHT
-          else -> Constants.READING_MODE_LIGHT
+  private val readerActions by lazy {
+    ReaderBarActions(
+      onBack = {
+        onSessionEnd()
+        finish()
+      },
+      onBookmark = { showReadingBookmarkSheet(ReadingBookmarkTarget.Page(currentPage)) },
+      onToggleTranslation = {
+        if (showingTranslation) {
+          switchToQuran()
+        } else if (translations != null) {
+          quranEventLogger.switchToTranslationMode(translations!!.size)
+          switchToTranslation()
         }
-      )
-      updateReadingModeItem(item)
-      refreshQuranPages()
-      return true
-    } else if (itemId == R.id.settings) {
-      val i = Intent(this, QuranPreferenceActivity::class.java)
-      startActivity(i)
-      return true
-    } else if (itemId == R.id.help) {
-      val i = Intent(this, HelpActivity::class.java)
-      startActivity(i)
-      return true
-    } else if (itemId == android.R.id.home) {
-      onSessionEnd()
-      finish()
-      return true
-    } else if (itemId == R.id.jump) {
-      val fm = supportFragmentManager
-      val jumpDialog = JumpFragment()
-      jumpDialog.show(fm, JumpFragment.TAG)
-      return true
+      },
+      onTranslationChecked = ::onTranslationChecked,
+      onMoreTranslations = ::startTranslationManager,
+      onReadingMode = { mode ->
+        quranSettings.setReadingMode(mode)
+        readerBar.readingMode = mode
+        refreshQuranPages()
+      },
+      onSearch = { startActivity(Intent(this, SearchActivity::class.java)) },
+      onGoToPage = { JumpFragment().show(supportFragmentManager, JumpFragment.TAG) },
+      onSettings = { startActivity(Intent(this, QuranPreferenceActivity::class.java)) },
+      onHelp = { startActivity(Intent(this, HelpActivity::class.java)) }
+    )
+  }
+
+  /** The top bar is Compose and always visible; the page sits underneath it, never behind it. */
+  private fun setupReaderBar() {
+    findViewById<ComposeView>(R.id.reader_toolbar).apply {
+      setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+      setContent { QuranTheme { ReaderTopBar(readerBar, readerActions) } }
     }
-    return super.onOptionsItemSelected(item)
+
+    // the top bar takes care of the status bar, so the page only has to clear the navigation bar
+    // (listening on the root rather than the page area, since the compose bar consumes insets
+    // that are dispatched to it)
+    val pageArea = findViewById<View>(R.id.reader_page_area)
+    ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.sliding_panel)) { _, windowInsets ->
+      val insets = windowInsets.getInsets(
+        WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.displayCutout()
+      )
+      pageArea.updatePadding(insets.left, 0, insets.right, insets.bottom)
+      windowInsets
+    }
+
+    readerBar.readingMode = quranSettings.readingMode
+    readerBar.showingTranslation = showingTranslation
+  }
+
+  /** Called when what the bar shows (translation mode, translation list) may have changed. */
+  private fun updateReaderBar() {
+    readerBar.showingTranslation = showingTranslation
+    readerBar.readingMode = quranSettings.readingMode
   }
 
   private fun refreshQuranPages() {
@@ -1288,7 +1097,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       viewPager.currentItem = position
     }
 
-    supportInvalidateOptionsMenu()
+    updateReaderBar()
     updateActionBarTitle(page)
   }
 
@@ -1308,7 +1117,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
         val position = quranInfo.getPositionFromPage(page, false)
         viewPager.currentItem = position
       }
-      supportInvalidateOptionsMenu()
+      updateReaderBar()
       updateActionBarSpinner()
     }
 
@@ -1322,23 +1131,6 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     startActivity(Intent(this, TranslationManagerActivity::class.java))
   }
 
-  private val translationItemChangedListener =
-    TranslationsSpinnerAdapter.OnSelectionChangedListener { selectedItems: Set<String?>? ->
-      quranSettings.activeTranslations = selectedItems
-      val pos = viewPager.currentItem - 1
-      for (count in 0..2) {
-        if (pos + count < 0) {
-          continue
-        }
-        val f = pagerAdapter.getFragmentIfExists(pos + count)
-        if (f is TranslationFragment) {
-          f.refresh()
-        } else if (f is TabletFragment) {
-          f.refresh()
-        }
-      }
-    }
-
   override fun onAddTagSelected() {
     val fm = supportFragmentManager
     val dialog = AddTagDialog()
@@ -1346,80 +1138,59 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
   }
 
   private fun updateActionBarTitle(page: Int) {
-    val sura = quranDisplayData.getSuraNameFromPage(this, page, true)
-    val actionBar = supportActionBar
-    if (actionBar != null) {
-      translationsSpinner.visibility = View.GONE
-      actionBar.setDisplayShowTitleEnabled(true)
-      actionBar.title = sura
-      val desc = quranDisplayData.getPageSubtitle(this, page)
-      actionBar.subtitle = desc
-    }
+    readerBar.title = quranDisplayData.getSuraNameFromPage(this, page, true)
+    readerBar.subtitle = quranDisplayData.getPageSubtitle(this, page)
   }
 
   private fun refreshActionBarSpinner() {
-    if (translationsSpinnerAdapter != null) {
-      translationsSpinnerAdapter!!.notifyDataSetChanged()
-    } else {
-      updateActionBarSpinner()
-    }
+    updateActionBarTitle(currentPage)
   }
 
   private val currentPage: Int
     get() = quranInfo.getPageFromPosition(viewPager.currentItem, isDualPageVisible)
 
+  /** The translations list in the top bar; the title itself is the same as in Quran mode. */
   private fun updateActionBarSpinner() {
-    if (translationNames.isEmpty()) {
-      val page = currentPage
-      updateActionBarTitle(page)
+    rebuildTranslationItems()
+    updateActionBarTitle(currentPage)
+  }
+
+  private fun rebuildTranslationItems() {
+    val active = activeTranslationsFilesNames ?: quranSettings.activeTranslations
+    val list = translations.orEmpty()
+    readerBar.translations = list.mapIndexed { index, translation ->
+      ReaderTranslationItem(
+        filename = translation.filename,
+        name = translationNames.getOrNull(index) ?: translation.filename,
+        checked = active.contains(translation.filename)
+      )
+    }
+  }
+
+  private fun onTranslationChecked(filename: String) {
+    val selected = HashSet(activeTranslationsFilesNames ?: quranSettings.activeTranslations)
+    if (!selected.remove(filename)) {
+      selected.add(filename)
+    }
+    // there is always at least one translation to read
+    if (selected.isEmpty()) {
       return
     }
+    activeTranslationsFilesNames = selected
+    quranSettings.activeTranslations = selected
+    rebuildTranslationItems()
 
-    if (translationsSpinnerAdapter == null) {
-      translationsSpinnerAdapter = object : TranslationsSpinnerAdapter(
-        this,
-        R.layout.translation_ab_spinner_item, translationNames, translations,
-        if (activeTranslationsFilesNames == null) quranSettings.activeTranslations else activeTranslationsFilesNames,
-        translationItemChangedListener
-      ) {
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-          val type = super.getItemViewType(position)
-          val view = super.getView(position, convertView, parent)
-          if (type == 0) {
-            val holder = view.tag as SpinnerHolder
-            val page: Int = currentPage
-
-            val sura =
-              quranDisplayData.getSuraNameFromPage(this@PagerActivity, page, true)
-            holder.title.text = sura
-            holder.title.setTextColor(
-              MaterialColors.getColor(
-                this@PagerActivity,
-                MaterialR.attr.colorOnSurface,
-                ResourcesCompat.getColor(resources, R.color.toolbar_text, null)
-              )
-            )
-            val desc = quranDisplayData.getPageSubtitle(this@PagerActivity, page)
-            holder.subtitle.text = desc
-            holder.subtitle.visibility = View.VISIBLE
-            holder.subtitle.setTextColor(
-              MaterialColors.getColor(
-                this@PagerActivity,
-                MaterialR.attr.colorOnSurfaceVariant,
-                ResourcesCompat.getColor(resources, R.color.toolbar_secondary_text, null)
-              )
-            )
-          }
-          return view
-        }
+    val pos = viewPager.currentItem - 1
+    for (count in 0..2) {
+      if (pos + count < 0) {
+        continue
       }
-      translationsSpinner.adapter = translationsSpinnerAdapter
-    }
-
-    val actionBar = supportActionBar
-    if (actionBar != null) {
-      actionBar.setDisplayShowTitleEnabled(false)
-      translationsSpinner.visibility = View.VISIBLE
+      val f = pagerAdapter.getFragmentIfExists(pos + count)
+      if (f is TranslationFragment) {
+        f.refresh()
+      } else if (f is TabletFragment) {
+        f.refresh()
+      }
     }
   }
 
@@ -1428,23 +1199,12 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     audioPresenter.onDownloadSuccess()
   }
 
+  /** The top bar is permanent now; these stay only so existing callers keep compiling. */
+  @Suppress("UNUSED_PARAMETER")
   fun toggleActionBarVisibility(visible: Boolean) {
-    if (visible == isActionBarHidden) {
-      toggleActionBar()
-    }
   }
 
   fun toggleActionBar() {
-    if (isActionBarHidden) {
-      setUiVisibility(true)
-
-      isActionBarHidden = false
-    } else {
-      handler.removeMessages(MSG_HIDE_ACTIONBAR)
-      setUiVisibility(false)
-
-      isActionBarHidden = true
-    }
   }
 
   private fun ensurePage(sura: Int, ayah: Int) {
@@ -1470,30 +1230,14 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
         }
         activeTranslationsFilesNames = currentActiveTranslationsFilesNames
 
-        if (translationsSpinnerAdapter != null) {
-          translationsSpinnerAdapter!!
-            .updateItems(titles, updatedTranslations, activeTranslationsFilesNames)
-        }
         translationNames = titles
         translations = updatedTranslations
-        if (showingTranslation) {
-          // Since translation items have changed, need to
-          updateActionBarSpinner()
-        }
+        rebuildTranslationItems()
       }
   }
 
-  private fun refreshBookmarksMenu() {
-    refreshBookmarksMenu(isCurrentPageReadingBookmarked)
-  }
-
   private fun refreshBookmarksMenu(isBookmarked: Boolean) {
-    val menuItem = bookmarksMenuItem
-    if (menuItem != null) {
-      menuItem.setIcon(if (isBookmarked) com.quran.labs.androidquran.common.toolbar.R.drawable.ic_favorite else com.quran.labs.androidquran.common.toolbar.R.drawable.ic_not_favorite)
-    } else {
-      supportInvalidateOptionsMenu()
-    }
+    readerBar.isBookmarked = isBookmarked
   }
 
   override fun setPageReadingBookmarkSelected(isBookmarked: Boolean) {
@@ -1665,9 +1409,6 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
   }
 
   override fun proceedWithDownload(downloadIntent: Intent?) {
-    if (isActionBarHidden) {
-      toggleActionBar()
-    }
     downloadInfoStreams.downloadRequested()
     Timber.d("starting service in handleRequiredDownload")
     startService(downloadIntent)
@@ -2027,7 +1768,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     // and it's false when the panel is GONE and showPane only calls
     // requestLayout, and only in onLayout does mCanSlide become true.
     // So by posting this later it gives time for onLayout to run.
-    handler.post { slidingPanel.expandPane() }
+    slidingPanel.post { slidingPanel.expandPane() }
   }
 
   private fun updateAyahBookmark(suraAyah: SuraAyah, bookmarked: Boolean) {

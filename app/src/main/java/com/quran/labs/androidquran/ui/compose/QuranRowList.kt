@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -68,7 +69,7 @@ import java.util.Date
  * large and whose inner corners are small, so each group reads as a single rounded container.
  * the surah and juz tabs only need [onRowClick]; the bookmarks tab also passes [isEditable] (some
  * rows, like plain headers, aren't tappable there), [selectedIndices] and the long press / open
- * callbacks.
+ * callbacks. With [separateCards] every row is its own fully rounded card instead.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -78,6 +79,7 @@ fun QuranRowList(
   listState: LazyListState = rememberLazyListState(),
   contentPadding: PaddingValues = PaddingValues(0.dp),
   isEditable: Boolean = false,
+  separateCards: Boolean = false,
   selectedIndices: Set<Int> = emptySet(),
   tagMap: Map<String, Tag> = emptyMap(),
   showTags: Boolean = false,
@@ -92,7 +94,7 @@ fun QuranRowList(
     modifier = modifier,
     state = listState,
     contentPadding = contentPadding,
-    verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+    verticalArrangement = Arrangement.spacedBy(if (separateCards) 8.dp else ListItemDefaults.SegmentedGap)
   ) {
     itemsIndexed(rows) { index, row ->
       val enabled = !isEditable || row.isTappableWhenEditable()
@@ -107,10 +109,18 @@ fun QuranRowList(
 
         row.isHeader -> SectionLabel(row)
         else -> {
-          val shapes = ListItemDefaults.segmentedShapes(
-            index = groups.positionOf(index),
-            count = groups.sizeOf(index)
-          )
+          val shapes = if (separateCards) {
+            ListItemDefaults.shapes(
+              shape = RoundedCornerShape(24.dp),
+              pressedShape = RoundedCornerShape(12.dp),
+              selectedShape = RoundedCornerShape(24.dp)
+            )
+          } else {
+            ListItemDefaults.segmentedShapes(
+              index = groups.positionOf(index),
+              count = groups.sizeOf(index)
+            )
+          }
           if (row.isHighlightColor) {
             HighlightColorRow(row, selected, shapes, click, longClick) { onOpenClick(index, row) }
           } else {

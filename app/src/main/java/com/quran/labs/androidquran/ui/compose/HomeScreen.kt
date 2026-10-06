@@ -269,6 +269,7 @@ fun HomeScreen(
       when (page) {
         0 -> QuranRowList(
           rows = suraState.rows,
+          separateCards = true,
           listState = suraListState,
           contentPadding = listPadding,
           onRowClick = { _, row -> if (row.page != 0) onRowClick(row) }

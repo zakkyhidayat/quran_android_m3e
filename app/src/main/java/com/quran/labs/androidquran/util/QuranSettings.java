@@ -107,7 +107,8 @@ public class QuranSettings {
   }
 
   public boolean shouldOverlayPageInfo() {
-    return prefs.getBoolean(Constants.PREF_OVERLAY_PAGE_INFO, true);
+    // the reader's top bar already shows the surah, page and juz
+    return false;
   }
 
   public void setShouldOverlayPageInfo(boolean shouldOverlay) {
