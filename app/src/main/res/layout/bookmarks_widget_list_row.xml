@@ -24,6 +24,7 @@
       android:layout_marginBottom="4dp"
       android:layout_toRightOf="@id/widget_favorite_icon"
       android:textAppearance="@style/TitleText"
+      android:textColor="@color/quran_on_surface"
       tools:text="Surah title"
       />
   <TextView

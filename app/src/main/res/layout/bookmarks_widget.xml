@@ -3,13 +3,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/translation_verse_text_color">
+    android:background="@drawable/bookmarks_widget_background">
 
   <LinearLayout
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:layout_marginVertical="2dp"
-      android:background="@drawable/quran_row_background"
+      android:layout_margin="6dp"
+      android:background="@drawable/bookmarks_widget_header_background"
       android:orientation="horizontal">
 
     <ImageButton
@@ -17,7 +17,7 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:background="@color/translation_verse_text_color"
+        android:background="@android:color/transparent"
         android:src="@drawable/icon" />
 
     <ImageButton
@@ -25,7 +25,8 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:background="@color/translation_verse_text_color"
+        android:background="@android:color/transparent"
+        android:tint="@color/quran_primary"
         android:src="@drawable/ic_ab_search" />
 
     <ImageButton
@@ -33,7 +34,8 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:background="@color/translation_verse_text_color"
+        android:background="@android:color/transparent"
+        android:tint="@color/quran_primary"
         android:src="@drawable/ic_goto_quran" />
 
     <ImageButton
@@ -41,7 +43,8 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:background="@color/translation_verse_text_color"
+        android:background="@android:color/transparent"
+        android:tint="@color/quran_primary"
         android:src="@drawable/ic_baseline_arrow_upright_24" />
 
   </LinearLayout>
@@ -50,7 +53,9 @@
       android:id="@+id/list_view_widget"
       android:layout_width="match_parent"
       android:layout_height="match_parent"
-      android:background="@color/transparent_actionbar_color" />
+      android:background="@android:color/transparent"
+      android:divider="@android:color/transparent"
+      android:dividerHeight="0dp" />
 
 
   <!-- Empty view is shown if list items are empty -->
@@ -60,7 +65,7 @@
       android:layout_height="wrap_content"
       android:gravity="center"
       android:text="@string/bookmarks_list_empty"
-      android:textColor="#ffffff"
+      android:textColor="@color/quran_on_surface"
       android:textSize="20sp"
       android:layout_marginHorizontal="8dp"
       android:visibility="gone" />

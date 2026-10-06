@@ -4,7 +4,8 @@
     android:background="@drawable/search_widget_background"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="15dp">
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="10dp">
 
   <ImageButton
       android:id="@+id/search_widget_icon_button"
@@ -21,6 +22,7 @@
       android:layout_height="match_parent"
       android:layout_weight="1"
       android:background="@android:color/transparent"
+      android:tint="@color/quran_primary"
       android:src="@drawable/ic_ab_search" />
 
   <ImageButton
@@ -29,6 +31,7 @@
       android:layout_height="match_parent"
       android:layout_weight="1"
       android:background="@android:color/transparent"
+      android:tint="@color/quran_primary"
       android:src="@drawable/ic_goto_quran" />
 
   <ImageButton
@@ -37,6 +40,7 @@
       android:layout_height="match_parent"
       android:layout_weight="1"
       android:background="@android:color/transparent"
+      android:tint="@color/quran_primary"
       android:src="@drawable/ic_baseline_arrow_upright_24" />
 
 </LinearLayout>
