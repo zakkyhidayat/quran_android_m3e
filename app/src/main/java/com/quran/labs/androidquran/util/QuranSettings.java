@@ -278,6 +278,15 @@ public class QuranSettings {
     prefs.edit().putString(Constants.PREF_APP_COLOR_SCHEME, colorScheme).apply();
   }
 
+  public void setDualPageMode(boolean enabled) {
+    prefs.edit().putBoolean(Constants.PREF_DUAL_PAGE_ENABLED, enabled).apply();
+  }
+
+  /** Whether the bookmarks are saved to their backup file once a day. On unless turned off. */
+  public boolean isAutoBackupEnabled() {
+    return prefs.getBoolean(Constants.PREF_AUTO_BACKUP, true);
+  }
+
   public void setUseAmoled(boolean useAmoled) {
     prefs.edit().putBoolean(Constants.PREF_AMOLED, useAmoled).apply();
   }

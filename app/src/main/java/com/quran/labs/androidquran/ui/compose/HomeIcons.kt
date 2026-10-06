@@ -76,6 +76,10 @@ internal object HomeIcons {
     icon("Filled.CheckCircle", "M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM10,17l-5,-5 1.41,-1.41L10,14.17l7.59,-7.59L19,8l-9,9z")
   }
 
+  val Columns: ImageVector by lazy {
+    icon("Filled.ViewColumn", "M10,18h5V5h-5V18zM4,18h5V5H4V18zM16,5v13h5V5H16z")
+  }
+
   val DragHandle: ImageVector by lazy {
     icon("Filled.DragHandle", "M20,9H4v2h16V9zM4,15h16v-2H4V15z")
   }

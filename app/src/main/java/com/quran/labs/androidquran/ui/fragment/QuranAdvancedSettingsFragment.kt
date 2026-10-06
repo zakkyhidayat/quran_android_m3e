@@ -1,5 +1,6 @@
 package com.quran.labs.androidquran.ui.fragment
 
+import com.quran.labs.androidquran.worker.BookmarkAutoBackupWorker
 import android.app.Activity
 import android.app.Dialog
 import android.content.Context
@@ -125,6 +126,12 @@ class QuranAdvancedSettingsFragment : QuranPreferenceFragment() {
     } else {
       removeAdvancePreference(logsPref)
     }
+    findPreference<Preference>(Constants.PREF_AUTO_BACKUP)?.onPreferenceChangeListener =
+      Preference.OnPreferenceChangeListener { _, newValue ->
+        BookmarkAutoBackupWorker.schedule(appContext, newValue as Boolean)
+        true
+      }
+
     val importPref = findPreference<Preference>(Constants.PREF_IMPORT)
     importPref?.onPreferenceClickListener =
       Preference.OnPreferenceClickListener {

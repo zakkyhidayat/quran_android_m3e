@@ -629,6 +629,8 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
     }
     state.theme = quranSettings.currentTheme()
     state.amoled = quranSettings.useAmoled()
+    state.dualPageAvailable = quranScreenInfo.isDualPageMode
+    state.dualPage = QuranUtils.isDualPagesInLandscape(this, quranScreenInfo)
     state.dynamicColor = QuranThemeSettings.isDynamicColorAvailable && quranSettings.useDynamicColors()
     state.arabic = QuranUtils.getCurrentLocale().language == "ar"
     state.dyslexicFont = quranSettings.wantDyslexicFontInTranslationView()
@@ -651,6 +653,10 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
         },
         onAmoled = ::setAmoled,
         onDynamicColor = ::setDynamicColor,
+        onDualPage = { enabled ->
+          onboardingState.dualPage = enabled
+          quranSettings.setDualPageMode(enabled)
+        },
         onArabic = ::setArabic,
         onDyslexicFont = { enabled ->
           onboardingState.dyslexicFont = enabled

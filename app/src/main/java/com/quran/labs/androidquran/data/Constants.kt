@@ -63,6 +63,7 @@ object Constants {
   const val PREF_AYAH_BEFORE_TRANSLATION = "ayahBeforeTranslation"
   const val PREF_USE_DYSLEXIC_FONT = "useDyslexicFont"
   const val PREF_ONBOARDING_DONE = "onboardingDone"
+  const val PREF_AUTO_BACKUP = "autoBackupBookmarks"
   const val PREF_SKIPPED_PAGES_DOWNLOAD = "skippedPagesDownload"
   const val PREF_SPLIT_PAGE_AND_TRANSLATION = "splitPageAndTranslation"
   const val PREF_PREFER_STREAMING = "preferStreaming"

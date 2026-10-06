@@ -27,7 +27,7 @@
         android:title="@string/appearance"
         app:iconSpaceReserved="false" />
 
-    <androidx.preference.ListPreference
+    <com.quran.labs.androidquran.ui.preference.ColorSchemeListPreference
         android:defaultValue="dynamic"
         android:dialogTitle="@string/prefs_color_scheme_title"
         android:entries="@array/color_schemes"

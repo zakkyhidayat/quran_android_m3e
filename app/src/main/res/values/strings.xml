@@ -56,7 +56,7 @@
   <string name="about_fork_author_summary">Created this fork and redesigned its interface</string>
   <string name="about_fork_author_url" translatable="false">https://github.com/zakkyhidayat</string>
   <string name="about_fork_changes">What is different</string>
-  <string name="about_fork_changes_summary">A new interface built with Jetpack Compose and Material 3 Expressive, an emerald color scheme, and light, semi sepia and night reading modes. The Quran text, images and data are unchanged.</string>
+  <string name="about_fork_changes_summary">A new interface built with Jetpack Compose and Material 3 Expressive, an emerald color scheme, and light, sepia and night reading modes. The Quran text, images and data are unchanged.</string>
   <string name="about_fork_source">Source code</string>
   <string name="about_fork_source_url" translatable="false">https://github.com/zakkyhidayat/quran_android_m3e</string>
   <string name="about_original_section">Original project</string>
@@ -203,7 +203,7 @@
   <string name="prefs_landscape_orientation_summary_off">Always use portrait mode</string>
   <string name="prefs_reading_mode_title">Reading mode</string>
   <string name="reading_mode_light">Light</string>
-  <string name="reading_mode_sepia">Semi sepia</string>
+  <string name="reading_mode_sepia">Sepia</string>
   <string name="reading_mode_night">Night</string>
   <string name="prefs_overlay_page_info_title">Show page info</string>
   <string name="prefs_overlay_page_info_summary">Overlay page number, surah name, and juz\' number while reading</string>
@@ -489,6 +489,11 @@
   <string name="onboarding_theme_dark">Dark</string>
   <string name="onboarding_theme_title">Choose a theme</string>
   <string name="onboarding_theme_body">Follow your phone, or always use light or dark.</string>
+  <string name="onboarding_dual_title">Two pages at once</string>
+  <string name="onboarding_dual_body">Turn your phone sideways to read two pages side by side, like an open mushaf.</string>
+  <string name="onboarding_dual_summary">Only when the phone is held sideways. It may download an extra set of page images that fit the wider screen.</string>
+  <string name="prefs_auto_backup_title">Back up bookmarks daily</string>
+  <string name="prefs_auto_backup_summary">Once a day, your bookmarks are saved to one backup file in the app’s files folder, replacing the previous one.</string>
   <string name="onboarding_colors_title">Colors</string>
   <string name="onboarding_colors_original">Original green</string>
   <string name="onboarding_colors_original_summary">The emerald and gold of the mushaf</string>

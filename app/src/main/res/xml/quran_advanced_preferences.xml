@@ -10,6 +10,13 @@
       android:title="@string/prefs_import_title"
       app:iconSpaceReserved="false"/>
 
+  <SwitchPreferenceCompat
+      android:defaultValue="true"
+      android:key="@string/prefs_auto_backup"
+      android:summary="@string/prefs_auto_backup_summary"
+      android:title="@string/prefs_auto_backup_title"
+      app:iconSpaceReserved="false"/>
+
   <Preference
       android:key="@string/prefs_export"
       android:summary="@string/prefs_export_summary"

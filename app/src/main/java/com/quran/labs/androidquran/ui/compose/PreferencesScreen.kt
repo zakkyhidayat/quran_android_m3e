@@ -1,5 +1,8 @@
 package com.quran.labs.androidquran.ui.compose
 
+import com.quran.labs.androidquran.data.Constants
+import com.quran.labs.androidquran.common.ui.core.QuranThemeSettings
+import com.quran.labs.androidquran.ui.preference.ColorSchemeListPreference
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -292,6 +295,13 @@ private fun PreferenceItem(
     }
 
     is SegmentedListPreference -> SegmentedPreferenceItem(preference, shapes, modifier, onChanged)
+    is ColorSchemeListPreference ->
+      if (QuranThemeSettings.isDynamicColorAvailable) {
+        ColorSchemePreferenceItem(preference, shapes, modifier, onChanged)
+      } else {
+        ListPreferenceItem(preference, shapes, modifier, onChanged)
+      }
+
     is ListPreference -> ListPreferenceItem(preference, shapes, modifier, onChanged)
     is SeekBarPreference -> SeekBarItem(preference, shapes, modifier, onChanged)
     else -> SettingsItem(
@@ -496,6 +506,37 @@ private fun SeekBarPreview(kind: SeekBarPreference.Preview, value: Int) {
       Text(text = sample, fontSize = value.coerceAtLeast(1).sp, modifier = Modifier.padding(top = 4.dp))
 
   }
+}
+
+/** The color scheme, as the same two swatch cards the first-run setup shows. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun ColorSchemePreferenceItem(
+  preference: ColorSchemeListPreference,
+  shapes: ListItemShapes,
+  modifier: Modifier,
+  onChanged: () -> Unit
+) {
+  SettingsItem(
+    title = preference.title,
+    summary = null,
+    enabled = preference.isEnabled,
+    shapes = shapes,
+    modifier = modifier,
+    onClick = {},
+    supporting = {
+      Column(Modifier.padding(top = 8.dp, bottom = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        ColorSchemeOptions(
+          dynamic = preference.value == Constants.COLOR_SCHEME_DYNAMIC,
+          showTitle = false
+        ) { dynamic ->
+          val value = if (dynamic) Constants.COLOR_SCHEME_DYNAMIC else Constants.COLOR_SCHEME_ORIGINAL
+          if (preference.callChangeListener(value)) preference.value = value
+          onChanged()
+        }
+      }
+    }
+  )
 }
 
 /** A choice among a few short options (system / light / dark, say), shown as segmented buttons. */

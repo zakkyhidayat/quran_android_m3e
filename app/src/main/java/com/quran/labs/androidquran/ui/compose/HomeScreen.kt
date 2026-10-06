@@ -24,7 +24,10 @@ import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
@@ -219,7 +222,15 @@ fun HomeScreen(
 
   val navigationBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
   // leave room under the lists for the continue-reading button
-  val listPadding = PaddingValues(top = 4.dp, bottom = navigationBarPadding + 96.dp)
+  val listPadding = PaddingValues(top = 4.dp, bottom = navigationBarPadding + 80.dp)
+  // the continue button shrinks to its icon while a list is being scrolled down, then comes back
+  val activeList = when (pagerState.currentPage) {
+    0 -> suraListState
+    1 -> juzListState
+    2 -> hizbListState
+    else -> null
+  }
+  val fabExpanded = activeList == null || !activeList.lastScrolledForward || !activeList.canScrollBackward
 
   Scaffold(
     modifier = Modifier.nestedScroll(searchScrollBehavior.nestedScrollConnection),
@@ -234,12 +245,19 @@ fun HomeScreen(
           onClick = actions.onLastPage,
           icon = { Icon(QuranIcons.MenuBook, contentDescription = null) },
           text = { Text(stringResource(R.string.menu_jump_last_page)) },
+          expanded = fabExpanded,
           modifier = Modifier.padding(bottom = navigationBarPadding)
         )
       }
     },
     topBar = {
-      Column {
+      // the status bar space belongs to this column, so the tabs stay clear of it once the search
+      // bar has scrolled away
+      Column(
+        Modifier
+          .background(MaterialTheme.colorScheme.surface)
+          .windowInsetsPadding(WindowInsets.statusBars)
+      ) {
         if (selecting) {
           SelectionBar(
             bookmarks = bookmarks,
@@ -249,6 +267,7 @@ fun HomeScreen(
         } else {
           AppBarWithSearch(
             state = searchBarState,
+            windowInsets = WindowInsets(0, 0, 0, 0),
             inputField = searchField,
             actions = {
               if (pagerState.currentPage == BOOKMARKS_TAB) {
@@ -455,6 +474,7 @@ private fun SelectionBar(
         Icon(HomeIcons.Add, contentDescription = stringResource(R.string.new_tag))
       }
     },
+    windowInsets = WindowInsets(0, 0, 0, 0),
     colors = TopAppBarDefaults.topAppBarColors(
       containerColor = MaterialTheme.colorScheme.secondaryContainer,
       titleContentColor = MaterialTheme.colorScheme.onSecondaryContainer,

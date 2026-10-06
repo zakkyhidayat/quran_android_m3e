@@ -3,6 +3,7 @@ package com.quran.labs.androidquran.core.worker.di
 import com.quran.labs.androidquran.core.worker.WorkerKey
 import com.quran.labs.androidquran.core.worker.WorkerTaskFactory
 import com.quran.labs.androidquran.worker.AudioUpdateWorker
+import com.quran.labs.androidquran.worker.BookmarkAutoBackupWorker
 import com.quran.labs.androidquran.worker.MissingPageDownloadWorker
 import com.quran.labs.androidquran.worker.PartialPageCheckingWorker
 import com.quran.labs.androidquran.worker.PartialPageCheckingWorker.Factory
@@ -25,6 +26,13 @@ abstract class WorkerModule {
   @WorkerKey(MissingPageDownloadWorker::class)
   abstract fun bindMissingPageDownloadWorkerFactory(
     workerFactory: MissingPageDownloadWorker.Factory
+  ): WorkerTaskFactory
+
+  @Binds
+  @IntoMap
+  @WorkerKey(BookmarkAutoBackupWorker::class)
+  abstract fun bindBookmarkAutoBackupWorkerFactory(
+    workerFactory: BookmarkAutoBackupWorker.Factory
   ): WorkerTaskFactory
 
   @Binds

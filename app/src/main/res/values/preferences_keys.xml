@@ -10,6 +10,7 @@
   <string translatable="false" name="prefs_app_theme">appTheme</string>
   <string translatable="false" name="prefs_app_color_scheme">appColorScheme</string>
   <string translatable="false" name="prefs_amoled">useAmoled</string>
+  <string translatable="false" name="prefs_auto_backup">autoBackupBookmarks</string>
   <string translatable="false" name="prefs_dual_page_enabled">useDualPageMode</string>
   <string translatable="false" name="prefs_overlay_page_info">overlayPageInfo</string>
   <string translatable="false" name="prefs_display_marker_popup">displayMarkerPopup</string>

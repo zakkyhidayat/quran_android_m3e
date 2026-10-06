@@ -1,5 +1,9 @@
 package com.quran.labs.androidquran.ui.compose
 
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.activity.compose.BackHandler
 import android.os.Build
 import androidx.annotation.StringRes
@@ -123,6 +127,8 @@ class OnboardingState {
   var theme by mutableStateOf(Constants.THEME_DEFAULT)
   var amoled by mutableStateOf(false)
   var dynamicColor by mutableStateOf(false)
+  var dualPage by mutableStateOf(false)
+  var dualPageAvailable by mutableStateOf(false)
   var arabic by mutableStateOf(false)
   var dyslexicFont by mutableStateOf(false)
   var arabicBeforeTranslation by mutableStateOf(true)
@@ -137,6 +143,7 @@ class OnboardingActions(
   val onTheme: (String) -> Unit,
   val onAmoled: (Boolean) -> Unit,
   val onDynamicColor: (Boolean) -> Unit,
+  val onDualPage: (Boolean) -> Unit,
   val onArabic: (Boolean) -> Unit,
   val onDyslexicFont: (Boolean) -> Unit,
   val onArabicBeforeTranslation: (Boolean) -> Unit,
@@ -155,6 +162,7 @@ private enum class Step(@StringRes val title: Int, @StringRes val body: Int) {
   FONT(R.string.onboarding_font_title, R.string.onboarding_font_body),
   ORDER(R.string.onboarding_order_title, R.string.onboarding_order_body),
   TRANSLATION(R.string.onboarding_translation_title, R.string.onboarding_translation_body),
+  DUAL(R.string.onboarding_dual_title, R.string.onboarding_dual_body),
   PAGES(R.string.onboarding_pages_title, R.string.onboarding_pages_body)
 }
 
@@ -169,7 +177,10 @@ fun OnboardingScreen(
   translations: TranslationDownloads,
   actions: OnboardingActions
 ) {
-  val steps = Step.entries
+  // two pages side by side only makes sense on a screen wide enough to hold them
+  val steps = remember(state.dualPageAvailable) {
+    Step.entries.filter { it != Step.DUAL || state.dualPageAvailable }
+  }
   // saveable, since changing the theme or the language recreates the activity
   var index by rememberSaveable { mutableIntStateOf(0) }
   val step = steps[index]
@@ -257,6 +268,7 @@ fun OnboardingScreen(
 
               Step.FONT -> FontChoice(state, actions)
               Step.ORDER -> OrderChoice(state, actions)
+              Step.DUAL -> DualPageChoice(state, actions)
               Step.PAGES -> PageStyles(state, actions)
               Step.TRANSLATION -> Unit
             }
@@ -275,6 +287,7 @@ private fun Step.icon(): ImageVector = when (this) {
   Step.FONT -> HomeIcons.TextFields
   Step.ORDER -> HomeIcons.SwapVert
   Step.TRANSLATION -> HomeIcons.Translate
+  Step.DUAL -> HomeIcons.Columns
   Step.PAGES -> QuranIcons.MenuBook
 }
 
@@ -288,6 +301,7 @@ private fun Step.shape(): Shape = when (this) {
   Step.FONT -> MaterialShapes.Cookie6Sided
   Step.ORDER -> MaterialShapes.SoftBurst
   Step.TRANSLATION -> MaterialShapes.Cookie12Sided
+  Step.DUAL -> MaterialShapes.Cookie4Sided
   Step.PAGES -> MaterialShapes.Gem
 }.toShape()
 
@@ -567,10 +581,15 @@ private fun ThemeChoice(state: OnboardingState, actions: OnboardingActions) {
 /** Wallpaper colors or the original emerald, each shown by the swatches it would paint the app with. */
 @Composable
 private fun ColorSchemeChoice(state: OnboardingState, actions: OnboardingActions) {
+  ColorSchemeOptions(state.dynamicColor, showTitle = true, onSelect = actions.onDynamicColor)
+}
+
+@Composable
+internal fun ColorSchemeOptions(dynamic: Boolean, showTitle: Boolean, onSelect: (Boolean) -> Unit) {
   val context = LocalContext.current
   val dark = isSystemInDarkTheme()
   val original = if (dark) darkSwatches else lightSwatches
-  val dynamic = remember(dark) {
+  val dynamicSwatches = remember(dark) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       val scheme = if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
       listOf(scheme.primary, scheme.primaryContainer, scheme.tertiary)
@@ -578,24 +597,26 @@ private fun ColorSchemeChoice(state: OnboardingState, actions: OnboardingActions
       original
     }
   }
-  Text(
-    stringResource(R.string.onboarding_colors_title),
-    style = MaterialTheme.typography.labelLarge,
-    color = MaterialTheme.colorScheme.primary,
-    modifier = Modifier.padding(top = 8.dp, start = 4.dp)
-  )
+  if (showTitle) {
+    Text(
+      stringResource(R.string.onboarding_colors_title),
+      style = MaterialTheme.typography.labelLarge,
+      color = MaterialTheme.colorScheme.primary,
+      modifier = Modifier.padding(top = 8.dp, start = 4.dp)
+    )
+  }
   ColorOption(
-    selected = !state.dynamicColor,
+    selected = !dynamic,
     title = R.string.onboarding_colors_original,
     summary = R.string.onboarding_colors_original_summary,
     swatches = original
-  ) { actions.onDynamicColor(false) }
+  ) { onSelect(false) }
   ColorOption(
-    selected = state.dynamicColor,
+    selected = dynamic,
     title = R.string.onboarding_colors_dynamic,
     summary = R.string.onboarding_colors_dynamic_summary,
-    swatches = dynamic
-  ) { actions.onDynamicColor(true) }
+    swatches = dynamicSwatches
+  ) { onSelect(true) }
 }
 
 private val lightSwatches = listOf(lightPrimary, lightPrimaryContainer, lightTertiary)
@@ -633,6 +654,71 @@ private fun ColorOption(
           )
         }
       }
+    }
+  }
+}
+
+/** Two pages side by side when the phone is held sideways, drawn so the difference is visible. */
+@Composable
+private fun DualPageChoice(state: OnboardingState, actions: OnboardingActions) {
+  val basmalah = state.pagePreviews.values.firstOrNull()
+  Surface(
+    shape = RoundedCornerShape(24.dp),
+    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    modifier = Modifier
+      .fillMaxWidth()
+      .aspectRatio(2.1f)
+  ) {
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(14.dp)
+    ) {
+      if (!state.dualPage) Spacer(Modifier.weight(0.5f))
+      PaperPage(basmalah, Modifier.weight(1f))
+      if (state.dualPage) PaperPage(null, Modifier.weight(1f)) else Spacer(Modifier.weight(0.5f))
+    }
+  }
+  SwitchCard(
+    title = stringResource(R.string.prefs_dual_page_mode_title),
+    summary = stringResource(R.string.onboarding_dual_summary),
+    checked = state.dualPage,
+    onCheckedChange = actions.onDualPage
+  )
+}
+
+/** One page of paper: the Basmalah when there is one on the phone, then lines of text. */
+@Composable
+private fun PaperPage(preview: ImageBitmap?, modifier: Modifier) {
+  val ink = Color(0xFF1B1B1B)
+  Column(
+    verticalArrangement = Arrangement.spacedBy(6.dp),
+    modifier = modifier
+      .fillMaxHeight()
+      .clipToBounds()
+      .background(Color(0xFFFDFBEF), RoundedCornerShape(10.dp))
+      .padding(horizontal = 12.dp, vertical = 10.dp)
+  ) {
+    if (preview != null) {
+      Image(
+        bitmap = preview,
+        contentDescription = null,
+        contentScale = ContentScale.FillWidth,
+        colorFilter = ColorFilter.tint(ink),
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 14.dp)
+      )
+    }
+    listOf(1f, 0.96f, 1f, 0.92f, 1f, 0.98f, 0.9f, 1f, 0.6f).forEach { fraction ->
+      Box(
+        Modifier
+          .align(Alignment.End)
+          .fillMaxWidth(fraction)
+          .height(5.dp)
+          .background(ink.copy(alpha = 0.55f), RoundedCornerShape(3.dp))
+      )
     }
   }
 }

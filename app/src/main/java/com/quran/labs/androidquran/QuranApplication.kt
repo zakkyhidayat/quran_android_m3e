@@ -1,5 +1,6 @@
 package com.quran.labs.androidquran
 
+import com.quran.labs.androidquran.worker.BookmarkAutoBackupWorker
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
@@ -50,6 +51,7 @@ open class QuranApplication : Application(), QuranApplicationComponentProvider {
     applicationComponent.inject(this)
     initializeWorkManager()
     bookmarksWidgetSubscriber.subscribeBookmarksWidgetIfNecessary()
+    BookmarkAutoBackupWorker.schedule(this, quranSettings.isAutoBackupEnabled())
 
     // theme setup
     val theme = quranSettings.currentTheme()
