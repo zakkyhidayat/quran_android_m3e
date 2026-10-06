@@ -116,7 +116,7 @@ private fun ReaderTitle(state: ReaderBarState, actions: ReaderBarActions) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(
         text = state.title,
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.titleLarge,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.weight(1f, fill = false)

@@ -169,13 +169,14 @@ private fun SectionLabel(row: QuranRow) {
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .padding(start = 28.dp, end = 28.dp, top = 20.dp, bottom = 8.dp),
+      .heightIn(min = 48.dp)
+      .padding(start = 28.dp, end = 28.dp, top = 16.dp, bottom = 4.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Text(
       text = row.text.orEmpty(),
-      style = MaterialTheme.typography.titleSmall,
-      color = MaterialTheme.colorScheme.primary,
+      style = MaterialTheme.typography.titleLarge,
+      color = MaterialTheme.colorScheme.onSurface,
       modifier = Modifier.weight(1f)
     )
     if (trailing != 0) {
