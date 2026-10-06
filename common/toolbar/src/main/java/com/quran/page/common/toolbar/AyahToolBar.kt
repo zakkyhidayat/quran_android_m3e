@@ -63,13 +63,18 @@ class AyahToolBar @JvmOverloads constructor(
     val toolBarHeight = resources.getDimensionPixelSize(R.dimen.toolbar_height)
     pipHeight = resources.getDimensionPixelSize(R.dimen.toolbar_pip_height)
     pipWidth = resources.getDimensionPixelSize(R.dimen.toolbar_pip_width)
-    val background = ContextCompat.getColor(context, R.color.toolbar_background)
+    val backgroundColor = ContextCompat.getColor(context, R.color.toolbar_background)
 
     toolBarTotalHeight = resources.getDimensionPixelSize(R.dimen.toolbar_total_height)
 
     menuLayout = LinearLayout(context).apply {
       layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, toolBarHeight)
-      setBackgroundColor(background)
+      // a floating toolbar: rounded, with the ripples kept inside the corners
+      background = android.graphics.drawable.GradientDrawable().apply {
+        cornerRadius = resources.getDimension(R.dimen.toolbar_corner_radius)
+        setColor(backgroundColor)
+      }
+      clipToOutline = true
     }
     menuLayout.layoutDirection = LAYOUT_DIRECTION_LTR
     addView(menuLayout)
