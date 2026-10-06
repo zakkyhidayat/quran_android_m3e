@@ -3,17 +3,16 @@ package com.quran.labs.androidquran
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.view.MenuItem
-import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updateLayoutParams
+import com.quran.labs.androidquran.common.ui.core.QuranTheme
 import com.quran.labs.androidquran.service.util.PermissionUtil
+import com.quran.labs.androidquran.ui.compose.PreferencesScreen
+import com.quran.labs.androidquran.ui.fragment.QuranPreferenceFragment
 import com.quran.labs.androidquran.ui.fragment.QuranAdvancedSettingsFragment
 import com.quran.labs.androidquran.ui.util.ToastCompat
 import com.quran.labs.androidquran.util.QuranSettings
@@ -31,38 +30,24 @@ class QuranAdvancedPreferenceActivity : AppCompatActivity() {
     enableEdgeToEdge()
 
     super.onCreate(savedInstanceState)
-    setContentView(R.layout.preferences)
-
-    val root = findViewById<ViewGroup>(R.id.root)
-    ViewCompat.setOnApplyWindowInsetsListener(root) { _, windowInsets ->
-      val insets = windowInsets.getInsets(
-        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-      )
-      root.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-        topMargin = insets.top
-        leftMargin = insets.left
-        rightMargin = insets.right
-      }
-
-      windowInsets
-    }
-
-    val toolbar = findViewById<Toolbar>(R.id.toolbar)
-    toolbar.setTitle(R.string.prefs_category_advanced)
-    setSupportActionBar(toolbar)
-    val ab = supportActionBar
-    ab?.setDisplayHomeAsUpEnabled(true)
+    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
     if (savedInstanceState != null) {
       locationToWrite = savedInstanceState.getString(SI_LOCATION_TO_WRITE)
     }
 
+    // the fragment has no view: it builds the preferences and handles what a change does, and
+    // the Compose screen below draws them
     val fm = supportFragmentManager
-    val fragment = fm.findFragmentById(R.id.content)
-    if (fragment == null) {
-      fm.beginTransaction()
-        .replace(R.id.content, QuranAdvancedSettingsFragment())
-        .commit()
+    val fragment = fm.findFragmentByTag(QuranPreferenceFragment.TAG) as? QuranAdvancedSettingsFragment
+      ?: QuranAdvancedSettingsFragment().also {
+        fm.beginTransaction().add(it, QuranPreferenceFragment.TAG).commitNow()
+      }
+
+    setContent {
+      QuranTheme {
+        PreferencesScreen(R.string.prefs_category_advanced, fragment, onBack = ::finish)
+      }
     }
   }
 
@@ -71,14 +56,6 @@ class QuranAdvancedPreferenceActivity : AppCompatActivity() {
       outState.putString(SI_LOCATION_TO_WRITE, locationToWrite)
     }
     super.onSaveInstanceState(outState)
-  }
-
-  override fun onOptionsItemSelected(item: MenuItem): Boolean {
-    if (item.itemId == android.R.id.home) {
-      finish()
-      return true
-    }
-    return super.onOptionsItemSelected(item)
   }
 
   fun requestWriteExternalSdcardPermission(newLocation: String) {
@@ -103,7 +80,7 @@ class QuranAdvancedPreferenceActivity : AppCompatActivity() {
   ) {
     if (requestCode == REQUEST_WRITE_TO_SDCARD_PERMISSION) {
       if (grantResults.size == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED && locationToWrite != null) {
-        val fragment = supportFragmentManager.findFragmentById(R.id.content)
+        val fragment = supportFragmentManager.findFragmentByTag(QuranPreferenceFragment.TAG)
         if (fragment is QuranAdvancedSettingsFragment) {
           val location = locationToWrite
           if (location != null) {

@@ -2,83 +2,37 @@ package com.quran.labs.androidquran.ui.preference
 
 import android.content.Context
 import android.util.AttributeSet
-import android.view.View
-import android.widget.SeekBar
-import android.widget.TextView
 import androidx.preference.Preference
-import androidx.preference.PreferenceViewHolder
-import com.quran.labs.androidquran.R
 import com.quran.labs.androidquran.data.Constants
-import com.quran.labs.androidquran.util.QuranUtils
 
+/**
+ * A preference holding an int in 0..[maxValue]. It carries only the model (range, suffix, what to
+ * preview); the settings screen draws the slider.
+ */
 open class SeekBarPreference(
   context: Context,
   attrs: AttributeSet
-) : Preference(context, attrs), SeekBar.OnSeekBarChangeListener {
+) : Preference(context, attrs) {
 
-  private lateinit var valueText: TextView
-  protected lateinit var previewText: TextView
-  protected lateinit var previewBox: View
+  /** What the sample under the slider shows. */
+  enum class Preview { NONE, TEXT_SIZE, TEXT_BRIGHTNESS, BACKGROUND_BRIGHTNESS }
 
-  private val suffix = attrs.getAttributeValue(ANDROID_NS, "text")
-  private val default = attrs.getAttributeIntValue(
-    ANDROID_NS,
-    "defaultValue",
-    Constants.DEFAULT_TEXT_SIZE
-  )
-  private val maxValue = attrs.getAttributeIntValue(ANDROID_NS, "max", 100)
-  private var currentValue = 0
-  protected var value = 0
+  val suffix: String? = attrs.getAttributeValue(ANDROID_NS, "text")
+  val default: Int = attrs.getAttributeIntValue(ANDROID_NS, "defaultValue", Constants.DEFAULT_TEXT_SIZE)
+  val maxValue: Int = attrs.getAttributeIntValue(ANDROID_NS, "max", 100)
 
-  init {
-    layoutResource = R.layout.seekbar_pref
-  }
+  open val preview: Preview = Preview.NONE
 
-  override fun onBindViewHolder(holder: PreferenceViewHolder) {
-    super.onBindViewHolder(holder)
-    val seekBar = holder.findViewById(R.id.seekbar) as SeekBar
-    valueText = holder.findViewById(R.id.value) as TextView
-    previewText = holder.findViewById(R.id.pref_preview) as TextView
-    previewBox = holder.findViewById(R.id.preview_square)
-    previewText.visibility = getPreviewVisibility()
-    seekBar.setOnSeekBarChangeListener(this)
-    value = if (shouldDisableView) getPersistedInt(default) else 0
-    seekBar.apply {
-      max = maxValue
-      progress = value
-    }
-  }
+  fun currentValue(): Int = if (shouldPersist()) getPersistedInt(default) else default
 
-  override fun onSetInitialValue(defaultValue: Any?) {
-    super.onSetInitialValue(defaultValue)
-    value = if (shouldPersist()) {
-      getPersistedInt(default)
-    } else {
-      if (defaultValue != null) default else 0
-    }
-  }
-
-  override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-    val t = QuranUtils.getLocalizedNumber(progress)
-    valueText.text = if (suffix == null) t else "$t$suffix"
-    currentValue = progress
-  }
-
-  override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-
-  override fun onStopTrackingTouch(seekBar: SeekBar?) {
+  fun commitValue(value: Int) {
     if (shouldPersist()) {
-      persistInt(currentValue)
-      callChangeListener(currentValue)
+      persistInt(value)
+      callChangeListener(value)
     }
   }
 
-  /**
-   * Visibility of the preview view under the seek bar
-   */
-  protected open fun getPreviewVisibility(): Int = View.GONE
-
-  companion object {
+  private companion object {
     private const val ANDROID_NS = "http://schemas.android.com/apk/res/android"
   }
 }

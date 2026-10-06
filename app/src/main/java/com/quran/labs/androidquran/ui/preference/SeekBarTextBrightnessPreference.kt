@@ -1,20 +1,11 @@
 package com.quran.labs.androidquran.ui.preference
 
 import android.content.Context
-import android.graphics.Color
 import android.util.AttributeSet
-import android.view.View
-import android.widget.SeekBar
 
 class SeekBarTextBrightnessPreference(
   context: Context, attrs: AttributeSet
 ) : SeekBarPreference(context, attrs) {
 
-  override fun getPreviewVisibility(): Int = View.VISIBLE
-
-  override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-    super.onProgressChanged(seekBar, progress, fromUser)
-    val lineColor = Color.argb(progress, 255, 255, 255)
-    previewText.setTextColor(lineColor)
-  }
+  override val preview: Preview = Preview.TEXT_BRIGHTNESS
 }

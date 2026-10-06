@@ -31,7 +31,7 @@ import com.quran.mobile.di.ExtraPreferencesProvider
 import com.quran.mobile.feature.downloadmanager.AudioManagerActivity
 import dev.zacsweers.metro.Inject
 
-class QuranSettingsFragment : PreferenceFragmentCompat() {
+class QuranSettingsFragment : QuranPreferenceFragment() {
 
   @Inject
   lateinit var pageTypes: Map<@JvmSuppressWildcards String, @JvmSuppressWildcards PageProvider>
@@ -134,28 +134,6 @@ class QuranSettingsFragment : PreferenceFragmentCompat() {
     extraPreferences
       .sortedBy { it.order }
       .forEach { it.addPreferences(preferenceScreen) }
-  }
-
-  override fun onCreateView(
-    inflater: LayoutInflater,
-    container: ViewGroup?,
-    savedInstanceState: Bundle?
-  ): View {
-    val view = super.onCreateView(inflater, container, savedInstanceState)
-    val recyclerView = listView
-    recyclerView.clipToPadding = false
-    ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { view, windowInsets ->
-      val insets = windowInsets.getInsets(
-        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-      )
-      recyclerView.updateLayoutParams<ViewGroup.LayoutParams> {
-        // top, left, right are handled by QuranActivity
-        view.setPadding(0, 0, 0, insets.bottom)
-      }
-
-      windowInsets
-    }
-    return view
   }
 
   override fun onPreferenceTreeClick(preference: Preference): Boolean {

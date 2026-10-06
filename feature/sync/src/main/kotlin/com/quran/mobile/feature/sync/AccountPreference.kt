@@ -1,10 +1,9 @@
 package com.quran.mobile.feature.sync
 
 import android.content.Context
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.runtime.Composable
 import androidx.preference.Preference
-import androidx.preference.PreferenceViewHolder
+import com.quran.labs.androidquran.common.ui.core.ComposePreferenceRow
 import com.quran.labs.androidquran.common.ui.core.QuranTheme
 
 /**
@@ -17,24 +16,15 @@ import com.quran.labs.androidquran.common.ui.core.QuranTheme
 internal class AccountPreference(
   context: Context,
   private val syncManager: QuranSyncManager
-) : Preference(context) {
+) : Preference(context), ComposePreferenceRow {
 
   init {
-    layoutResource = R.layout.quran_sync_account_preference
     isSelectable = false
     isIconSpaceReserved = false
   }
 
-  override fun onBindViewHolder(holder: PreferenceViewHolder) {
-    super.onBindViewHolder(holder)
-    // The layout's root is the ComposeView itself (no wrapping preference frame), so itemView
-    // is the view to render into.
-    val composeView = holder.itemView as ComposeView
-    composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-    composeView.setContent {
-      QuranTheme {
-        AccountSettingsRow(syncManager = syncManager)
-      }
-    }
+  @Composable
+  override fun Content() {
+    AccountSettingsRow(syncManager = syncManager)
   }
 }

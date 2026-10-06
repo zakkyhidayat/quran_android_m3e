@@ -54,7 +54,7 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 
-class QuranAdvancedSettingsFragment : PreferenceFragmentCompat() {
+class QuranAdvancedSettingsFragment : QuranPreferenceFragment() {
   private lateinit var listStoragePref: DataListPreference
   private lateinit var storageList: List<StorageUtils.Storage>
   private lateinit var appContext: Context
@@ -196,6 +196,7 @@ class QuranAdvancedSettingsFragment : PreferenceFragmentCompat() {
     } else {
       lifecycle.coroutineScope.launch {
         listStoragePref.setSummary(R.string.prefs_calculating_app_size)
+        invalidatePreferences()
         appSize = withContext(Dispatchers.IO) {
           quranFileUtils.getAppUsedSpace(appContext)
         }
@@ -203,31 +204,10 @@ class QuranAdvancedSettingsFragment : PreferenceFragmentCompat() {
         if (!isPaused) {
           loadStorageOptions(appContext)
           listStoragePref.setSummary(R.string.prefs_app_location_summary)
+          invalidatePreferences()
         }
       }
     }
-  }
-
-  override fun onCreateView(
-    inflater: LayoutInflater,
-    container: ViewGroup?,
-    savedInstanceState: Bundle?
-  ): View {
-    val view = super.onCreateView(inflater, container, savedInstanceState)
-    val recyclerView = listView
-    recyclerView.clipToPadding = false
-    ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { view, windowInsets ->
-      val insets = windowInsets.getInsets(
-        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-      )
-      recyclerView.updateLayoutParams<ViewGroup.LayoutParams> {
-        // top, left, right are handled by QuranActivity
-        view.setPadding(0, 0, 0, insets.bottom)
-      }
-
-      windowInsets
-    }
-    return view
   }
 
   private fun onBookmarkExportSuccess(uri: Uri, context: Context) {
@@ -295,6 +275,7 @@ class QuranAdvancedSettingsFragment : PreferenceFragmentCompat() {
 
   private fun hideStorageListPref() {
     removeAdvancePreference(listStoragePref)
+    invalidatePreferences()
   }
 
   private fun loadStorageOptions(context: Context) {

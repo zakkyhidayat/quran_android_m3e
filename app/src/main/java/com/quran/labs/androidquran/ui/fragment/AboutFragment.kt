@@ -13,7 +13,7 @@ import androidx.preference.PreferenceFragmentCompat
 import com.quran.labs.androidquran.BuildConfig
 import com.quran.labs.androidquran.R
 
-class AboutFragment : PreferenceFragmentCompat() {
+class AboutFragment : QuranPreferenceFragment() {
 
   override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
     addPreferencesFromResource(R.xml.about)
@@ -26,28 +26,6 @@ class AboutFragment : PreferenceFragmentCompat() {
         parent?.removePreference(pref)
       }
     }
-  }
-
-  override fun onCreateView(
-    inflater: LayoutInflater,
-    container: ViewGroup?,
-    savedInstanceState: Bundle?
-  ): View {
-    val view = super.onCreateView(inflater, container, savedInstanceState)
-    val recyclerView = listView
-    recyclerView.clipToPadding = false
-    ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { view, windowInsets ->
-      val insets = windowInsets.getInsets(
-        WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
-      )
-      recyclerView.updateLayoutParams<ViewGroup.LayoutParams> {
-        // top, left, right are handled by QuranActivity
-        view.setPadding(0, 0, 0, insets.bottom)
-      }
-
-      windowInsets
-    }
-    return view
   }
 
   companion object {
