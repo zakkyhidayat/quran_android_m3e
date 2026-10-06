@@ -50,6 +50,8 @@ public abstract class QuranPageLayout extends QuranPageWrapperLayout
 
   private static PaintDrawable leftGradient;
   private static PaintDrawable rightGradient;
+  private static PaintDrawable leftSepiaGradient;
+  private static PaintDrawable rightSepiaGradient;
   private static int gradientForNumberOfPages;
   private static boolean areGradientsLandscape;
   private static BitmapDrawable leftPageBorder;
@@ -102,6 +104,8 @@ public abstract class QuranPageLayout extends QuranPageWrapperLayout
     if (areGradientsLandscape != isLandscape) {
       leftGradient = null;
       rightGradient = null;
+      leftSepiaGradient = null;
+      rightSepiaGradient = null;
       areGradientsLandscape = isLandscape;
     }
 
@@ -225,6 +229,8 @@ public abstract class QuranPageLayout extends QuranPageWrapperLayout
       width = width / pagesVisible;
       leftGradient = QuranDisplayHelper.getPaintDrawable(width, 0);
       rightGradient = QuranDisplayHelper.getPaintDrawable(0, width);
+      leftSepiaGradient = QuranDisplayHelper.getSepiaPaintDrawable(width, 0);
+      rightSepiaGradient = QuranDisplayHelper.getSepiaPaintDrawable(0, width);
       gradientForNumberOfPages = pagesVisible;
     }
   }
@@ -238,6 +244,8 @@ public abstract class QuranPageLayout extends QuranPageWrapperLayout
         quranSettings.getNightModeTextBrightness() : Constants.DEFAULT_NIGHT_MODE_TEXT_BRIGHTNESS;
     if (nightMode) {
       lineColor = Color.argb(nightModeTextBrightness, 255, 255, 255);
+    } else if (quranSettings.isSepiaMode()) {
+      lineColor = 0xFF8D7A5C;
     }
 
     if ((pageNumber + skippedPages) % 2 == 0) {
@@ -259,6 +267,8 @@ public abstract class QuranPageLayout extends QuranPageWrapperLayout
     if (nightMode) {
       int bgColor = quranSettings.getNightModeBackgroundBrightness();
       setBackgroundColor(Color.rgb(bgColor,bgColor,bgColor));
+    } else if (quranSettings.isSepiaMode()) {
+      setBackgroundDrawable((pageNumber % 2 == 0 ? leftSepiaGradient : rightSepiaGradient));
     } else {
       setBackgroundDrawable((pageNumber % 2 == 0 ? leftGradient : rightGradient));
     }

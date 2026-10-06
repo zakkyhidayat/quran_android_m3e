@@ -19,9 +19,8 @@
           app:actionViewClass="androidx.appcompat.widget.SearchView"
           app:showAsAction="ifRoom|collapseActionView" />
     <item android:id="@+id/night_mode"
-        android:checkable="true"
         android:icon="@drawable/ic_day_mode"
-        android:title="@string/prefs_night_mode_title"
+        android:title="@string/prefs_reading_mode_title"
         app:showAsAction="ifRoom" />
     <item android:id="@+id/jump"
           android:title="@string/menu_jump"

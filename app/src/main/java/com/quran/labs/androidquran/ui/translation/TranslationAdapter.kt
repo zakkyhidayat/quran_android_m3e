@@ -215,6 +215,14 @@ internal class TranslationAdapter(
       this.suraHeaderColor = ContextCompat.getColor(context, R.color.translation_sura_header_night)
       this.ayahSelectionColor = ContextCompat.getColor(context, R.color.translation_ayah_selected_color_night)
       this.inlineAyahColor = ContextCompat.getColor(context, R.color.translation_inline_ayah_highlight_night_color)
+    } else if (quranSettings.isSepiaMode) {
+      this.textColor = Color.parseColor("#3B2F23")
+      this.footnoteColor = Color.parseColor("#8D7A5C")
+      this.dividerColor = Color.parseColor("#D2BF98")
+      this.arabicTextColor = Color.parseColor("#2B2118")
+      this.suraHeaderColor = Color.parseColor("#E4D3AC")
+      this.ayahSelectionColor = Color.parseColor("#E9D9B4")
+      this.inlineAyahColor = ContextCompat.getColor(context, R.color.translation_inline_ayah_highlight_color)
     } else {
       this.textColor = ContextCompat.getColor(context, R.color.translation_text_color)
       this.footnoteColor = ContextCompat.getColor(context, R.color.translation_footnote_color)

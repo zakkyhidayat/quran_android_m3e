@@ -18,7 +18,7 @@
         android:title="@string/prefs_use_arabic_title"
         app:iconSpaceReserved="false"/>
 
-    <androidx.preference.ListPreference
+    <com.quran.labs.androidquran.ui.preference.SegmentedListPreference
         android:defaultValue="default"
         android:dialogTitle="@string/appearance"
         android:entries="@array/themes"
@@ -66,30 +66,13 @@
         app:iconSpaceReserved="false"/>
 
 
-    <CheckBoxPreference
-        android:key="@string/prefs_night_mode"
-        android:persistent="true"
-        android:summary="@string/prefs_night_mode_summary"
-        android:title="@string/prefs_night_mode_title"
-        app:iconSpaceReserved="false"/>
-
-    <com.quran.labs.androidquran.ui.preference.SeekBarTextBrightnessPreference
-        android:defaultValue="255"
-        android:dependency="@string/prefs_night_mode"
-        android:key="@string/prefs_night_mode_text_brightness"
-        android:max="255"
-        android:persistent="true"
-        android:summary="@string/prefs_night_mode_text_brightness_summary"
-        android:title="@string/prefs_night_mode_text_brightness_title"/>
-
-    <com.quran.labs.androidquran.ui.preference.SeekBarBackgroundBrightnessPreference
-        android:defaultValue="0"
-        android:dependency="@string/prefs_night_mode"
-        android:key="@string/prefs_night_mode_background_brightness"
-        android:max="64"
-        android:persistent="true"
-        android:summary="@string/prefs_night_mode_background_brightness_summary"
-        android:title="@string/prefs_night_mode_background_brightness_title"/>
+    <com.quran.labs.androidquran.ui.preference.SegmentedListPreference
+        android:defaultValue="light"
+        android:entries="@array/reading_modes"
+        android:entryValues="@array/reading_mode_values"
+        android:key="@string/prefs_reading_mode"
+        android:title="@string/prefs_reading_mode_title"
+        app:iconSpaceReserved="false" />
   </PreferenceCategory>
 
   <PreferenceCategory

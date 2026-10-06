@@ -15,7 +15,7 @@ open class SeekBarPreference(
 ) : Preference(context, attrs) {
 
   /** What the sample under the slider shows. */
-  enum class Preview { NONE, TEXT_SIZE, TEXT_BRIGHTNESS, BACKGROUND_BRIGHTNESS }
+  enum class Preview { NONE, TEXT_SIZE }
 
   val suffix: String? = attrs.getAttributeValue(ANDROID_NS, "text")
   val default: Int = attrs.getAttributeIntValue(ANDROID_NS, "defaultValue", Constants.DEFAULT_TEXT_SIZE)

@@ -14,6 +14,7 @@ import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorMatrixColorFilter;
+import android.graphics.LightingColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
@@ -69,6 +70,7 @@ public class HighlightingImageView extends AppCompatImageView {
   private final SortedMap<HighlightType, Set<AyahHighlight>> currentHighlights = new TreeMap<>();
 
   private boolean isNightMode;
+  private boolean isSepiaMode;
   private boolean isColorFilterOn;
   private int nightModeTextBrightness = Constants.DEFAULT_NIGHT_MODE_TEXT_BRIGHTNESS;
 
@@ -216,8 +218,21 @@ public class HighlightingImageView extends AppCompatImageView {
     }
   }
 
+  /** Sepia keeps the page light, but turns the black text a warm brown. */
+  public void setSepiaMode(boolean isSepiaMode) {
+    if (this.isSepiaMode != isSepiaMode) {
+      this.isSepiaMode = isSepiaMode;
+      // the next adjustNightMode() has to build the right filter
+      isColorFilterOn = false;
+    }
+  }
+
   public void setNightMode(boolean isNightMode, int textBrightness, int backgroundBrightness) {
+    boolean modeChanged = this.isNightMode != isNightMode;
     this.isNightMode = isNightMode;
+    if (!isNightMode && modeChanged) {
+      isColorFilterOn = false;
+    }
     if (isNightMode) {
       // avoid damaging the looks of the Quran page
       nightModeTextBrightness = (int) (50 * Math.log1p(backgroundBrightness) + textBrightness);
@@ -385,8 +400,16 @@ public class HighlightingImageView extends AppCompatImageView {
       setColorFilter(new ColorMatrixColorFilter(matrix));
       isColorFilterOn = true;
     } else if (!isNightMode) {
-      clearColorFilter();
-      isColorFilterOn = false;
+      if (isSepiaMode) {
+        if (!isColorFilterOn) {
+          // black text becomes #4A3728, while the transparent parts of the page stay untouched
+          setColorFilter(new LightingColorFilter(0xFFFFFFFF, 0x004A3728));
+          isColorFilterOn = true;
+        }
+      } else {
+        clearColorFilter();
+        isColorFilterOn = false;
+      }
     }
 
     invalidate();

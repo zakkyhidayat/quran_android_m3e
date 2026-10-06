@@ -69,22 +69,41 @@ public class QuranSettings {
     return prefs.getBoolean(Constants.PREF_PREFER_STREAMING, false);
   }
 
+  /** One of {@link Constants#READING_MODE_LIGHT}, {@link Constants#READING_MODE_SEPIA} or {@link Constants#READING_MODE_NIGHT}. */
+  public String getReadingMode() {
+    String mode = prefs.getString(Constants.PREF_READING_MODE, null);
+    if (mode == null) {
+      // before there were three reading modes there was only a night mode switch
+      mode = prefs.getBoolean(Constants.PREF_NIGHT_MODE, false)
+          ? Constants.READING_MODE_NIGHT : Constants.READING_MODE_LIGHT;
+      prefs.edit().putString(Constants.PREF_READING_MODE, mode).apply();
+    }
+    return mode;
+  }
+
+  public void setReadingMode(String mode) {
+    prefs.edit().putString(Constants.PREF_READING_MODE, mode).apply();
+  }
+
   public boolean isNightMode() {
-    return prefs.getBoolean(Constants.PREF_NIGHT_MODE, false);
+    return Constants.READING_MODE_NIGHT.equals(getReadingMode());
+  }
+
+  public boolean isSepiaMode() {
+    return Constants.READING_MODE_SEPIA.equals(getReadingMode());
   }
 
   public boolean highlightBookmarks() {
     return prefs.getBoolean(Constants.PREF_HIGHLIGHT_BOOKMARKS, true);
   }
 
+  // the night mode brightness sliders are gone; night mode always uses the defaults
   public int getNightModeTextBrightness() {
-    return prefs.getInt(Constants.PREF_NIGHT_MODE_TEXT_BRIGHTNESS,
-        Constants.DEFAULT_NIGHT_MODE_TEXT_BRIGHTNESS);
+    return Constants.DEFAULT_NIGHT_MODE_TEXT_BRIGHTNESS;
   }
 
   public int getNightModeBackgroundBrightness() {
-    return prefs.getInt(Constants.PREF_NIGHT_MODE_BACKGROUND_BRIGHTNESS,
-        Constants.DEFAULT_NIGHT_MODE_BACKGROUND_BRIGHTNESS);
+    return Constants.DEFAULT_NIGHT_MODE_BACKGROUND_BRIGHTNESS;
   }
 
   public boolean shouldOverlayPageInfo() {

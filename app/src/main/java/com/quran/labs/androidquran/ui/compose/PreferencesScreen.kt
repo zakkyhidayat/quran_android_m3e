@@ -30,6 +30,9 @@ import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -63,6 +66,7 @@ import com.quran.labs.androidquran.common.ui.core.ComposePreferenceRow
 import com.quran.labs.androidquran.common.ui.core.QuranIcons
 import com.quran.labs.androidquran.ui.fragment.QuranPreferenceFragment
 import com.quran.labs.androidquran.ui.preference.QuranHeaderPreference
+import com.quran.labs.androidquran.ui.preference.SegmentedListPreference
 import com.quran.labs.androidquran.ui.preference.SeekBarPreference
 import com.quran.labs.androidquran.util.QuranUtils
 import kotlin.math.roundToInt
@@ -272,6 +276,7 @@ private fun PreferenceItem(
       )
     }
 
+    is SegmentedListPreference -> SegmentedPreferenceItem(preference, shapes, modifier, onChanged)
     is ListPreference -> ListPreferenceItem(preference, shapes, modifier, onChanged)
     is SeekBarPreference -> SeekBarItem(preference, shapes, modifier, onChanged)
     else -> SettingsItem(
@@ -454,24 +459,51 @@ private fun SeekBarPreview(kind: SeekBarPreference.Preview, value: Int) {
     SeekBarPreference.Preview.TEXT_SIZE ->
       Text(text = sample, fontSize = value.coerceAtLeast(1).sp, modifier = Modifier.padding(top = 4.dp))
 
-    SeekBarPreference.Preview.TEXT_BRIGHTNESS ->
-      Box(
-        modifier = Modifier
-          .padding(top = 8.dp)
-          .background(Color.Black, MaterialTheme.shapes.medium)
-          .padding(horizontal = 16.dp, vertical = 8.dp)
-      ) {
-        Text(text = sample, color = Color.White.copy(alpha = value.coerceIn(0, 255) / 255f))
-      }
-
-    SeekBarPreference.Preview.BACKGROUND_BRIGHTNESS -> {
-      val shade = value.coerceIn(0, 255)
-      Box(
-        modifier = Modifier
-          .padding(top = 8.dp)
-          .size(48.dp)
-          .background(Color(shade, shade, shade), MaterialTheme.shapes.medium)
-      )
-    }
   }
+}
+
+/** A choice among a few short options (system / light / dark, say), shown as segmented buttons. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun SegmentedPreferenceItem(
+  preference: SegmentedListPreference,
+  shapes: ListItemShapes,
+  modifier: Modifier,
+  onChanged: () -> Unit
+) {
+  val entries = preference.entries.orEmpty()
+  val values = preference.entryValues.orEmpty()
+
+  SettingsItem(
+    title = preference.title,
+    summary = null,
+    enabled = preference.isEnabled,
+    shapes = shapes,
+    modifier = modifier,
+    onClick = {},
+    supporting = {
+      Column {
+        preference.summary?.takeIf { it.isNotEmpty() }?.let { Text(it.toString()) }
+        SingleChoiceSegmentedButtonRow(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 4.dp)
+        ) {
+          entries.forEachIndexed { index, entry ->
+            val value = values.getOrNull(index)?.toString() ?: return@forEachIndexed
+            SegmentedButton(
+              selected = value == preference.value,
+              onClick = {
+                if (preference.callChangeListener(value)) preference.value = value
+                onChanged()
+              },
+              shape = SegmentedButtonDefaults.itemShape(index, entries.size),
+              enabled = preference.isEnabled,
+              label = { Text(entry.toString(), maxLines = 1) }
+            )
+          }
+        }
+      }
+    }
+  )
 }

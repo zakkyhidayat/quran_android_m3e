@@ -112,21 +112,35 @@ public class QuranDisplayHelper {
     return sb.toString();
   }
 
+  private static final int[] PAPER_COLORS =
+      {0xFFDCDAD5, 0xFFFDFDF4, 0xFFFFFFFF, 0xFFFDFBEF};
+  private static final int[] SEPIA_COLORS =
+      {0xFFCDBB94, 0xFFEFE0BE, 0xFFF4E8CC, 0xFFEEDFBC};
+
   public static PaintDrawable getPaintDrawable(int startX, int endX) {
+    return getPaintDrawable(startX, endX, PAPER_COLORS);
+  }
+
+  /** The same book edge gradient, on warm sepia paper. */
+  public static PaintDrawable getSepiaPaintDrawable(int startX, int endX) {
+    return getPaintDrawable(startX, endX, SEPIA_COLORS);
+  }
+
+  private static PaintDrawable getPaintDrawable(int startX, int endX, int[] colors) {
     PaintDrawable drawable = new PaintDrawable();
     drawable.setShape(new RectShape());
-    drawable.setShaderFactory(getShaderFactory(startX, endX));
+    drawable.setShaderFactory(getShaderFactory(startX, endX, colors));
     return drawable;
   }
 
-  private static ShapeDrawable.ShaderFactory getShaderFactory(final int startX, final int endX) {
+  private static ShapeDrawable.ShaderFactory getShaderFactory(
+      final int startX, final int endX, final int[] colors) {
     return new ShapeDrawable.ShaderFactory() {
 
       @Override
       public Shader resize(int width, int height) {
         return new LinearGradient(startX, 0, endX, 0,
-            new int[]{0xFFDCDAD5, 0xFFFDFDF4,
-                0xFFFFFFFF, 0xFFFDFBEF},
+            colors,
             new float[]{0, 0.18f, 0.48f, 1},
             Shader.TileMode.REPEAT);
       }

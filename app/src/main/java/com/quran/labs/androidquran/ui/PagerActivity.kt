@@ -1193,14 +1193,26 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       }
     }
 
-    val nightMode = menu.findItem(R.id.night_mode)
-    if (nightMode != null) {
-      val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-      val isNightMode = prefs.getBoolean(Constants.PREF_NIGHT_MODE, false)
-      nightMode.isChecked = isNightMode
-      nightMode.setIcon(if (isNightMode) R.drawable.ic_night_mode else R.drawable.ic_day_mode)
-    }
+    menu.findItem(R.id.night_mode)?.let { updateReadingModeItem(it) }
     return true
+  }
+
+  private fun updateReadingModeItem(item: MenuItem) {
+    val mode = QuranSettings.getInstance(this).readingMode
+    item.setIcon(
+      when (mode) {
+        Constants.READING_MODE_NIGHT -> R.drawable.ic_night_mode
+        Constants.READING_MODE_SEPIA -> R.drawable.ic_sepia_mode
+        else -> R.drawable.ic_day_mode
+      }
+    )
+    item.title = getString(
+      when (mode) {
+        Constants.READING_MODE_NIGHT -> R.string.reading_mode_night
+        Constants.READING_MODE_SEPIA -> R.string.reading_mode_sepia
+        else -> R.string.reading_mode_light
+      }
+    )
   }
 
   override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -1218,13 +1230,16 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       }
       return true
     } else if (itemId == R.id.night_mode) {
-      val prefs = PreferenceManager
-        .getDefaultSharedPreferences(this)
-      val prefsEditor = prefs.edit()
-      val isNightMode = !item.isChecked
-      prefsEditor.putBoolean(Constants.PREF_NIGHT_MODE, isNightMode).apply()
-      item.setIcon(if (isNightMode) R.drawable.ic_night_mode else R.drawable.ic_day_mode)
-      item.isChecked = isNightMode
+      // light, then sepia, then night, then back to light
+      val settings = QuranSettings.getInstance(this)
+      settings.setReadingMode(
+        when (settings.readingMode) {
+          Constants.READING_MODE_LIGHT -> Constants.READING_MODE_SEPIA
+          Constants.READING_MODE_SEPIA -> Constants.READING_MODE_NIGHT
+          else -> Constants.READING_MODE_LIGHT
+        }
+      )
+      updateReadingModeItem(item)
       refreshQuranPages()
       return true
     } else if (itemId == R.id.settings) {

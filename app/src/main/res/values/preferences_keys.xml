@@ -11,9 +11,6 @@
   <string translatable="false" name="prefs_app_color_scheme">appColorScheme</string>
   <string translatable="false" name="prefs_amoled">useAmoled</string>
   <string translatable="false" name="prefs_dual_page_enabled">useDualPageMode</string>
-  <string translatable="false" name="prefs_night_mode">nightMode</string>
-  <string translatable="false" name="prefs_night_mode_text_brightness">nightModeTextBrightness</string>
-  <string translatable="false" name="prefs_night_mode_background_brightness">nightModeBackgroundBrightness</string>
   <string translatable="false" name="prefs_overlay_page_info">overlayPageInfo</string>
   <string translatable="false" name="prefs_display_marker_popup">displayMarkerPopup</string>
   <string translatable="false" name="prefs_highlight_bookmarks">highlightBookmarks</string>
@@ -48,6 +45,12 @@
     <item>dynamic</item>
     <item>original</item>
   </string-array>
+  <string translatable="false" name="prefs_reading_mode">readingMode</string>
+  <array name="reading_mode_values" translatable="false">
+    <item>light</item>
+    <item>sepia</item>
+    <item>night</item>
+  </array>
   <array name="theme_values" translatable="false">
     <item>default</item>
     <item>light</item>
