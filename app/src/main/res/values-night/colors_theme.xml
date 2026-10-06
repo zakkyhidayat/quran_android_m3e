@@ -1,38 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <!-- dark variant of the "original" palette, see values/colors_theme.xml -->
-  <color name="quran_primary">#FF4DD9E4</color>
-  <color name="quran_on_primary">#FF00363A</color>
-  <color name="quran_primary_container">#FF004F54</color>
-  <color name="quran_on_primary_container">#FF79F5FF</color>
-  <color name="quran_secondary">#FFB1CBCE</color>
-  <color name="quran_on_secondary">#FF1B3436</color>
-  <color name="quran_secondary_container">#FF324B4D</color>
-  <color name="quran_on_secondary_container">#FFCCE8EA</color>
-  <color name="quran_tertiary">#FFB7C7EA</color>
-  <color name="quran_on_tertiary">#FF21304C</color>
-  <color name="quran_tertiary_container">#FF374764</color>
-  <color name="quran_on_tertiary_container">#FFD7E2FF</color>
+  <!--
+    the "original" Quran for Android palette, expressed as a full Material 3 color scheme: an
+    emerald primary with a soft gold tertiary. it is the same palette common/ui/core's Color.kt uses
+    for Compose - keep the two in sync. when dynamic color is on (Android 12+), DynamicColors
+    overlays every one of these with the wallpaper derived scheme instead.
+  -->
+  <color name="quran_primary">#FF6FDC9A</color>
+  <color name="quran_on_primary">#FF00391E</color>
+  <color name="quran_primary_container">#FF00522E</color>
+  <color name="quran_on_primary_container">#FF8CF8B4</color>
+  <color name="quran_secondary">#FFB8CBBB</color>
+  <color name="quran_on_secondary">#FF243429</color>
+  <color name="quran_secondary_container">#FF3A4B3E</color>
+  <color name="quran_on_secondary_container">#FFD4E7D6</color>
+  <color name="quran_tertiary">#FFE8C266</color>
+  <color name="quran_on_tertiary">#FF3F2E00</color>
+  <color name="quran_tertiary_container">#FF5A4300</color>
+  <color name="quran_on_tertiary_container">#FFFFDF98</color>
   <color name="quran_error">#FFFFB4AB</color>
-  <color name="quran_on_error">#FF690005</color>
   <color name="quran_error_container">#FF93000A</color>
+  <color name="quran_on_error">#FF690005</color>
   <color name="quran_on_error_container">#FFFFDAD6</color>
-  <color name="quran_background">#FF0E1415</color>
-  <color name="quran_on_background">#FFDDE4E4</color>
-  <color name="quran_surface">#FF0E1415</color>
-  <color name="quran_on_surface">#FFDDE4E4</color>
-  <color name="quran_surface_variant">#FF3F4849</color>
-  <color name="quran_on_surface_variant">#FFBEC8C9</color>
-  <color name="quran_outline">#FF899393</color>
-  <color name="quran_outline_variant">#FF3F4849</color>
-  <color name="quran_surface_dim">#FF0E1415</color>
-  <color name="quran_surface_bright">#FF343A3B</color>
-  <color name="quran_surface_container_lowest">#FF090F10</color>
-  <color name="quran_surface_container_low">#FF161D1D</color>
-  <color name="quran_surface_container">#FF1A2121</color>
-  <color name="quran_surface_container_high">#FF252B2C</color>
-  <color name="quran_surface_container_highest">#FF303636</color>
-  <color name="quran_inverse_surface">#FFDDE4E4</color>
-  <color name="quran_inverse_on_surface">#FF2B3232</color>
-  <color name="quran_inverse_primary">#FF00696F</color>
+  <color name="quran_background">#FF111411</color>
+  <color name="quran_on_background">#FFE1E3DE</color>
+  <color name="quran_surface">#FF111411</color>
+  <color name="quran_on_surface">#FFE1E3DE</color>
+  <color name="quran_surface_variant">#FF414942</color>
+  <color name="quran_on_surface_variant">#FFC0C9C0</color>
+  <color name="quran_outline">#FF8A938B</color>
+  <color name="quran_outline_variant">#FF414942</color>
+  <color name="quran_inverse_on_surface">#FF2E312E</color>
+  <color name="quran_inverse_surface">#FFE1E3DE</color>
+  <color name="quran_inverse_primary">#FF006D3E</color>
+  <color name="quran_surface_dim">#FF111411</color>
+  <color name="quran_surface_bright">#FF373A37</color>
+  <color name="quran_surface_container_lowest">#FF0C0F0C</color>
+  <color name="quran_surface_container_low">#FF191C1A</color>
+  <color name="quran_surface_container">#FF1D201E</color>
+  <color name="quran_surface_container_high">#FF282B28</color>
+  <color name="quran_surface_container_highest">#FF323532</color>
 </resources>
