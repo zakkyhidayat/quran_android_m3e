@@ -2,6 +2,7 @@ package com.quran.labs.androidquran.ui.compose
 
 import android.content.Context
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.quran.data.core.QuranInfo
@@ -39,6 +40,10 @@ class SuraListState(
   var rows by mutableStateOf<List<QuranRow>>(buildRows())
     private set
 
+  /** The surah the last read page belongs to, or 0 when nothing was read yet. */
+  var lastReadSura by mutableIntStateOf(0)
+    private set
+
   /** Keeps the pinned reading bookmarks current; run it while the screen is started. */
   suspend fun observeReadingBookmarks() {
     readingBookmarksDao.readingBookmarksFlow()
@@ -53,16 +58,14 @@ class SuraListState(
   }
 
   /**
-   * Refreshes the rows when the screen comes back (the surah name setting may have changed), and
-   * returns the row to scroll to so the surah you were last reading is in view, or null.
+   * Refreshes the rows when the screen comes back (the surah name setting may have changed) and
+   * notes which surah was read last, so its row can be highlighted.
    */
-  suspend fun onResume(latestPage: suspend () -> Int): Int? {
+  suspend fun onResume(latestPage: suspend () -> Int) {
     readingBookmarks = placed(readingBookmarksDao.readingBookmarks())
     rows = buildRows()
     val recentPage = latestPage()
-    if (recentPage == Constants.NO_PAGE) return null
-    val sura = quranDisplayData.safelyGetSuraOnPage(recentPage)
-    return sura - 1 + readingBookmarkOffset()
+    lastReadSura = if (recentPage == Constants.NO_PAGE) 0 else quranDisplayData.safelyGetSuraOnPage(recentPage)
   }
 
   private fun buildRows(): List<QuranRow> {

@@ -40,6 +40,10 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.SegmentedListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
@@ -87,6 +91,7 @@ import kotlinx.coroutines.launch
 /** What the home screen's app bar can trigger. The activity owns what each of these does. */
 class HomeActions(
   val onSearch: (String) -> Unit,
+  val resolveJump: (String) -> HomeJump?,
   val onLastPage: () -> Unit,
   val onJumpToPage: () -> Unit,
   val onSettings: () -> Unit,
@@ -95,6 +100,9 @@ class HomeActions(
   val onSignIn: () -> Unit,
   val extraItems: List<HomeExtraItem> = emptyList()
 )
+
+/** A place the search bar can take you straight to, when what was typed is a page or an ayah. */
+class HomeJump(val label: String, val go: () -> Unit)
 
 class HomeExtraItem(@StringRes val titleResId: Int, val onClick: () -> Unit)
 
@@ -141,7 +149,8 @@ fun HomeScreen(
   }
   LaunchedEffect(suraState) {
     lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-      suraState.onResume(latestPage)?.let { suraListState.scrollToItem(it) }
+      // the list stays where it is (the top on a fresh start); the surah last read is highlighted
+      suraState.onResume(latestPage)
     }
   }
   LaunchedEffect(juzState) {
@@ -190,7 +199,8 @@ fun HomeScreen(
   val submitSearch: (String) -> Unit = { query ->
     if (query.isNotBlank()) {
       scope.launch { searchBarState.animateToCollapsed() }
-      actions.onSearch(query.trim())
+      val jump = actions.resolveJump(query)
+      if (jump != null) jump.go() else actions.onSearch(query.trim())
       // the results open in their own screen, so the bar should be empty when you come back
       searchTextState.clearText()
     }
@@ -295,6 +305,7 @@ fun HomeScreen(
         0 -> QuranRowList(
           rows = suraState.rows,
           separateCards = true,
+          highlightedSura = suraState.lastReadSura,
           listState = suraListState,
           contentPadding = listPadding,
           onRowClick = { _, row -> if (row.page != 0) onRowClick(row) }
@@ -328,7 +339,85 @@ fun HomeScreen(
   }
 
   // the search bar grows to fill the screen when tapped; results open in the search screen
-  ExpandedFullScreenSearchBar(state = searchBarState, inputField = searchField) {}
+  ExpandedFullScreenSearchBar(state = searchBarState, inputField = searchField) {
+    SearchHelp(
+      query = searchTextState.text.toString(),
+      jump = actions.resolveJump(searchTextState.text.toString()),
+      onJump = { submitSearch(searchTextState.text.toString()) },
+      onWords = {
+        val words = searchTextState.text.toString().trim()
+        scope.launch { searchBarState.animateToCollapsed() }
+        actions.onSearch(words)
+        searchTextState.clearText()
+      }
+    )
+  }
+}
+
+/**
+ * What the expanded search bar shows under the field: a short explanation of the two things it
+ * does (find words, jump to a page or ayah), then the jump or the search for what was typed.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun SearchHelp(query: String, jump: HomeJump?, onJump: () -> Unit, onWords: () -> Unit) {
+  Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    if (jump != null) {
+      SearchHelpRow(
+        icon = HomeIcons.Numbers,
+        title = jump.label,
+        summary = stringResource(R.string.search_jump_summary),
+        highlighted = true,
+        onClick = onJump
+      )
+    }
+    if (query.isNotBlank()) {
+      SearchHelpRow(
+        icon = QuranIcons.Search,
+        title = stringResource(R.string.search_for_query, query.trim()),
+        summary = stringResource(R.string.search_words_summary),
+        highlighted = jump == null,
+        onClick = onWords
+      )
+    } else {
+      SearchHelpRow(
+        icon = QuranIcons.Search,
+        title = stringResource(R.string.search_help_words_title),
+        summary = stringResource(R.string.search_words_summary)
+      )
+      SearchHelpRow(
+        icon = HomeIcons.Numbers,
+        title = stringResource(R.string.search_help_jump_title),
+        summary = stringResource(R.string.search_help_jump_summary)
+      )
+    }
+  }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun SearchHelpRow(
+  icon: ImageVector,
+  title: String,
+  summary: String,
+  highlighted: Boolean = false,
+  onClick: (() -> Unit)? = null
+) {
+  SegmentedListItem(
+    onClick = onClick ?: {},
+    shapes = ListItemDefaults.shapes(shape = RoundedCornerShape(24.dp)),
+    colors = ListItemDefaults.segmentedColors(
+      containerColor = if (highlighted) {
+        MaterialTheme.colorScheme.primaryContainer
+      } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+      }
+    ),
+    leadingContent = { Icon(icon, contentDescription = null) },
+    supportingContent = { Text(summary) }
+  ) {
+    Text(title, style = MaterialTheme.typography.titleMedium)
+  }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -385,7 +474,6 @@ private fun OverflowMenu(actions: HomeActions) {
     )
   }
   val main = listOf(
-    MenuEntry(stringResource(R.string.menu_jump), HomeIcons.Numbers, onClick = actions.onJumpToPage),
     MenuEntry(stringResource(R.string.menu_settings), HomeIcons.Settings, onClick = actions.onSettings)
   )
   val info = listOf(

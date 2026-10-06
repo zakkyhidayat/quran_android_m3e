@@ -46,6 +46,7 @@ import com.quran.mobile.feature.sync.QuranSyncActivity
 import com.quran.mobile.feature.sync.QuranSyncManager
 import com.quran.labs.androidquran.common.ui.core.QuranTheme
 import com.quran.labs.androidquran.ui.compose.HomeActions
+import com.quran.labs.androidquran.ui.compose.HomeJump
 import com.quran.labs.androidquran.ui.compose.HomeExtraItem
 import com.quran.labs.androidquran.ui.compose.HomeScreen
 import com.quran.labs.androidquran.SearchActivity
@@ -333,7 +334,34 @@ class QuranActivity : AppCompatActivity(),
     onTagBookmarks = ::tagBookmarks
   )
 
+  /** Typing a page number (50) or an ayah (2:255) in the search bar jumps there instead of searching. */
+  private fun resolveJump(query: String): HomeJump? {
+    val text = query.trim()
+    Regex("^(\\d{1,3})$").matchEntire(text)?.let { match ->
+      val page = match.groupValues[1].toInt()
+      if (page in 1..quranInfo.numberOfPages) {
+        return HomeJump(getString(R.string.search_go_to_page, QuranUtils.getLocalizedNumber(page))) { jumpTo(page) }
+      }
+    }
+    Regex("^(\\d{1,3})\\s*[:.,]\\s*(\\d{1,3})$").matchEntire(text)?.let { match ->
+      val sura = match.groupValues[1].toInt()
+      val ayah = match.groupValues[2].toInt()
+      if (sura in 1..114 && ayah in 1..quranInfo.getNumberOfAyahs(sura)) {
+        val label = getString(
+          R.string.search_go_to_ayah,
+          QuranUtils.getLocalizedNumber(sura),
+          QuranUtils.getLocalizedNumber(ayah)
+        )
+        return HomeJump(label) {
+          jumpToAndHighlight(quranInfo.getPageFromSuraAyah(sura, ayah), sura, ayah)
+        }
+      }
+    }
+    return null
+  }
+
   private fun homeActions() = HomeActions(
+    resolveJump = ::resolveJump,
     onSearch = { query ->
       startActivity(
         Intent(this, SearchActivity::class.java)

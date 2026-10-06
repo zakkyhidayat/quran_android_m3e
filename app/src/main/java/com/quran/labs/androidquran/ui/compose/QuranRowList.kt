@@ -49,6 +49,8 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.res.ResourcesCompat
@@ -80,6 +82,7 @@ fun QuranRowList(
   contentPadding: PaddingValues = PaddingValues(0.dp),
   isEditable: Boolean = false,
   separateCards: Boolean = false,
+  highlightedSura: Int = 0,
   selectedIndices: Set<Int> = emptySet(),
   tagMap: Map<String, Tag> = emptyMap(),
   showTags: Boolean = false,
@@ -124,7 +127,8 @@ fun QuranRowList(
           if (row.isHighlightColor) {
             HighlightColorRow(row, selected, shapes, click, longClick) { onOpenClick(index, row) }
           } else {
-            QuranRowItem(row, selected, shapes, tagMap, showTags, showDate, click, longClick)
+            val current = highlightedSura != 0 && row.sura == highlightedSura && row.isPlainSuraRow()
+            QuranRowItem(row, selected, shapes, tagMap, showTags, showDate, current, click, longClick)
           }
         }
       }
@@ -157,6 +161,10 @@ private fun segmentGroups(rows: List<QuranRow>): SegmentGroups {
   }
   return SegmentGroups(position, size)
 }
+
+/** A surah row of the surah tab, as opposed to a bookmark, a juz quarter or a header. */
+private fun QuranRow.isPlainSuraRow(): Boolean =
+  sura > 0 && juzType == null && imageResource == null && !isHeader
 
 private fun QuranRow.isTappableWhenEditable(): Boolean =
   isBookmark || isReadingBookmark || rowType == QuranRow.NONE || isHighlightsHeader ||
@@ -331,6 +339,7 @@ private fun QuranRowItem(
   tagMap: Map<String, Tag>,
   showTags: Boolean,
   showDate: Boolean,
+  current: Boolean,
   onClick: () -> Unit,
   onLongClick: (() -> Unit)?
 ) {
@@ -358,15 +367,33 @@ private fun QuranRowItem(
     selected = selected,
     shapes = shapes,
     colors = ListItemDefaults.segmentedColors(
-      containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+      containerColor = if (current) {
+        MaterialTheme.colorScheme.primaryContainer
+      } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+      },
+      contentColor = if (current) MaterialTheme.colorScheme.onPrimaryContainer else Color.Unspecified,
+      supportingContentColor = if (current) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+      } else {
+        Color.Unspecified
+      }
     ),
     modifier = Modifier.padding(horizontal = 16.dp),
-    leadingContent = { QuranRowLeading(row) },
-    supportingContent = if (metadata.isNullOrEmpty() && tags.isEmpty()) {
+    leadingContent = { QuranRowLeading(row, current) },
+    supportingContent = if (metadata.isNullOrEmpty() && tags.isEmpty() && !current) {
       null
     } else {
       {
         Column {
+          if (current) {
+            Text(
+              text = stringResource(R.string.last_read_label),
+              style = MaterialTheme.typography.labelMedium,
+              fontWeight = FontWeight.Bold,
+              color = MaterialTheme.colorScheme.primary
+            )
+          }
           if (!metadata.isNullOrEmpty()) {
             Text(text = metadata, maxLines = 2, overflow = TextOverflow.Ellipsis)
           }
@@ -418,7 +445,7 @@ private fun TagChip(name: String) {
 }
 
 @Composable
-private fun QuranRowLeading(row: QuranRow) {
+private fun QuranRowLeading(row: QuranRow, current: Boolean = false) {
   val juzType = row.juzType
   val imageResource = row.imageResource
   when {
@@ -440,18 +467,18 @@ private fun QuranRowLeading(row: QuranRow) {
       }
     }
 
-    else -> SuraNumberBadge(QuranUtils.getLocalizedNumber(row.sura))
+    else -> SuraNumberBadge(QuranUtils.getLocalizedNumber(row.sura), current)
   }
 }
 
 /** The surah number, in a scalloped "cookie" shape from the expressive shape library. */
 @Composable
-private fun SuraNumberBadge(number: String) {
+private fun SuraNumberBadge(number: String, current: Boolean = false) {
   Box(
     modifier = Modifier
       .size(48.dp)
       .background(
-        MaterialTheme.colorScheme.secondaryContainer,
+        if (current) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
         MaterialShapes.Cookie9Sided.toShape()
       ),
     contentAlignment = Alignment.Center
@@ -459,7 +486,7 @@ private fun SuraNumberBadge(number: String) {
     Text(
       text = number,
       style = MaterialTheme.typography.titleMedium,
-      color = MaterialTheme.colorScheme.onSecondaryContainer
+      color = if (current) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
     )
   }
 }
