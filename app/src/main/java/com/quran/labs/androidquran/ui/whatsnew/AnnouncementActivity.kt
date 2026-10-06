@@ -54,10 +54,12 @@ class AnnouncementActivity : AppCompatActivity() {
 
   companion object {
     private const val CURRENT_ANNOUNCEMENT_ID = 1
+    private const val SHOW_ANNOUNCEMENTS = false
     private const val EXTRA_DESTINATION = "announcementDestination"
 
     fun shouldShow(quranSettings: QuranSettings): Boolean {
-      return BuildConfig.FLAVOR == "madani" &&
+      // the one announcement is about the original app's icon change, which this fork does not share
+      return SHOW_ANNOUNCEMENTS && BuildConfig.FLAVOR == "madani" &&
           quranSettings.shouldShowAnnouncement(CURRENT_ANNOUNCEMENT_ID)
     }
 

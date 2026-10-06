@@ -44,6 +44,18 @@ internal object HomeIcons {
     )
   }
 
+  val Download: ImageVector by lazy {
+    icon("Filled.Download", "M19,9h-4V3H9v6H5l7,7 7,-7zM5,18v2h14v-2H5z")
+  }
+
+  val ArrowUp: ImageVector by lazy {
+    icon("Filled.ArrowUpward", "M4,12l1.41,1.41L11,7.83V20h2V7.83l5.58,5.59L20,12l-8,-8 -8,8z")
+  }
+
+  val ArrowDown: ImageVector by lazy {
+    icon("Filled.ArrowDownward", "M20,12l-1.41,-1.41L13,16.17V4h-2v12.17l-5.58,-5.59L4,12l8,8 8,-8z")
+  }
+
   val Sort: ImageVector by lazy {
     icon("Filled.Sort", "M3,18h6v-2L3,16v2zM3,6v2h18L21,6L3,6zM3,13h12v-2L3,11v2z")
   }
