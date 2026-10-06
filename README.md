@@ -22,6 +22,16 @@ This is a simple (Madani based) Quran app for Android.
 
 <div align="left">
 
+## About this fork (Material 3 Expressive)
+
+This fork of Quran for Android changes three things:
+
+* **Audio is disabled.** Recitation playback, the audio bar, the qari list, the audio manager, the audio download settings and Android Auto are all switched off by one build flag. Build with `./gradlew assembleMadaniDebug -PenableAudio` to bring all of it back.
+* **Material 3 Expressive.** The view based screens use `Theme.Material3Expressive`, and the Compose screens use `MaterialExpressiveTheme` with the expressive motion scheme. To get the Compose expressive APIs, `androidx.compose.material3` is pinned to `1.5.0-alpha29`, because the Compose BOM still maps it to 1.4.0.
+* **Dynamic or original colors.** Settings → Display → *Color scheme* picks between dynamic color (from the wallpaper, Android 12+) and the original Quran teal palette. The light, dark and automatic *Appearance* setting still applies on top of either one.
+
+The `Fork Build` workflow (`.github/workflows/fork_build.yml`) builds a debug APK on every push and uploads it as an artifact, then runs lint and the unit tests.
+
 ## Credits
 
 * madani images from [quran images project](https://github.com/quran/quran.com-images) on github.

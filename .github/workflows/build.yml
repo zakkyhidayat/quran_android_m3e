@@ -13,7 +13,9 @@ jobs:
   build:
     name: Validate PR
     runs-on: ubuntu-latest
-    if: github.event_name != 'merge_group'
+    # compares against artifacts from quran/quran_android's post_merge runs, so forks skip it -
+    # see fork_build.yml instead
+    if: github.event_name != 'merge_group' && github.repository == 'quran/quran_android'
     steps:
       - name: Checkout the Code
         uses: actions/checkout@v7

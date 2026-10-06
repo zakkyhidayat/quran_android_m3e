@@ -13,6 +13,7 @@ jobs:
   apkdeps:
     name: Build
     runs-on: ubuntu-latest
+    if: github.repository == 'quran/quran_android'
     steps:
       - name: Checkout the Code
         uses: actions/checkout@v7
