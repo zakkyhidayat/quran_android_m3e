@@ -5,6 +5,21 @@
                   android:title="@string/menu_settings">
 
   <PreferenceCategory
+      android:title="@string/prefs_category_support"
+      app:iconSpaceReserved="false">
+
+    <Preference
+        android:key="donateKey"
+        android:summary="@string/prefs_donate_summary"
+        android:title="@string/prefs_donate_title"
+        app:iconSpaceReserved="false">
+      <intent
+          android:action="android.intent.action.VIEW"
+          android:data="@string/donate_quran_url" />
+    </Preference>
+  </PreferenceCategory>
+
+  <PreferenceCategory
       android:key="@string/prefs_display_category_key"
       android:title="@string/prefs_category_display_settings"
       app:iconSpaceReserved="false">

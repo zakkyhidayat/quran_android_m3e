@@ -110,6 +110,9 @@
   <!-- Quran Preference Activity -->
   <string name="appearance">Tampilan</string>
   <string name="prefs_color_scheme_title">Skema warna</string>
+  <string name="prefs_category_support">Dukung Quran.com</string>
+  <string name="prefs_donate_title">Donasi ke Quran.com</string>
+  <string name="prefs_donate_summary">Quran.com dan datanya berjalan berkat donasi. Membuka halaman donasi Quran Foundation.</string>
   <string name="prefs_color_scheme_dynamic">Dinamis (dari wallpaper Anda)</string>
   <string name="prefs_color_scheme_original">Asli</string>
   <string name="prefs_color_scheme_unavailable">Warna dinamis membutuhkan Android 12 atau yang lebih baru, jadi warna asli yang dipakai</string>

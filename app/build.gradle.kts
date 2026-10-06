@@ -79,7 +79,9 @@ android {
   flavorDimensions += listOf("pageType")
   productFlavors {
     create("madani") {
-      applicationId = "com.quran.labs.androidquran"
+      // this fork's own application id, so it installs next to the official Quran for Android
+      // instead of replacing it. the kotlin namespace stays com.quran.labs.androidquran.
+      applicationId = "io.github.zakkyhidayat.quranm3e"
     }
   }
 

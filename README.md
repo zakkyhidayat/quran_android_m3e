@@ -28,6 +28,8 @@ This fork of Quran for Android changes three things:
 
 * **Audio is disabled.** Recitation playback, the audio bar, the qari list, the audio manager, the audio download settings and Android Auto are all switched off by one build flag. Build with `./gradlew assembleMadaniDebug -PenableAudio` to bring all of it back.
 * **Material 3 Expressive.** The view based screens use `Theme.Material3Expressive`, and the Compose screens use `MaterialExpressiveTheme` with the expressive motion scheme. To get the Compose expressive APIs, `androidx.compose.material3` is pinned to `1.5.0-alpha29`, because the Compose BOM still maps it to 1.4.0.
+* **Own application id.** The madani build is `io.github.zakkyhidayat.quranm3e` (debug builds add `.debug`), so it installs next to the official app instead of replacing it.
+* **Donate link.** Settings opens with a *Support Quran.com* entry that links to the Quran Foundation donation page.
 * **Dynamic or original colors.** Settings → Display → *Color scheme* picks between dynamic color (from the wallpaper, Android 12+) and the original Quran teal palette. The light, dark and automatic *Appearance* setting still applies on top of either one.
 
 The `Fork Build` workflow (`.github/workflows/fork_build.yml`) builds a debug APK on every push and uploads it as an artifact, then runs lint and the unit tests.
