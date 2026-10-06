@@ -9,6 +9,8 @@ import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import android.text.TextPaint
 import androidx.core.content.ContextCompat
+import com.google.android.material.R as MaterialR
+import com.google.android.material.color.MaterialColors
 import com.quran.labs.androidquran.R
 
 class JuzView(
@@ -29,8 +31,16 @@ class JuzView(
 
   init {
     val resources = context.resources
-    val circleColor = ContextCompat.getColor(context, R.color.accent_color)
-    val circleBackground = ContextCompat.getColor(context, R.color.accent_color_dark)
+    val circleColor = MaterialColors.getColor(
+      context,
+      androidx.appcompat.R.attr.colorPrimary,
+      ContextCompat.getColor(context, R.color.accent_color)
+    )
+    val circleBackground = MaterialColors.getColor(
+      context,
+      MaterialR.attr.colorPrimaryContainer,
+      ContextCompat.getColor(context, R.color.accent_color_dark)
+    )
 
     circlePaint.apply {
       style = Paint.Style.FILL
@@ -45,7 +55,11 @@ class JuzView(
     }
 
     if (!overlayText.isNullOrEmpty()) {
-      val textPaintColor = ContextCompat.getColor(context, R.color.header_background)
+      val textPaintColor = MaterialColors.getColor(
+        context,
+        MaterialR.attr.colorOnPrimary,
+        ContextCompat.getColor(context, R.color.header_background)
+      )
       val textPaintSize = resources.getDimensionPixelSize(R.dimen.juz_overlay_text_size)
       overlayTextPaint = TextPaint()
       overlayTextPaint?.apply {

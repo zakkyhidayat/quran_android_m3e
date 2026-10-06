@@ -27,6 +27,16 @@
         android:title="@string/appearance"
         app:iconSpaceReserved="false" />
 
+    <androidx.preference.ListPreference
+        android:defaultValue="dynamic"
+        android:dialogTitle="@string/prefs_color_scheme_title"
+        android:entries="@array/color_schemes"
+        android:entryValues="@array/color_scheme_values"
+        android:key="@string/prefs_app_color_scheme"
+        android:title="@string/prefs_color_scheme_title"
+        app:useSimpleSummaryProvider="true"
+        app:iconSpaceReserved="false" />
+
     <CheckBoxPreference
         android:defaultValue="true"
         android:key="@string/prefs_new_background"
@@ -237,5 +247,21 @@
         android:summary="@string/prefs_category_advanced_summary"
         android:title="@string/prefs_category_advanced"
         app:iconSpaceReserved="false"/>
+  </PreferenceCategory>
+
+  <!-- optional, so it sits last: a link out to the Quran Foundation donation page -->
+  <PreferenceCategory
+      android:title="@string/prefs_category_support"
+      app:iconSpaceReserved="false">
+
+    <Preference
+        android:key="donateKey"
+        android:summary="@string/prefs_donate_summary"
+        android:title="@string/prefs_donate_title"
+        app:iconSpaceReserved="false">
+      <intent
+          android:action="android.intent.action.VIEW"
+          android:data="@string/donate_quran_url" />
+    </Preference>
   </PreferenceCategory>
 </PreferenceScreen>

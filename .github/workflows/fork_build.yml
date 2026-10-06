@@ -1,0 +1,73 @@
+name: Fork Build
+
+# builds the m3e fork: a debug apk you can install, plus lint and unit tests. the upstream
+# workflows (build.yml, post_build.yml, post_merge.yml) compare against artifacts that only exist
+# in quran/quran_android, so they are skipped outside that repository.
+on:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build, Lint and Test
+    runs-on: ubuntu-latest
+    if: github.repository != 'quran/quran_android'
+    steps:
+      - name: Checkout the Code
+        uses: actions/checkout@v7
+
+      - name: Setup JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version-file: .github/workflows/.java-version
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build debug APK
+        run: ./gradlew assembleMadaniDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: quran-m3e-debug-apk
+          path: app/build/outputs/apk/madani/debug/app-madani-debug.apk
+          retention-days: 14
+
+      - name: Run lint
+        run: ./gradlew lintMadaniDebug
+
+      - name: Upload lint results
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: lint_report
+          path: app/build/reports/lint-results-madaniDebug.html
+          retention-days: 3
+
+      # compiles and shrinks the release build without signing it, so R8 / proguard problems show
+      # up here rather than only when cutting a release
+      - name: Check release build
+        run: ./gradlew :app:minifyMadaniReleaseWithR8
+
+      - name: Run tests
+        run: ./gradlew testMadaniDebug testReleaseUnitTest
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: unit_test_report
+          path: app/build/reports/tests/testMadaniDebugUnitTest/
+          retention-days: 3
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx8G -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseParallelGC -Dfile.encoding=UTF-8"

@@ -1,0 +1,97 @@
+name: Release
+
+# builds a signed release apk and publishes it as a GitHub Release.
+#
+# run it by pushing a tag (git tag v3.6.4-m3e.1 && git push origin v3.6.4-m3e.1) or from the
+# Actions tab. it needs these repository secrets (Settings > Secrets and variables > Actions):
+#   RELEASE_KEYSTORE_BASE64   the release keystore (.jks), base64 encoded
+#   RELEASE_KEYSTORE_PASSWORD the keystore password
+#   RELEASE_KEY_ALIAS         the key alias inside the keystore
+#   RELEASE_KEY_PASSWORD      the key password
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to create the release for, e.g. v3.6.4-m3e.1'
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and Publish Release
+    runs-on: ubuntu-latest
+    if: github.repository != 'quran/quran_android'
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - name: Checkout the Code
+        uses: actions/checkout@v7
+
+      - name: Check the signing secrets
+        env:
+          KEYSTORE: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          missing=0
+          for name in KEYSTORE STORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::The ${name} signing secret is not set - see the comment at the top of release.yml"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Setup JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version-file: .github/workflows/.java-version
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Decode the keystore
+        env:
+          KEYSTORE: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/release.jks"
+
+      - name: Build the signed release APK
+        env:
+          # ORG_GRADLE_PROJECT_* become gradle properties, overriding the placeholders in
+          # app/gradle.properties without putting the passwords on the command line
+          ORG_GRADLE_PROJECT_STORE_FILE: ${{ runner.temp }}/release.jks
+          ORG_GRADLE_PROJECT_STORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: ./gradlew assembleMadaniRelease
+
+      - name: Remove the keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
+
+      - name: Publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apk="quran-m3e-${TAG}.apk"
+          cp app/build/outputs/apk/madani/release/app-madani-release.apk "$apk"
+          sha256sum "$apk" > "$apk.sha256"
+          gh release create "$TAG" "$apk" "$apk.sha256" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Quran M3E $TAG" \
+            --generate-notes
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx8G -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError -XX:+UseParallelGC -Dfile.encoding=UTF-8"

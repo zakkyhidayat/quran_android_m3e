@@ -31,7 +31,7 @@
           android:paddingBottom="8dp"
           android:text="@string/help_title"
           android:textAppearance="?android:attr/textAppearanceMedium"
-          android:textColor="@color/text_primary"
+          android:textColor="?attr/colorOnSurface"
           android:textStyle="bold" />
 
       <TextView
@@ -41,7 +41,7 @@
           android:lineSpacingExtra="4dip"
           android:paddingBottom="8dp"
           android:textAppearance="?android:attr/textAppearanceSmall"
-          android:textColor="@color/text_primary"
+          android:textColor="?attr/colorOnSurface"
           android:textSize="16sp" />
 
       <TextView
@@ -50,7 +50,7 @@
           android:layout_height="wrap_content"
           android:autoLink="email"
           android:text="@string/email_us"
-          android:textColor="@color/text_primary" />
+          android:textColor="?attr/colorOnSurface" />
     </LinearLayout>
   </ScrollView>
 </LinearLayout>

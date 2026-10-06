@@ -30,10 +30,13 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
+import com.google.android.material.R as MaterialR
+import com.google.android.material.color.MaterialColors
 import com.quran.data.dao.RecentPagesDao
 import com.quran.data.model.Page
 import com.quran.data.model.SuraAyah
 import com.quran.labs.androidquran.AboutUsActivity
+import com.quran.labs.androidquran.BuildConfig
 import com.quran.labs.androidquran.HelpActivity
 import com.quran.labs.androidquran.QuranApplication
 import com.quran.labs.androidquran.QuranPreferenceActivity
@@ -65,14 +68,14 @@ import dev.zacsweers.metro.Inject
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import kotlin.math.abs
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import kotlin.math.abs
 
 /**
  * The home screen activity for the app. Displays a toolbar and 3 fragments:
@@ -226,20 +229,22 @@ class QuranActivity : AppCompatActivity(),
         jumpToPageOnResume = null
       }
 
-      compositeDisposable.add(
-          Completable.timer(500, MILLISECONDS)
-              .observeOn(AndroidSchedulers.mainThread())
-              .subscribe {
-                try {
-                  startService(
-                    audioUtils.getAudioIntent(this@QuranActivity, AudioService.ACTION_STOP)
-                  )
-                } catch (_: IllegalStateException) {
-                  // do nothing, we might be in the background
-                  // onPause should have stopped us from needing this, but it sometimes happens
+      if (BuildConfig.AUDIO_ENABLED) {
+        compositeDisposable.add(
+            Completable.timer(500, MILLISECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                  try {
+                    startService(
+                      audioUtils.getAudioIntent(this@QuranActivity, AudioService.ACTION_STOP)
+                    )
+                  } catch (_: IllegalStateException) {
+                    // do nothing, we might be in the background
+                    // onPause should have stopped us from needing this, but it sometimes happens
+                  }
                 }
-              }
-      )
+        )
+      }
     }
     isPaused = false
   }
@@ -400,7 +405,11 @@ class QuranActivity : AppCompatActivity(),
         // not using `is` here because i literally want a View, not a subclass of View.
         // checking top to be 0 is just a second just in case check.
         if (statusGuard::class == View::class && statusGuard.top == 0) {
-          statusGuard.setBackgroundColor(ContextCompat.getColor(this, R.color.toolbar))
+          statusGuard.setBackgroundColor(
+            MaterialColors.getColor(
+              this, MaterialR.attr.colorSurfaceContainer, ContextCompat.getColor(this, R.color.toolbar)
+            )
+          )
         }
       }
     }

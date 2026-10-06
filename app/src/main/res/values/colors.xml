@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <color name="toolbar">@color/surface</color>
-  <color name="toolbar_text">#ff44464e</color>
-  <color name="toolbar_icon_tint">#ff44464e</color>
-  <color name="toolbar_secondary_text">#ff44464e</color>
+  <color name="toolbar">@color/quran_surface_container</color>
+  <color name="toolbar_text">@color/quran_on_surface</color>
+  <color name="toolbar_icon_tint">@color/quran_on_surface_variant</color>
+  <color name="toolbar_secondary_text">@color/quran_on_surface_variant</color>
 
-  <color name="surface">#fffaf8f7</color>
-  <color name="accent_color">#ff00838f</color>
+  <color name="surface">@color/quran_surface</color>
+  <color name="accent_color">@color/quran_primary</color>
   <color name="accent_color_dark">@color/color_control_normal</color>
   <color name="page_background">#FFF4CB</color>
-  <color name="secondary_dark_background">#ffffffff</color>
-  <color name="header_background">#dee2e6</color>
+  <color name="secondary_dark_background">@color/quran_surface</color>
+  <color name="header_background">@color/quran_surface_container_high</color>
   <color name="header_text_color">@color/sura_number_color</color>
   <color name="ripple_dark">#1f000000</color>
-  <color name="title_color">#212529</color>
-  <color name="sura_number_color">#ff212529</color>
-  <color name="sura_details_color">#ff6c757d</color>
+  <color name="title_color">@color/quran_on_surface</color>
+  <color name="sura_number_color">@color/quran_on_surface_variant</color>
+  <color name="sura_details_color">@color/quran_on_surface_variant</color>
   <color name="nav_status_bar_colors">#ff424242</color>
   <color name="transparent_actionbar_color">#AA000000</color>
-  <color name="panel_background_color">@color/toolbar</color>
+  <color name="panel_background_color">@color/quran_surface_container_low</color>
   <color name="translation_hdr_color">#ff777777</color>
   <color name="translation_sura_header">#fff1ecd8</color>
   <color name="translation_sura_header_night">#ff424242</color>
@@ -48,9 +48,9 @@
   <color name="ayah_bookmark_color">#ff2e7d32</color>
   <color name="download_button_background">#ffe8f4f8</color>
 
-  <color name="icon_tint">#ff212529</color>
-  <color name="indicator_color">@color/accent_color</color>
-  <color name="color_control_activated">@color/accent_color</color>
+  <color name="icon_tint">@color/quran_on_surface_variant</color>
+  <color name="indicator_color">@color/quran_primary</color>
+  <color name="color_control_activated">@color/quran_primary</color>
   <color name="color_control_normal">#4d00838f</color>
   
   
@@ -77,9 +77,9 @@
   <color name="unhighlighted_bookmark_color">#ff546e7a</color>
   <!-- reading bookmarks -->
 
-  <color name="default_text">#ff000000</color>
+  <color name="default_text">@color/quran_on_surface</color>
 
-  <color name="text_primary">#ff212121</color>
+  <color name="text_primary">@color/quran_on_surface</color>
   <color name="disabled_color">#ffbdbdbd</color>
-  <color name="text_hint_color">#ff9e9e9e</color>
+  <color name="text_hint_color">@color/quran_on_surface_variant</color>
 </resources>

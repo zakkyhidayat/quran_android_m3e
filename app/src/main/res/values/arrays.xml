@@ -12,6 +12,10 @@
     <item>3</item>
   </string-array>
 
+  <string-array name="color_schemes">
+    <item>@string/prefs_color_scheme_dynamic</item>
+    <item>@string/prefs_color_scheme_original</item>
+  </string-array>
   <array name="themes">
     <item>Light</item>
     <item>Dark</item>

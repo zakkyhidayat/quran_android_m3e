@@ -14,9 +14,12 @@ plugins {
   alias(libs.plugins.sqldelight)
 }
 
-// whether or not to use Firebase - Firebase is enabled by default, and is only disabled for
-// providing apks for open source distribution stores.
-val useFirebase = !project.hasProperty("disableFirebase")
+// whether or not to use Firebase (analytics and crashlytics). this fork has no Firebase project
+// (no google-services.json), so it is off unless -PenableFirebase is passed.
+val useFirebase = project.hasProperty("enableFirebase")
+// audio playback (recitation audio, qari list, audio manager, Android Auto) is disabled by
+// default in this fork. pass -PenableAudio to bring all of it back.
+val audioEnabled = project.hasProperty("enableAudio")
 val oauthProperties = Properties().apply {
   // Optional local sync config. Android OAuth uses PKCE, so client secrets are intentionally unsupported.
   val oauthPropertiesFile = rootProject.file("oauth.properties")
@@ -39,6 +42,8 @@ android {
     versionCode = 3640
     versionName = "3.6.4"
     testInstrumentationRunner = "com.quran.labs.androidquran.core.QuranTestRunner"
+    buildConfigField("boolean", "AUDIO_ENABLED", audioEnabled.toString())
+    resValue("bool", "audio_enabled", audioEnabled.toString())
   }
 
   buildFeatures.resValues = true
@@ -74,7 +79,9 @@ android {
   flavorDimensions += listOf("pageType")
   productFlavors {
     create("madani") {
-      applicationId = "com.quran.labs.androidquran"
+      // this fork's own application id, so it installs next to the official Quran for Android
+      // instead of replacing it. the kotlin namespace stays com.quran.labs.androidquran.
+      applicationId = "io.zakkyhidayat.quran.m3e"
     }
   }
 
@@ -239,8 +246,10 @@ dependencies {
   implementation(project(":feature:qarilist"))
   implementation(project(":feature:sync"))
 
-  // android auto support
-  implementation(project(":feature:autoquran"))
+  // android auto support - it only plays audio, so it ships only when audio is enabled
+  if (audioEnabled) {
+    implementation(project(":feature:autoquran"))
+  }
 
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.kotlinx.coroutines.android)

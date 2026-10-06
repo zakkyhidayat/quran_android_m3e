@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import com.google.android.material.color.MaterialColors
 import com.quran.data.model.bookmark.Tag
 import com.quran.labs.androidquran.R
 
@@ -21,7 +22,11 @@ class TagsViewGroup @JvmOverloads constructor(
   private val chipSpacing = resources.getDimensionPixelSize(R.dimen.tag_margin)
   private val chipPadding = resources.getDimensionPixelSize(R.dimen.tag_padding)
   private val chipTextSize = resources.getDimensionPixelSize(R.dimen.tag_text_size).toFloat()
-  private val chipTextColor = ContextCompat.getColor(context, R.color.accent_color)
+  private val chipTextColor = MaterialColors.getColor(
+    context,
+    androidx.appcompat.R.attr.colorPrimary,
+    ContextCompat.getColor(context, R.color.accent_color)
+  )
 
   fun setTags(tags: List<Tag>) {
     removeAllViews()

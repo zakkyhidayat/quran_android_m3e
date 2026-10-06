@@ -16,6 +16,8 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.annotation.StyleRes
 import androidx.core.content.ContextCompat
+import com.google.android.material.R as MaterialR
+import com.google.android.material.color.MaterialColors
 import com.quran.labs.androidquran.R
 import com.quran.labs.androidquran.common.QuranAyahInfo
 import com.quran.labs.androidquran.common.TranslationMetadata
@@ -67,7 +69,9 @@ class InlineTranslationView @JvmOverloads constructor(
     translationFontSize = settings.translationTextSize
     textStyle = R.style.TranslationText
     inlineAyahColor = ContextCompat.getColor(context, R.color.translation_translator_color)
-    ayahTextColor = ContextCompat.getColor(context, R.color.text_primary)
+    ayahTextColor = MaterialColors.getColor(
+      context, MaterialR.attr.colorOnSurface, ContextCompat.getColor(context, R.color.text_primary)
+    )
   }
 
   fun refresh() {

@@ -45,6 +45,7 @@
   <string name="about_data_sources">Data Sources</string>
   <string name="about_images">Images</string>
   <string name="about_madani_images">The Quran images are based on the fonts from the King Fahd Quran Printing Complex</string>
+  <string name="donate_quran_url" translatable="false">https://give.quran.foundation/campaign/802362/donate</string>
   <string name="about_madani_images_url" translatable="false">https://github.com/quran/quran.com-images</string>
   <string name="about_naskh_images">The Quran images for the Naskh app are taken (with permission) from SHL Info Systems</string>
   <string name="about_naskh_images_url" translatable="false">http://www.shlinfosystems.com</string>
@@ -157,6 +158,13 @@
 
   <!-- Quran Preference Activity -->
   <string name="appearance">Appearance</string>
+  <string name="prefs_color_scheme_title">Color scheme</string>
+  <string name="prefs_category_support">Support Quran.com</string>
+  <string name="prefs_donate_title">Donate to Quran.com</string>
+  <string name="prefs_donate_summary">Quran.com and its data are kept running by donations. Opens the Quran Foundation donation page.</string>
+  <string name="prefs_color_scheme_dynamic">Dynamic (from your wallpaper)</string>
+  <string name="prefs_color_scheme_original">Original</string>
+  <string name="prefs_color_scheme_unavailable">Dynamic color needs Android 12 or newer, so the original colors are used</string>
   <string name="prefs_volume_key_navigation_title">Volume key navigation</string>
   <string name="prefs_volume_key_navigation_summary">Navigate between pages using volume keys</string>
   <string name="prefs_category_reading">Reading Preferences</string>

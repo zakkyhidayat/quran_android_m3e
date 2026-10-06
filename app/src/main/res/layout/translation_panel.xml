@@ -20,7 +20,7 @@
         android:layout_marginRight="@dimen/translation_left_right_margin"
         android:textSize="14sp"
         android:textStyle="bold"
-        android:textColor="@color/accent_color"
+        android:textColor="?attr/colorPrimary"
         />
     <com.quran.labs.androidquran.view.InlineTranslationView
         android:id="@+id/translation_view"
