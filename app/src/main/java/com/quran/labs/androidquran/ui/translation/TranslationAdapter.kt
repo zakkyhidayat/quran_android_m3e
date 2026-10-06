@@ -323,7 +323,11 @@ internal class TranslationAdapter(
         val text: CharSequence?
         if (row.type == TranslationViewRow.Type.SURA_HEADER) {
           text = row.data
-          holder.text.setBackgroundColor(suraHeaderColor)
+          holder.text.background = android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = 24 * context.resources.displayMetrics.density
+            setColor(suraHeaderColor)
+          }
+          holder.text.setTextColor(if (isNightMode) Color.parseColor("#E1E3DE") else ContextCompat.getColor(context, R.color.translation_hdr_color))
         } else if (row.type == TranslationViewRow.Type.BASMALLAH || row.type == TranslationViewRow.Type.QURAN_TEXT) {
           val str = SpannableString(
             if (row.type == TranslationViewRow.Type.BASMALLAH) {

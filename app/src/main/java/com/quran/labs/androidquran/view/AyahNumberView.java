@@ -48,11 +48,12 @@ public class AyahNumberView extends View {
       ta.recycle();
     }
 
-    boxPaint = new Paint();
+    boxPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     boxPaint.setColor(boxColor);
     textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     textPaint.setColor(textColor);
     textPaint.setTextSize(textSize);
+    textPaint.setFakeBoldText(true);
   }
 
   public void setAyahString(@NonNull String suraAyah) {
@@ -92,7 +93,9 @@ public class AyahNumberView extends View {
 
   @Override
   protected void onDraw(Canvas canvas) {
-    canvas.drawRect(padding, padding, padding + boxWidth, padding + boxHeight, boxPaint);
+    // a pill, the shape Material 3 uses for small labels
+    float radius = boxHeight / 2f;
+    canvas.drawRoundRect(padding, padding, padding + boxWidth, padding + boxHeight, radius, radius, boxPaint);
     if (this.textLayout != null) {
       int startY = padding + ((boxHeight - this.textLayout.getHeight()) / 2);
       canvas.translate(padding, startY);
