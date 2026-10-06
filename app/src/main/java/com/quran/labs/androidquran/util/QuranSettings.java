@@ -252,6 +252,15 @@ public class QuranSettings {
     return theme;
   }
 
+  /**
+   * Whether to color the app with the wallpaper based (dynamic) color scheme rather than the
+   * original Quran palette. Dynamic color is the default; it only takes effect on Android 12+.
+   */
+  public boolean useDynamicColors() {
+    return Constants.COLOR_SCHEME_DYNAMIC.equals(
+        prefs.getString(Constants.PREF_APP_COLOR_SCHEME, Constants.COLOR_SCHEME_DYNAMIC));
+  }
+
   // probably should eventually move this to Application.onCreate..
   public void upgradePreferences(PreferencesUpgrade preferencesUpgrade) {
     int version = getVersion();

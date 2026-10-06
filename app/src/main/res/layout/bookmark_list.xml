@@ -12,7 +12,6 @@
       android:layout_width="match_parent"
       android:layout_height="?attr/actionBarSize"
       android:theme="@style/ToolbarStyle"
-      app:popupTheme="@style/ThemeOverlay.AppCompat"
       app:titleTextAppearance="@style/ToolbarTitleText" />
 
   <FrameLayout
@@ -34,7 +33,7 @@
         android:paddingStart="32dp"
         android:paddingEnd="32dp"
         android:gravity="center"
-        android:textColor="@color/sura_details_color"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="16sp"
         android:visibility="gone" />
   </FrameLayout>

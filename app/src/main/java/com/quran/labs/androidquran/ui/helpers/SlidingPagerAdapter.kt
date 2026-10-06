@@ -11,6 +11,7 @@ class SlidingPagerAdapter(
   fm: FragmentManager,
   private val isRtl: Boolean,
   additionalPanels: Set<AyahActionFragmentProvider>,
+  includeAudioPanel: Boolean = true,
 ) : FragmentStatePagerAdapter(fm, "sliding_without_tag"), IconPageIndicator.IconPagerAdapter {
 
   private val pages: ArrayList<AyahActionFragmentProvider> = arrayListOf()
@@ -18,7 +19,9 @@ class SlidingPagerAdapter(
   init {
     // Add the core ayah action panels
     pages.add(AyahTranslationFragment.Provider)
-    pages.add(AyahPlaybackFragment.Provider)
+    if (includeAudioPanel) {
+      pages.add(AyahPlaybackFragment.Provider)
+    }
 
     // Since additionalPanel Set may be unsorted, put them in a list and sort them by page number..
     val additionalPages: ArrayList<AyahActionFragmentProvider> = ArrayList(additionalPanels)

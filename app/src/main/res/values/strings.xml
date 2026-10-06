@@ -157,6 +157,10 @@
 
   <!-- Quran Preference Activity -->
   <string name="appearance">Appearance</string>
+  <string name="prefs_color_scheme_title">Color scheme</string>
+  <string name="prefs_color_scheme_dynamic">Dynamic (from your wallpaper)</string>
+  <string name="prefs_color_scheme_original">Original</string>
+  <string name="prefs_color_scheme_unavailable">Dynamic color needs Android 12 or newer, so the original colors are used</string>
   <string name="prefs_volume_key_navigation_title">Volume key navigation</string>
   <string name="prefs_volume_key_navigation_summary">Navigate between pages using volume keys</string>
   <string name="prefs_category_reading">Reading Preferences</string>

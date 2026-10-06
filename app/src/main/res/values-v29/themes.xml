@@ -1,24 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <style name="Quran" parent="Theme.AppCompat">
-    <item name="colorAccent">@color/accent_color</item>
-    <item name="spinnerStyle">?attr/actionDropDownStyle</item>
-    <item name="spinnerDropDownItemStyle">@style/SherlockDropDownItem</item>
-    <item name="spinnerItemStyle">@style/SherlockSpinnerItem</item>
+  <!--
+    force dark would repaint the Quran page itself, so keep it off everywhere - the app already
+    ships a real dark theme.
+  -->
+  <style name="Quran" parent="Base.Quran">
     <item name="android:forceDarkAllowed">false</item>
   </style>
 
-  <style name="QuranToolBar" parent="Theme.AppCompat.DayNight.NoActionBar">
-    <item name="android:windowBackground">@color/surface</item>
-    <item name="colorAccent">@color/accent_color</item>
-    <item name="windowActionModeOverlay">true</item>
-    <item name="spinnerStyle">?attr/actionDropDownStyle</item>
-    <item name="spinnerDropDownItemStyle">@style/SherlockDropDownItem</item>
-    <item name="spinnerItemStyle">@style/SherlockSpinnerItem</item>
+  <style name="QuranToolBar" parent="Base.Quran">
     <item name="android:forceDarkAllowed">false</item>
   </style>
 
-  <style name="QuranDialog" parent="Theme.AppCompat.DayNight.Dialog">
+  <style name="QuranDialog" parent="Base.QuranDialog">
     <item name="android:forceDarkAllowed">false</item>
   </style>
 </resources>

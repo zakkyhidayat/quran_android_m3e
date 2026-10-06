@@ -17,7 +17,7 @@
       android:layout_height="48dp"
       android:scaleType="center"
       android:contentDescription="@null"
-      app:tint="@color/icon_tint"
+      app:tint="?attr/colorOnSurfaceVariant"
       />
   <LinearLayout
       android:id="@+id/translation_area"
@@ -31,7 +31,7 @@
         android:id="@+id/translation_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/text_primary"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="16sp"
         />
     <TextView
@@ -48,7 +48,7 @@
       android:layout_height="match_parent"
       android:scaleType="center"
       android:contentDescription="@null"
-      app:tint="@color/icon_tint" />
+      app:tint="?attr/colorOnSurfaceVariant" />
 
   <!-- content description set in code -->
   <ImageView
@@ -57,6 +57,6 @@
       android:layout_height="match_parent"
       android:scaleType="center"
       tools:ignore="ContentDescription"
-      app:tint="@color/icon_tint" />
+      app:tint="?attr/colorOnSurfaceVariant" />
       />
 </LinearLayout>

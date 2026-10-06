@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- dark variant of the "original" palette, see values/colors_theme.xml -->
+  <color name="quran_primary">#FF4DD9E4</color>
+  <color name="quran_on_primary">#FF00363A</color>
+  <color name="quran_primary_container">#FF004F54</color>
+  <color name="quran_on_primary_container">#FF79F5FF</color>
+  <color name="quran_secondary">#FFB1CBCE</color>
+  <color name="quran_on_secondary">#FF1B3436</color>
+  <color name="quran_secondary_container">#FF324B4D</color>
+  <color name="quran_on_secondary_container">#FFCCE8EA</color>
+  <color name="quran_tertiary">#FFB7C7EA</color>
+  <color name="quran_on_tertiary">#FF21304C</color>
+  <color name="quran_tertiary_container">#FF374764</color>
+  <color name="quran_on_tertiary_container">#FFD7E2FF</color>
+  <color name="quran_error">#FFFFB4AB</color>
+  <color name="quran_on_error">#FF690005</color>
+  <color name="quran_error_container">#FF93000A</color>
+  <color name="quran_on_error_container">#FFFFDAD6</color>
+  <color name="quran_background">#FF0E1415</color>
+  <color name="quran_on_background">#FFDDE4E4</color>
+  <color name="quran_surface">#FF0E1415</color>
+  <color name="quran_on_surface">#FFDDE4E4</color>
+  <color name="quran_surface_variant">#FF3F4849</color>
+  <color name="quran_on_surface_variant">#FFBEC8C9</color>
+  <color name="quran_outline">#FF899393</color>
+  <color name="quran_outline_variant">#FF3F4849</color>
+  <color name="quran_surface_dim">#FF0E1415</color>
+  <color name="quran_surface_bright">#FF343A3B</color>
+  <color name="quran_surface_container_lowest">#FF090F10</color>
+  <color name="quran_surface_container_low">#FF161D1D</color>
+  <color name="quran_surface_container">#FF1A2121</color>
+  <color name="quran_surface_container_high">#FF252B2C</color>
+  <color name="quran_surface_container_highest">#FF303636</color>
+  <color name="quran_inverse_surface">#FFDDE4E4</color>
+  <color name="quran_inverse_on_surface">#FF2B3232</color>
+  <color name="quran_inverse_primary">#FF00696F</color>
+</resources>

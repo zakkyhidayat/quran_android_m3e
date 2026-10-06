@@ -2,12 +2,17 @@ package com.quran.labs.androidquran.common.ui.core
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 
@@ -35,10 +40,18 @@ private val LightColors = lightColorScheme(
   surfaceVariant = lightSurfaceVariant,
   onSurfaceVariant = lightOnSurfaceVariant,
   outline = lightOutline,
+  outlineVariant = lightOutlineVariant,
   inverseOnSurface = lightInverseOnSurface,
   inverseSurface = lightInverseSurface,
   inversePrimary = lightInversePrimary,
   surfaceTint = lightSurfaceTint,
+  scrim = lightShadow,
+  surfaceDim = lightSurfaceDim,
+  surfaceBright = lightSurfaceBright,
+  surfaceContainerLowest = lightSurfaceContainerLowest,
+  surfaceContainerLow = lightSurfaceContainerLow,
+  surfaceContainer = lightSurfaceContainer,
+  surfaceContainerHigh = lightSurfaceContainerHigh,
   surfaceContainerHighest = lightSurfaceColorHighest
 )
 
@@ -66,10 +79,18 @@ private val DarkColors = darkColorScheme(
   surfaceVariant = darkSurfaceVariant,
   onSurfaceVariant = darkOnSurfaceVariant,
   outline = darkOutline,
+  outlineVariant = darkOutlineVariant,
   inverseOnSurface = darkInverseOnSurface,
   inverseSurface = darkInverseSurface,
   inversePrimary = darkInversePrimary,
   surfaceTint = darkSurfaceTint,
+  scrim = darkShadow,
+  surfaceDim = darkSurfaceDim,
+  surfaceBright = darkSurfaceBright,
+  surfaceContainerLowest = darkSurfaceContainerLowest,
+  surfaceContainerLow = darkSurfaceContainerLow,
+  surfaceContainer = darkSurfaceContainer,
+  surfaceContainerHigh = darkSurfaceContainerHigh,
   surfaceContainerHighest = darkSurfaceColorHighest
 )
 
@@ -99,16 +120,29 @@ object QuranIcons {
   val Sync: ImageVector get() = com.quran.labs.androidquran.common.ui.core.icons.Sync
 }
 
+/**
+ * The app's Material 3 Expressive theme.
+ *
+ * @param useDarkTheme whether to use the dark color scheme
+ * @param useDynamicColor whether to use the wallpaper based (Material You) color scheme instead of
+ * the original Quran palette. this only has an effect on Android 12+, older versions always get the
+ * original palette. defaults to the user's choice in [QuranThemeSettings].
+ */
 @Composable
 fun QuranTheme(
   useDarkTheme: Boolean = isSystemInDarkTheme(),
+  useDynamicColor: Boolean = QuranThemeSettings.useDynamicColor,
   content: @Composable () -> Unit
 ) {
-  val colors = if (!useDarkTheme) {
-    LightColors
-  } else {
-    DarkColors
-  }
+  val context = LocalContext.current
+  val colors: ColorScheme =
+    if (useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      if (useDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    } else if (useDarkTheme) {
+      DarkColors
+    } else {
+      LightColors
+    }
 
   val quranColors = if (useDarkTheme) {
     darkQuranColors
@@ -131,8 +165,10 @@ fun QuranTheme(
 
   CompositionLocalProvider(*locals) {
     CompositionLocalProvider(LocalQuranColors provides quranColors) {
-      MaterialTheme(
+      MaterialExpressiveTheme(
         colorScheme = colors,
+        motionScheme = MotionScheme.expressive(),
+        shapes = AppShapes,
         typography = AppTypography,
         content = content
       )

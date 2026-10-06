@@ -87,12 +87,14 @@ object Constants {
   const val PREF_WAS_SHOWING_TRANSLATION = "wasShowingTranslation"
   const val PREF_ADVANCED_QURAN_SETTINGS = "quranAdvancedSettings"
   const val PREF_READING_CATEGORY = "readingCategoryKey"
+  const val PREF_DOWNLOAD_CATEGORY = "downloadCategoryKey"
   const val PREF_CHECKED_PARTIAL_IMAGES = "didCheckPartialImages"
   const val PREF_CURRENT_AUDIO_REVISION = "currentAudioRevision"
   const val PREF_SURA_TRANSLATED_NAME = "suraTranslatedName"
   const val PREF_SHOW_SIDELINES = "showSidelines"
   const val PREF_SHOW_LINE_DIVIDERS = "showLineDividers"
   const val PREF_APP_THEME = "appTheme"
+  const val PREF_APP_COLOR_SCHEME = "appColorScheme"
   const val PREF_MOBILE_SYNC_LEGACY_BOOKMARKS_MIGRATED = "mobileSyncLegacyBookmarksMigrated"
   const val PREF_HAS_SEEN_MOVABLE_BOOKMARK_EDUCATION = "hasSeenMovableBookmarkEducation"
   const val PREF_LAST_SEEN_ANNOUNCEMENT = "lastSeenAnnouncement"
@@ -101,4 +103,8 @@ object Constants {
   const val THEME_LIGHT = "light"
   const val THEME_DARK = "dark"
   const val THEME_DEFAULT = "default"
+
+  // Color schemes
+  const val COLOR_SCHEME_DYNAMIC = "dynamic"
+  const val COLOR_SCHEME_ORIGINAL = "original"
 }

@@ -1,45 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-  <style name="Quran" parent="Theme.AppCompat">
-    <item name="colorAccent">@color/accent_color</item>
+  <!--
+    the base of every app theme - Material 3 Expressive, day/night, filled in with the "original"
+    Quran palette (values/colors_theme.xml). when the "dynamic" color scheme is selected,
+    QuranApplication layers the wallpaper based DynamicColors overlay on top of this, replacing the
+    whole palette at once.
+  -->
+  <style name="Base.Quran" parent="Theme.Material3Expressive.DayNight.NoActionBar">
+    <item name="colorPrimary">@color/quran_primary</item>
+    <item name="colorOnPrimary">@color/quran_on_primary</item>
+    <item name="colorPrimaryContainer">@color/quran_primary_container</item>
+    <item name="colorOnPrimaryContainer">@color/quran_on_primary_container</item>
+    <item name="colorPrimaryInverse">@color/quran_inverse_primary</item>
+    <item name="colorSecondary">@color/quran_secondary</item>
+    <item name="colorOnSecondary">@color/quran_on_secondary</item>
+    <item name="colorSecondaryContainer">@color/quran_secondary_container</item>
+    <item name="colorOnSecondaryContainer">@color/quran_on_secondary_container</item>
+    <item name="colorTertiary">@color/quran_tertiary</item>
+    <item name="colorOnTertiary">@color/quran_on_tertiary</item>
+    <item name="colorTertiaryContainer">@color/quran_tertiary_container</item>
+    <item name="colorOnTertiaryContainer">@color/quran_on_tertiary_container</item>
+    <item name="colorError">@color/quran_error</item>
+    <item name="colorOnError">@color/quran_on_error</item>
+    <item name="colorErrorContainer">@color/quran_error_container</item>
+    <item name="colorOnErrorContainer">@color/quran_on_error_container</item>
+    <item name="android:colorBackground">@color/quran_background</item>
+    <item name="colorOnBackground">@color/quran_on_background</item>
+    <item name="colorSurface">@color/quran_surface</item>
+    <item name="colorOnSurface">@color/quran_on_surface</item>
+    <item name="colorSurfaceVariant">@color/quran_surface_variant</item>
+    <item name="colorOnSurfaceVariant">@color/quran_on_surface_variant</item>
+    <item name="colorSurfaceInverse">@color/quran_inverse_surface</item>
+    <item name="colorOnSurfaceInverse">@color/quran_inverse_on_surface</item>
+    <item name="colorSurfaceDim">@color/quran_surface_dim</item>
+    <item name="colorSurfaceBright">@color/quran_surface_bright</item>
+    <item name="colorSurfaceContainerLowest">@color/quran_surface_container_lowest</item>
+    <item name="colorSurfaceContainerLow">@color/quran_surface_container_low</item>
+    <item name="colorSurfaceContainer">@color/quran_surface_container</item>
+    <item name="colorSurfaceContainerHigh">@color/quran_surface_container_high</item>
+    <item name="colorSurfaceContainerHighest">@color/quran_surface_container_highest</item>
+    <item name="colorOutline">@color/quran_outline</item>
+    <item name="colorOutlineVariant">@color/quran_outline_variant</item>
+
+    <item name="android:windowBackground">?attr/colorSurface</item>
+    <item name="windowActionModeOverlay">true</item>
+    <item name="actionModeBackground">?attr/colorSurfaceContainer</item>
     <item name="spinnerStyle">?attr/actionDropDownStyle</item>
     <item name="spinnerDropDownItemStyle">@style/SherlockDropDownItem</item>
     <item name="spinnerItemStyle">@style/SherlockSpinnerItem</item>
   </style>
 
-  <style name="QuranToolBar" parent="Theme.AppCompat.DayNight.NoActionBar">
-    <item name="android:windowBackground">@color/surface</item>
-    <item name="colorAccent">@color/accent_color</item>
-    <item name="windowActionModeOverlay">true</item>
-    <item name="spinnerStyle">?attr/actionDropDownStyle</item>
-    <item name="spinnerDropDownItemStyle">@style/SherlockDropDownItem</item>
-    <item name="spinnerItemStyle">@style/SherlockSpinnerItem</item>
-  </style>
+  <!-- the application theme. only used by activities that never show any ui of their own -->
+  <style name="Quran" parent="Base.Quran" />
 
-  <style name="QuranToolBarDayNight" parent="Theme.AppCompat.DayNight.NoActionBar">
-    <item name="android:windowBackground">@color/surface</item>
-    <item name="actionModeBackground">@color/toolbar</item>
-    <item name="colorAccent">@color/accent_color</item>
-    <item name="colorPrimary">@color/toolbar</item>
-    <item name="iconTint">@color/icon_tint</item>
-    <item name="windowActionModeOverlay">true</item>
-    <item name="spinnerStyle">?attr/actionDropDownStyle</item>
-    <item name="spinnerDropDownItemStyle">@style/SherlockDropDownItem</item>
-    <item name="spinnerItemStyle">@style/SherlockSpinnerItem</item>
+  <style name="QuranToolBar" parent="Base.Quran" />
+
+  <style name="QuranToolBarDayNight" parent="Base.Quran">
+    <item name="iconTint">?attr/colorOnSurfaceVariant</item>
   </style>
 
   <style name="QuranToolBarActionButton" parent="Widget.AppCompat.ActionButton">
-    <item name="android:tint">@color/icon_tint</item>
+    <item name="android:tint">?attr/colorOnSurfaceVariant</item>
   </style>
 
   <style name="QuranToolBar.Overlay">
     <item name="windowActionBarOverlay">true</item>
-    <item name="android:statusBarColor">@color/toolbar</item>
-    <item name="android:navigationBarColor">@color/toolbar</item>
+    <item name="android:statusBarColor">?attr/colorSurfaceContainer</item>
+    <item name="android:navigationBarColor">?attr/colorSurfaceContainer</item>
     <item name="actionButtonStyle">@style/QuranToolBarActionButton</item>
     <item name="actionModeCloseButtonStyle">@style/QuranToolBarActionButton</item>
   </style>
 
-    <style name="QuranDialog" parent="Theme.AppCompat.DayNight.Dialog" />
+  <style name="Base.QuranDialog" parent="Theme.Material3.DayNight.Dialog">
+    <item name="colorPrimary">@color/quran_primary</item>
+    <item name="colorOnPrimary">@color/quran_on_primary</item>
+    <item name="colorPrimaryContainer">@color/quran_primary_container</item>
+    <item name="colorOnPrimaryContainer">@color/quran_on_primary_container</item>
+    <item name="colorSecondary">@color/quran_secondary</item>
+    <item name="colorOnSecondary">@color/quran_on_secondary</item>
+    <item name="colorSecondaryContainer">@color/quran_secondary_container</item>
+    <item name="colorOnSecondaryContainer">@color/quran_on_secondary_container</item>
+    <item name="colorSurface">@color/quran_surface</item>
+    <item name="colorOnSurface">@color/quran_on_surface</item>
+    <item name="colorOnSurfaceVariant">@color/quran_on_surface_variant</item>
+    <item name="colorSurfaceContainerHigh">@color/quran_surface_container_high</item>
+    <item name="colorOutline">@color/quran_outline</item>
+  </style>
+
+  <style name="QuranDialog" parent="Base.QuranDialog" />
 </resources>

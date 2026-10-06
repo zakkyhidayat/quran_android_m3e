@@ -11,13 +11,16 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.preference.CheckBoxPreference
+import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceGroup
 import com.quran.data.source.PageProvider
+import com.quran.labs.androidquran.BuildConfig
 import com.quran.labs.androidquran.QuranAdvancedPreferenceActivity
 import com.quran.labs.androidquran.QuranApplication
 import com.quran.labs.androidquran.R
+import com.quran.labs.androidquran.common.ui.core.QuranThemeSettings
 import com.quran.labs.androidquran.data.Constants
 import com.quran.labs.androidquran.pageselect.PageSelectActivity
 import com.quran.labs.androidquran.ui.TranslationManagerActivity
@@ -75,6 +78,23 @@ class QuranSettingsFragment : PreferenceFragmentCompat() {
       true
     }
 
+    // handle color scheme preference
+    val colorSchemePref: ListPreference? = findPreference(Constants.PREF_APP_COLOR_SCHEME)
+    if (colorSchemePref != null) {
+      if (QuranThemeSettings.isDynamicColorAvailable) {
+        colorSchemePref.onPreferenceChangeListener =
+          Preference.OnPreferenceChangeListener { _, newValue ->
+            ThemeUtil.setColorScheme(newValue as String, (appContext as QuranApplication).activities)
+            true
+          }
+      } else {
+        // there's nothing to choose from before Android 12 - explain why instead
+        colorSchemePref.isEnabled = false
+        colorSchemePref.summaryProvider = null
+        colorSchemePref.setSummary(R.string.prefs_color_scheme_unavailable)
+      }
+    }
+
     // handle translation manager click
     val translationPref: Preference? = findPreference(Constants.PREF_TRANSLATION_MANAGER)
     translationPref?.setOnPreferenceClickListener {
@@ -82,11 +102,19 @@ class QuranSettingsFragment : PreferenceFragmentCompat() {
       true
     }
 
-    // handle audio manager click
-    val audioManagerPref: Preference? = findPreference(Constants.PREF_AUDIO_MANAGER)
-    audioManagerPref?.setOnPreferenceClickListener {
-      startActivity(Intent(activity, AudioManagerActivity::class.java))
-      true
+    if (BuildConfig.AUDIO_ENABLED) {
+      // handle audio manager click
+      val audioManagerPref: Preference? = findPreference(Constants.PREF_AUDIO_MANAGER)
+      audioManagerPref?.setOnPreferenceClickListener {
+        startActivity(Intent(activity, AudioManagerActivity::class.java))
+        true
+      }
+    } else {
+      // every preference in the download category (streaming, download amount, audio manager)
+      // is about recitation audio, so drop the whole category while audio is disabled.
+      findPreference<Preference>(Constants.PREF_DOWNLOAD_CATEGORY)?.let {
+        preferenceScreen.removePreference(it)
+      }
     }
 
     val pageChangePref: Preference? = findPreference(Constants.PREF_PAGE_TYPE)

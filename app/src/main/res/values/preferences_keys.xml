@@ -8,6 +8,7 @@
   <string translatable="false" name="prefs_path">quranSettings</string>
   <string translatable="false" name="prefs_advanced_path">quranAdvancedSettings</string>
   <string translatable="false" name="prefs_app_theme">appTheme</string>
+  <string translatable="false" name="prefs_app_color_scheme">appColorScheme</string>
   <string translatable="false" name="prefs_new_background">useNewBackground</string>
   <string translatable="false" name="prefs_dual_page_enabled">useDualPageMode</string>
   <string translatable="false" name="prefs_night_mode">nightMode</string>
@@ -43,6 +44,11 @@
   <string translatable="false" name="use_arabic_names">useArabicNames</string>
 
   <!-- theme property values, do not translate -->
+  <!-- color scheme property values, do not translate - see Constants.COLOR_SCHEME_* -->
+  <string-array name="color_scheme_values" translatable="false">
+    <item>dynamic</item>
+    <item>original</item>
+  </string-array>
   <array name="theme_values" translatable="false">
     <item>light</item>
     <item>dark</item>
