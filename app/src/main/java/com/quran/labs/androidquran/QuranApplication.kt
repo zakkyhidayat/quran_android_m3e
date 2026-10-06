@@ -59,6 +59,7 @@ open class QuranApplication : Application(), QuranApplicationComponentProvider {
 
   private fun setupColorScheme() {
     QuranThemeSettings.useDynamicColor = quranSettings.useDynamicColors()
+    QuranThemeSettings.useAmoled = quranSettings.useAmoled()
 
     // the xml themes carry the original palette; when dynamic color is chosen (and available, on
     // Android 12+), layer the wallpaper based palette on top of each activity's theme instead.

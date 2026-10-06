@@ -28,6 +28,7 @@ import com.quran.data.dao.ReadingBookmarksDao
 import com.quran.labs.androidquran.R
 import com.quran.labs.androidquran.data.QuranDisplayData
 import com.quran.labs.androidquran.presenter.data.JuzListPresenter
+import com.quran.labs.androidquran.ui.compose.HizbListState
 import com.quran.labs.androidquran.ui.compose.JuzListState
 import com.quran.labs.androidquran.ui.compose.SuraListState
 import com.quran.labs.androidquran.ui.helpers.QuranRowFactory
@@ -151,6 +152,9 @@ class QuranActivity : AppCompatActivity(),
   private val juzListState by lazy {
     JuzListState(this, quranInfo, quranDisplayData, juzListPresenter)
   }
+  private val hizbListState by lazy {
+    HizbListState(this, quranInfo, quranDisplayData, juzListPresenter)
+  }
   private val bookmarksState by lazy {
     BookmarksState(applicationContext, bookmarkPresenter, bookmarkUIConverter)
   }
@@ -175,6 +179,7 @@ class QuranActivity : AppCompatActivity(),
           actions = homeActions(),
           suraState = suraListState,
           juzState = juzListState,
+          hizbState = hizbListState,
           bookmarks = bookmarksState,
           bookmarkActions = bookmarksActions(),
           syncManager = syncManager,

@@ -95,6 +95,13 @@ class QuranSettingsFragment : PreferenceFragmentCompat() {
       }
     }
 
+    // handle the pure black (AMOLED) preference; Compose screens pick it up right away
+    findPreference<Preference>(Constants.PREF_AMOLED)?.onPreferenceChangeListener =
+      Preference.OnPreferenceChangeListener { _, newValue ->
+        QuranThemeSettings.useAmoled = newValue as Boolean
+        true
+      }
+
     // handle translation manager click
     val translationPref: Preference? = findPreference(Constants.PREF_TRANSLATION_MANAGER)
     translationPref?.setOnPreferenceClickListener {

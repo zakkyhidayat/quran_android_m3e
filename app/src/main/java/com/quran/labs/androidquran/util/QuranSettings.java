@@ -261,6 +261,11 @@ public class QuranSettings {
         prefs.getString(Constants.PREF_APP_COLOR_SCHEME, Constants.COLOR_SCHEME_DYNAMIC));
   }
 
+  /** Whether the dark theme uses a true black background instead of the dark gray one. */
+  public boolean useAmoled() {
+    return prefs.getBoolean(Constants.PREF_AMOLED, false);
+  }
+
   // probably should eventually move this to Application.onCreate..
   public void upgradePreferences(PreferencesUpgrade preferencesUpgrade) {
     int version = getVersion();

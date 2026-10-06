@@ -20,4 +20,7 @@ object QuranThemeSettings {
    * user's color scheme preference. Ignored when [isDynamicColorAvailable] is false.
    */
   var useDynamicColor: Boolean by mutableStateOf(true)
+
+  /** Whether the dark theme draws on true black (for OLED screens) instead of dark gray. */
+  var useAmoled: Boolean by mutableStateOf(false)
 }

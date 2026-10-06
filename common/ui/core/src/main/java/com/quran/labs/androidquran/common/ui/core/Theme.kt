@@ -11,6 +11,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -94,6 +95,22 @@ private val DarkColors = darkColorScheme(
   surfaceContainerHighest = darkSurfaceColorHighest
 )
 
+/**
+ * The same scheme on true black: the surfaces step up from black in small increments, so cards
+ * and containers still read as layers instead of vanishing into the background.
+ */
+private fun ColorScheme.toAmoled(): ColorScheme = copy(
+  background = Color.Black,
+  surface = Color.Black,
+  surfaceDim = Color.Black,
+  surfaceContainerLowest = Color.Black,
+  surfaceContainerLow = Color(0xFF0A0A0A),
+  surfaceContainer = Color(0xFF111111),
+  surfaceContainerHigh = Color(0xFF181818),
+  surfaceContainerHighest = Color(0xFF202020),
+  surfaceBright = Color(0xFF262626)
+)
+
 private val forceLtr = listOf("huawei", "lenovo", "tecno")
 
 object QuranIcons {
@@ -135,7 +152,7 @@ fun QuranTheme(
   content: @Composable () -> Unit
 ) {
   val context = LocalContext.current
-  val colors: ColorScheme =
+  val baseColors: ColorScheme =
     if (useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       if (useDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
     } else if (useDarkTheme) {
@@ -143,6 +160,7 @@ fun QuranTheme(
     } else {
       LightColors
     }
+  val colors = if (useDarkTheme && QuranThemeSettings.useAmoled) baseColors.toAmoled() else baseColors
 
   val quranColors = if (useDarkTheme) {
     darkQuranColors

@@ -159,6 +159,8 @@
   <!-- Quran Preference Activity -->
   <string name="appearance">Appearance</string>
   <string name="prefs_color_scheme_title">Color scheme</string>
+  <string name="prefs_amoled_title">Pure black (AMOLED)</string>
+  <string name="prefs_amoled_summary">Use a true black background in the dark theme</string>
   <string name="prefs_category_support">Support Quran.com</string>
   <string name="prefs_donate_title">Donate to Quran.com</string>
   <string name="prefs_donate_summary">Quran.com and its data are kept running by donations. Opens the Quran Foundation donation page.</string>
@@ -280,6 +282,7 @@
   <string name="quran_nos">½</string>
   <string name="quran_talt_arb3">¾</string>
   <string name="quran_hizb">Hizb</string>
+  <string name="hizb_description">Hizb %1$s</string>
   <string name="quran_juz2">Juz\'</string>
   <string name="quran_page">Page</string>
   <string name="quran_sura">Surahs</string>

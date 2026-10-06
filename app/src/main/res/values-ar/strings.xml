@@ -143,6 +143,7 @@
   <string name="quran_nos">نصف</string>
   <string name="quran_talt_arb3">ثلاثة أرباع</string>
   <string name="quran_hizb">الحزب</string>
+  <string name="hizb_description">الحزب %1$s</string>
   <string name="quran_juz2">الجزء</string>
   <string name="quran_page">الصفحة</string>
   <string name="quran_sura">سورة</string>

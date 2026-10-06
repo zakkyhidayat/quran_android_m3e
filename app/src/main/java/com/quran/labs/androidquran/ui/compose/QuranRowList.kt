@@ -274,7 +274,9 @@ private fun HighlightColorRow(
     onLongClick = onLongClick,
     selected = selected,
     shapes = shapes,
-    colors = ListItemDefaults.segmentedColors(),
+    colors = ListItemDefaults.segmentedColors(
+      containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    ),
     modifier = Modifier
       .padding(horizontal = 16.dp)
       .alpha(dim),
@@ -288,13 +290,15 @@ private fun HighlightColorRow(
       )
     },
     trailingContent = {
-      Text(
-        text = QuranUtils.getLocalizedNumber(count),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-      )
-      IconButton(onClick = onOpen) {
-        Icon(QuranIcons.ChevronRight, contentDescription = null)
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+          text = QuranUtils.getLocalizedNumber(count),
+          style = MaterialTheme.typography.labelLarge,
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        IconButton(onClick = onOpen) {
+          Icon(QuranIcons.ChevronRight, contentDescription = null)
+        }
       }
     }
   ) {
@@ -342,7 +346,9 @@ private fun QuranRowItem(
     onLongClick = onLongClick,
     selected = selected,
     shapes = shapes,
-    colors = ListItemDefaults.segmentedColors(),
+    colors = ListItemDefaults.segmentedColors(
+      containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    ),
     modifier = Modifier.padding(horizontal = 16.dp),
     leadingContent = { QuranRowLeading(row) },
     supportingContent = if (metadata.isNullOrEmpty() && tags.isEmpty()) {

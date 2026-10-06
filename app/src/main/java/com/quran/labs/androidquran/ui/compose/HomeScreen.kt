@@ -14,7 +14,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.AppBarWithSearch
+import androidx.compose.material3.ExpandedFullScreenSearchBar
+import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SearchBarValue
+import androidx.compose.material3.rememberSearchBarState
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
@@ -33,7 +39,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -86,8 +92,13 @@ class HomeActions(
 
 class HomeExtraItem(@StringRes val titleResId: Int, val onClick: () -> Unit)
 
-private val TabTitles = listOf(R.string.quran_sura, R.string.quran_juz2, R.string.menu_bookmarks)
-private const val BOOKMARKS_TAB = 2
+private val TabTitles = listOf(
+  R.string.quran_sura,
+  R.string.quran_juz2,
+  R.string.quran_hizb,
+  R.string.menu_bookmarks
+)
+private const val BOOKMARKS_TAB = 3
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -95,6 +106,7 @@ fun HomeScreen(
   actions: HomeActions,
   suraState: SuraListState,
   juzState: JuzListState,
+  hizbState: HizbListState,
   bookmarks: BookmarksState,
   bookmarkActions: BookmarksActions,
   syncManager: QuranSyncManager,
@@ -105,13 +117,17 @@ fun HomeScreen(
   val pagerState = rememberPagerState(pageCount = { TabTitles.size })
   val scope = rememberCoroutineScope()
   val snackbarHostState = remember { SnackbarHostState() }
-  val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-  var searching by rememberSaveable { mutableStateOf(false) }
   val selecting = bookmarks.isSelecting
+
+  val searchBarState = rememberSearchBarState()
+  val searchTextState = rememberTextFieldState()
+  val searchScrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
+  val isSearchOpen = searchBarState.currentValue == SearchBarValue.Expanded
 
   // the lists live here, not in their tabs, so a tab keeps its scroll position while off screen
   val suraListState = rememberLazyListState()
   val juzListState = rememberLazyListState()
+  val hizbListState = rememberLazyListState()
   val lifecycle = LocalLifecycleOwner.current.lifecycle
 
   LaunchedEffect(suraState) {
@@ -126,13 +142,18 @@ fun HomeScreen(
     juzState.load()
     lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
       val page = latestPage()
-      if (page != Constants.NO_PAGE) {
-        juzListState.scrollToItem(juzState.positionFor(page))
-      }
+      if (page != Constants.NO_PAGE) juzListState.scrollToItem(juzState.positionFor(page))
+    }
+  }
+  LaunchedEffect(hizbState) {
+    hizbState.load()
+    lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+      val page = latestPage()
+      if (page != Constants.NO_PAGE) hizbListState.scrollToItem(hizbState.positionFor(page))
     }
   }
 
-  BackHandler(enabled = searching) { searching = false }
+  BackHandler(enabled = isSearchOpen) { scope.launch { searchBarState.animateToCollapsed() } }
   BackHandler(enabled = selecting) { bookmarks.clearSelection() }
   // selection belongs to the bookmarks tab, so swiping to another tab drops it
   LaunchedEffect(pagerState.currentPage) {
@@ -160,19 +181,39 @@ fun HomeScreen(
     }
   }
 
+  val submitSearch: (String) -> Unit = { query ->
+    if (query.isNotBlank()) {
+      scope.launch { searchBarState.animateToCollapsed() }
+      actions.onSearch(query.trim())
+      // the results open in their own screen, so the bar should be empty when you come back
+      searchTextState.clearText()
+    }
+  }
+  val searchField: @Composable () -> Unit = {
+    SearchBarDefaults.InputField(
+      textFieldState = searchTextState,
+      searchBarState = searchBarState,
+      onSearch = submitSearch,
+      placeholder = { Text(stringResource(R.string.search_hint)) },
+      leadingIcon = {
+        Icon(QuranIcons.Search, contentDescription = stringResource(R.string.menu_search))
+      }
+    )
+  }
+
   val navigationBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
   // leave room under the lists for the continue-reading button
   val listPadding = PaddingValues(top = 4.dp, bottom = navigationBarPadding + 96.dp)
 
   Scaffold(
-    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+    modifier = Modifier.nestedScroll(searchScrollBehavior.nestedScrollConnection),
     containerColor = MaterialTheme.colorScheme.surface,
     contentWindowInsets = WindowInsets.systemBars
       .union(WindowInsets.displayCutout)
       .only(WindowInsetsSides.Horizontal),
     snackbarHost = { SnackbarHost(snackbarHostState) },
     floatingActionButton = {
-      if (!selecting && !searching) {
+      if (!selecting && !isSearchOpen) {
         ExtendedFloatingActionButton(
           onClick = actions.onLastPage,
           icon = { Icon(QuranIcons.MenuBook, contentDescription = null) },
@@ -183,60 +224,35 @@ fun HomeScreen(
     },
     topBar = {
       Column {
-        when {
-          selecting -> SelectionBar(
+        if (selecting) {
+          SelectionBar(
             bookmarks = bookmarks,
             actions = bookmarkActions,
             onDelete = deleteSelected
           )
-
-          searching -> TopAppBar(
-            title = {
-              SearchField(onSearch = {
-                searching = false
-                actions.onSearch(it)
-              })
-            },
-            navigationIcon = {
-              IconButton(onClick = { searching = false }) {
-                Icon(
-                  QuranIcons.ArrowBack,
-                  contentDescription = stringResource(R.string.download_cancel)
-                )
-              }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-              containerColor = MaterialTheme.colorScheme.surface
-            )
-          )
-
-          else -> LargeFlexibleTopAppBar(
-            title = { Text(stringResource(R.string.app_name)) },
+        } else {
+          AppBarWithSearch(
+            state = searchBarState,
+            inputField = searchField,
             actions = {
               if (pagerState.currentPage == BOOKMARKS_TAB) {
                 BookmarkOptionsMenu(bookmarks)
               }
-              IconButton(onClick = { searching = true }) {
-                Icon(QuranIcons.Search, contentDescription = stringResource(R.string.menu_search))
-              }
               OverflowMenu(actions)
             },
-            colors = TopAppBarDefaults.topAppBarColors(
-              containerColor = MaterialTheme.colorScheme.surface,
-              scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
-            ),
-            scrollBehavior = scrollBehavior
+            scrollBehavior = searchScrollBehavior
           )
         }
-        PrimaryTabRow(
+        PrimaryScrollableTabRow(
           selectedTabIndex = pagerState.currentPage,
+          edgePadding = 12.dp,
           containerColor = MaterialTheme.colorScheme.surface
         ) {
           TabTitles.forEachIndexed { index, titleResId ->
             Tab(
               selected = pagerState.currentPage == index,
               onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-              text = { Text(stringResource(titleResId)) }
+              text = { Text(stringResource(titleResId), maxLines = 1) }
             )
           }
         }
@@ -265,6 +281,13 @@ fun HomeScreen(
           onRowClick = { _, row -> if (row.page != 0) onRowClick(row) }
         )
 
+        2 -> QuranRowList(
+          rows = hizbState.rows,
+          listState = hizbListState,
+          contentPadding = listPadding,
+          onRowClick = { _, row -> if (row.page != 0) onRowClick(row) }
+        )
+
         else -> BookmarksTab(
           state = bookmarks,
           actions = bookmarkActions,
@@ -275,6 +298,9 @@ fun HomeScreen(
       }
     }
   }
+
+  // the search bar grows to fill the screen when tapped; results open in the search screen
+  ExpandedFullScreenSearchBar(state = searchBarState, inputField = searchField) {}
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -319,28 +345,6 @@ private fun SelectionBar(
       actionIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer
     )
   )
-}
-
-@Composable
-private fun SearchField(onSearch: (String) -> Unit) {
-  var query by rememberSaveable { mutableStateOf("") }
-  val focusRequester = remember { FocusRequester() }
-  TextField(
-    value = query,
-    onValueChange = { query = it },
-    singleLine = true,
-    placeholder = { Text(stringResource(R.string.search_hint)) },
-    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-    keyboardActions = KeyboardActions(onSearch = { if (query.isNotBlank()) onSearch(query.trim()) }),
-    colors = TextFieldDefaults.colors(
-      focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-      unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-      focusedIndicatorColor = Color.Transparent,
-      unfocusedIndicatorColor = Color.Transparent
-    ),
-    modifier = Modifier.focusRequester(focusRequester)
-  )
-  LaunchedEffect(Unit) { focusRequester.requestFocus() }
 }
 
 @Composable

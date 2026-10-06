@@ -175,3 +175,79 @@ class JuzListState(
     )
   }
 }
+
+/**
+ * The hizb tab's state: the same 240 quarters as the juz tab, grouped by the 60 hizb instead. each
+ * hizb is a header followed by its four quarters (the start, a quarter, a half and three quarters).
+ */
+class HizbListState(
+  private val context: Context,
+  private val quranInfo: QuranInfo,
+  private val quranDisplayData: QuranDisplayData,
+  private val juzListPresenter: JuzListPresenter
+) {
+  var rows by mutableStateOf<List<QuranRow>>(emptyList())
+    private set
+
+  private val quarterPages by lazy {
+    IntArray(QUARTERS) { i ->
+      val pos = quranInfo.getQuarterByIndex(i)
+      quranInfo.getPageFromSuraAyah(pos.sura, pos.ayah)
+    }
+  }
+
+  suspend fun load() {
+    val quarters = if (QuranFileConstants.FETCH_QUARTER_NAMES_FROM_DATABASE) {
+      juzListPresenter.quarters().toTypedArray()
+    } else {
+      context.resources.getStringArray(R.array.quarter_prefix_array)
+    }
+    if (quarters.isNotEmpty()) rows = buildRows(quarters)
+  }
+
+  /** The row of the hizb [page] is in, so it can be scrolled into view. */
+  fun positionFor(page: Int): Int {
+    val quarter = quarterPages.indexOfLast { it <= page }.coerceAtLeast(0)
+    return (quarter / 4) * ROWS_PER_HIZB
+  }
+
+  private fun buildRows(quarters: Array<String>): List<QuranRow> {
+    val elements = ArrayList<QuranRow>(HIZB_COUNT * ROWS_PER_HIZB)
+    for (i in 0 until QUARTERS) {
+      val pos = quranInfo.getQuarterByIndex(i)
+      val page = quarterPages[i]
+      val hizbNumber = QuranUtils.getLocalizedNumber(1 + i / 4)
+      if (i % 4 == 0) {
+        elements += QuranRow.Builder()
+          .withType(QuranRow.HEADER)
+          .withText(context.getString(R.string.hizb_description, hizbNumber))
+          .withPage(page)
+          .build()
+      }
+      val builder = QuranRow.Builder()
+        .withText(quarters[i] + "...")
+        .withMetadata(
+          context.getString(
+            R.string.sura_ayah_notification_str,
+            quranDisplayData.getSuraName(context, pos.sura, false),
+            pos.ayah
+          )
+        )
+        .withPage(page)
+        .withJuzType(ENTRY_TYPES[i % 4])
+      if (i % 4 == 0) builder.withJuzOverlayText(hizbNumber)
+      elements += builder.build()
+    }
+    return elements
+  }
+
+  private companion object {
+    private const val HIZB_COUNT = 60
+    private const val QUARTERS = HIZB_COUNT * 4
+    private const val ROWS_PER_HIZB = 5
+    private val ENTRY_TYPES = intArrayOf(
+      JuzView.TYPE_JUZ, JuzView.TYPE_QUARTER,
+      JuzView.TYPE_HALF, JuzView.TYPE_THREE_QUARTERS
+    )
+  }
+}
