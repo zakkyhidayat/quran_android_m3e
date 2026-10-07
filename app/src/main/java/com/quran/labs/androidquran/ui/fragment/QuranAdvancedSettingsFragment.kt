@@ -164,27 +164,6 @@ class QuranAdvancedSettingsFragment : QuranPreferenceFragment() {
         true
       }
 
-    val exportCSVPref = findPreference<Preference>(Constants.PREF_EXPORT_CSV)
-    exportCSVPref?.onPreferenceClickListener =
-      Preference.OnPreferenceClickListener {
-        if (exportSubscription == null) {
-          exportSubscription = bookmarkImportExportModel.exportBookmarksCSVObservable()
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribeWith(object : DisposableSingleObserver<Uri>() {
-              override fun onSuccess(uri: Uri) {
-                onBookmarkExportSuccess(uri, context)
-                exportSubscription = null
-              }
-
-              override fun onError(e: Throwable) {
-                exportSubscription = null
-                onExportBookmarksError(context)
-              }
-            })
-        }
-        true
-      }
-
     internalSdcardLocation = Environment.getExternalStorageDirectory().absolutePath
     listStoragePref = findPreference(getString(R.string.prefs_app_location))!!
     listStoragePref.isEnabled = false
