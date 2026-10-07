@@ -19,6 +19,8 @@ import java.util.Set;
 
 
 public class QuranSettings {
+  private static final int NIGHT_PAGE_GRAY = 28;
+
   private static final String PREFS_FILE = "com.quran.labs.androidquran.per_installation";
 
   private static QuranSettings instance;
@@ -102,8 +104,11 @@ public class QuranSettings {
     return Constants.DEFAULT_NIGHT_MODE_TEXT_BRIGHTNESS;
   }
 
+  /**
+   * The night page: a dark gray like the dark theme, or pure black when the AMOLED setting is on.
+   */
   public int getNightModeBackgroundBrightness() {
-    return Constants.DEFAULT_NIGHT_MODE_BACKGROUND_BRIGHTNESS;
+    return useAmoled() ? Constants.DEFAULT_NIGHT_MODE_BACKGROUND_BRIGHTNESS : NIGHT_PAGE_GRAY;
   }
 
   public boolean shouldOverlayPageInfo() {

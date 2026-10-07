@@ -6,6 +6,7 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.util.AttributeSet
 import android.view.Menu
+import android.view.animation.AccelerateInterpolator
 import androidx.dynamicanimation.animation.DynamicAnimation
 import androidx.dynamicanimation.animation.SpringAnimation
 import android.view.MenuInflater
@@ -520,6 +521,7 @@ class AyahToolBar @JvmOverloads constructor(
     val appearing = !isShowing
     showMenu(menu)
     if (appearing) {
+      animate().cancel()
       // hidden until the spring starts, so there is no frame of the window at full size
       alpha = 0f
       scaleX = 0.8f
@@ -554,17 +556,45 @@ class AyahToolBar @JvmOverloads constructor(
     }
   }
 
+  private val appearSprings = mutableListOf<SpringAnimation>()
+
   private fun startSpring(view: View, property: DynamicAnimation.ViewProperty, target: Float, damping: Float) {
-    SpringAnimation(view, property, target).apply {
+    val animation = SpringAnimation(view, property, target).apply {
       spring.stiffness = 380f
       spring.dampingRatio = damping
-      start()
     }
+    if (view === this) {
+      appearSprings.removeAll { !it.isRunning }
+      appearSprings.add(animation)
+    }
+    animation.start()
   }
 
   private fun hideMenu() {
+    val wasVisible = visibility == VISIBLE
     isShowing = false
-    visibility = GONE
+    appearSprings.forEach { if (it.isRunning) it.cancel() }
+    if (!wasVisible) {
+      visibility = GONE
+      return
+    }
+    // it shrinks back toward the ayah and fades, quicker than it came
+    animate().cancel()
+    animate()
+      .alpha(0f)
+      .scaleX(0.85f)
+      .scaleY(0.85f)
+      .setDuration(150)
+      .setInterpolator(AccelerateInterpolator())
+      .withEndAction {
+        if (!isShowing) {
+          visibility = GONE
+          alpha = 1f
+          scaleX = 1f
+          scaleY = 1f
+        }
+      }
+      .start()
   }
 
   fun setOnItemSelectedListener(listener: OnMenuItemClickListener?) {
