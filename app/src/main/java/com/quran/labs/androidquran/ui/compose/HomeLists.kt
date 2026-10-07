@@ -44,6 +44,10 @@ class SuraListState(
   var lastReadSura by mutableIntStateOf(0)
     private set
 
+  /** The page last read, or 0 when nothing was read yet. */
+  var lastReadPage by mutableIntStateOf(0)
+    private set
+
   /** Keeps the pinned reading bookmarks current; run it while the screen is started. */
   suspend fun observeReadingBookmarks() {
     readingBookmarksDao.readingBookmarksFlow()
@@ -65,6 +69,7 @@ class SuraListState(
     readingBookmarks = placed(readingBookmarksDao.readingBookmarks())
     rows = buildRows()
     val recentPage = latestPage()
+    lastReadPage = if (recentPage == Constants.NO_PAGE) 0 else recentPage
     lastReadSura = if (recentPage == Constants.NO_PAGE) 0 else quranDisplayData.safelyGetSuraOnPage(recentPage)
   }
 

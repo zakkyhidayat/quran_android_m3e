@@ -244,7 +244,18 @@ fun HomeScreen(
         ExtendedFloatingActionButton(
           onClick = actions.onLastPage,
           icon = { Icon(QuranIcons.MenuBook, contentDescription = null) },
-          text = { Text(stringResource(R.string.menu_jump_last_page)) },
+          text = {
+            Text(
+              if (suraState.lastReadPage != 0) {
+                stringResource(
+                  R.string.continue_reading_page,
+                  QuranUtils.getLocalizedNumber(suraState.lastReadPage)
+                )
+              } else {
+                stringResource(R.string.start_reading)
+              }
+            )
+          },
           expanded = fabExpanded,
           modifier = Modifier.padding(bottom = navigationBarPadding)
         )
