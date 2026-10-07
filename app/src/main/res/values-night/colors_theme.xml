@@ -22,9 +22,9 @@
   <color name="quran_error_container">#FF93000A</color>
   <color name="quran_on_error">#FF690005</color>
   <color name="quran_on_error_container">#FFFFDAD6</color>
-  <color name="quran_background">#FF111411</color>
+  <color name="quran_background">#FF1B1E1C</color>
   <color name="quran_on_background">#FFE1E3DE</color>
-  <color name="quran_surface">#FF111411</color>
+  <color name="quran_surface">#FF1B1E1C</color>
   <color name="quran_on_surface">#FFE1E3DE</color>
   <color name="quran_surface_variant">#FF414942</color>
   <color name="quran_on_surface_variant">#FFC0C9C0</color>
@@ -33,11 +33,11 @@
   <color name="quran_inverse_on_surface">#FF2E312E</color>
   <color name="quran_inverse_surface">#FFE1E3DE</color>
   <color name="quran_inverse_primary">#FF006D3E</color>
-  <color name="quran_surface_dim">#FF111411</color>
-  <color name="quran_surface_bright">#FF373A37</color>
-  <color name="quran_surface_container_lowest">#FF0C0F0C</color>
-  <color name="quran_surface_container_low">#FF191C1A</color>
-  <color name="quran_surface_container">#FF1D201E</color>
-  <color name="quran_surface_container_high">#FF282B28</color>
-  <color name="quran_surface_container_highest">#FF323532</color>
+  <color name="quran_surface_dim">#FF1B1E1C</color>
+  <color name="quran_surface_bright">#FF404441</color>
+  <color name="quran_surface_container_lowest">#FF161916</color>
+  <color name="quran_surface_container_low">#FF202321</color>
+  <color name="quran_surface_container">#FF252826</color>
+  <color name="quran_surface_container_high">#FF2F322F</color>
+  <color name="quran_surface_container_highest">#FF3A3D3A</color>
 </resources>
