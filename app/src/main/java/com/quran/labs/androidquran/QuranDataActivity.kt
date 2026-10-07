@@ -632,6 +632,11 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
       resources.configuration.smallestScreenWidthDp >= 600
     state.splitTranslation = quranSettings.isQuranSplitWithTranslation()
     state.dualPage = QuranUtils.isDualPagesInLandscape(this, quranScreenInfo)
+    // the setup starts on the original green; the wallpaper colors are for the person to switch on
+    if (!quranSettings.hasColorSchemeChoice()) {
+      quranSettings.setColorScheme(Constants.COLOR_SCHEME_ORIGINAL)
+      QuranThemeSettings.useDynamicColor = false
+    }
     state.dynamicColor = QuranThemeSettings.isDynamicColorAvailable && quranSettings.useDynamicColors()
     state.arabic = QuranUtils.getCurrentLocale().language == "ar"
     state.dyslexicFont = quranSettings.wantDyslexicFontInTranslationView()

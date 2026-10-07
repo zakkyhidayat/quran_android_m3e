@@ -283,6 +283,11 @@ public class QuranSettings {
     prefs.edit().putString(Constants.PREF_APP_THEME, theme).apply();
   }
 
+  /** Whether a color scheme was ever chosen, by the person or by the setup. */
+  public boolean hasColorSchemeChoice() {
+    return prefs.contains(Constants.PREF_APP_COLOR_SCHEME);
+  }
+
   public void setColorScheme(String colorScheme) {
     prefs.edit().putString(Constants.PREF_APP_COLOR_SCHEME, colorScheme).apply();
   }

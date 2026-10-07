@@ -168,14 +168,14 @@ class OnboardingActions(
 
 private enum class Step(@StringRes val title: Int, @StringRes val body: Int) {
   WELCOME(R.string.onboarding_welcome_title, R.string.onboarding_welcome_body),
+  PAGES(R.string.onboarding_pages_title, R.string.onboarding_pages_body),
   DATA(R.string.onboarding_data_title, R.string.onboarding_data_body),
   THEME(R.string.onboarding_theme_title, R.string.onboarding_theme_body),
   LANGUAGE(R.string.onboarding_language_title, R.string.onboarding_language_body),
   FONT(R.string.onboarding_font_title, R.string.onboarding_font_body),
   ORDER(R.string.onboarding_order_title, R.string.onboarding_order_body),
   TRANSLATION(R.string.onboarding_translation_title, R.string.onboarding_translation_body),
-  DUAL(R.string.onboarding_dual_title, R.string.onboarding_dual_body),
-  PAGES(R.string.onboarding_pages_title, R.string.onboarding_pages_body)
+  DUAL(R.string.onboarding_dual_title, R.string.onboarding_dual_body)
 }
 
 /**
@@ -1044,7 +1044,7 @@ private fun PageStyles(state: OnboardingState, actions: OnboardingActions) {
         modifier = Modifier.padding(top = 8.dp)
       )
 
-      // the style in use is downloaded on the previous step, so show its progress here too
+      // the style in use is downloaded on the next step, so show its progress here when coming back
       if (style.inUse && !style.downloaded && state.pages != PagesDownload.NotStarted) {
         Column(Modifier.padding(top = 12.dp)) { PagesDownloadCard(state.pages, actions.onDownloadPages) }
       }
@@ -1055,12 +1055,10 @@ private fun PageStyles(state: OnboardingState, actions: OnboardingActions) {
         modifier = Modifier.padding(top = 12.dp)
       ) {
         when {
-          !style.downloaded && (!style.inUse || state.pages == PagesDownload.NotStarted) ->
-            FilledTonalButton(onClick = {
-              if (style.inUse) actions.onDownloadPages() else actions.onDownloadPageStyle(style.key)
-            }) {
-              Icon(HomeIcons.Download, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
-              Text(stringResource(R.string.page_style_download), modifier = Modifier.padding(start = 8.dp))
+          // choosing comes first; the next step downloads whichever style is chosen
+          !style.downloaded && !style.inUse ->
+            FilledTonalButton(onClick = { actions.onDownloadPageStyle(style.key) }) {
+              Text(stringResource(R.string.page_style_choose))
             }
 
           style.downloaded && !style.inUse ->

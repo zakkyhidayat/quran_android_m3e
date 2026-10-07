@@ -528,10 +528,11 @@
   <string name="onboarding_translation_body">Pick one or more. You can add, order or remove translations at any time.</string>
   <string name="onboarding_translation_error">The list of translations could not be loaded. Check your connection and try again.</string>
   <string name="onboarding_pages_title">Page style</string>
-  <string name="onboarding_pages_body">The mushaf layout used for the pages. To remove a style, download another one first, so there is always one to read.</string>
+  <string name="onboarding_pages_body">Choose the mushaf layout first. The next step downloads the one you pick. To remove a style, download another one first, so there is always one to read.</string>
   <string name="page_style_in_use">In use</string>
   <string name="page_style_downloaded">Downloaded</string>
   <string name="page_style_not_downloaded">Not downloaded</string>
+  <string name="page_style_choose">Choose</string>
   <string name="page_style_use">Use</string>
   <string name="page_style_download">Download</string>
   <string name="page_style_remove">Remove</string>
