@@ -52,6 +52,13 @@ class SuraListState(
   var lastReadPage by mutableIntStateOf(0)
     private set
 
+  /** Follows the page last read, so the highlighted surah changes as soon as you read another. */
+  fun onLatestPage(page: Int) {
+    lastReadPage = if (page == Constants.NO_PAGE) 0 else page
+    lastReadAyah = if (page == Constants.NO_PAGE) 0 else runCatching { quranInfo.getFirstAyahOnPage(page) }.getOrDefault(0)
+    lastReadSura = if (page == Constants.NO_PAGE) 0 else quranDisplayData.safelyGetSuraOnPage(page)
+  }
+
   /** Keeps the pinned reading bookmarks current; run it while the screen is started. */
   suspend fun observeReadingBookmarks() {
     readingBookmarksDao.readingBookmarksFlow()

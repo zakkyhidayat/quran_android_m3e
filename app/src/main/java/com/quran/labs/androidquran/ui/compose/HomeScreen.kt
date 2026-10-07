@@ -27,6 +27,7 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
@@ -89,6 +90,7 @@ import com.quran.labs.androidquran.ui.helpers.QuranRow
 import com.quran.labs.androidquran.util.QuranUtils
 import com.quran.mobile.feature.sync.QuranSyncManager
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 /** What the home screen's app bar can trigger. The activity owns what each of these does. */
@@ -128,6 +130,7 @@ fun HomeScreen(
   bookmarkActions: BookmarksActions,
   syncManager: QuranSyncManager,
   latestPage: suspend () -> Int,
+  latestPageFlow: Flow<Int>,
   onRowClick: (QuranRow) -> Unit
 ) {
   val context = LocalContext.current
@@ -154,6 +157,11 @@ fun HomeScreen(
     lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
       // the list stays where it is (the top on a fresh start); the surah last read is highlighted
       suraState.onResume(latestPage)
+    }
+  }
+  LaunchedEffect(suraState) {
+    lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+      latestPageFlow.collect { suraState.onLatestPage(it) }
     }
   }
   LaunchedEffect(juzState) {
@@ -247,15 +255,22 @@ fun HomeScreen(
           text = {
             Text(
               if (suraState.lastReadPage != 0) {
-                // the same words every time, so the button never changes width
-                stringResource(R.string.continue_reading)
+                stringResource(
+                  R.string.continue_reading_page,
+                  QuranUtils.getLocalizedNumber(suraState.lastReadPage),
+                  QuranUtils.getLocalizedNumber(suraState.lastReadSura) + ":" +
+                    QuranUtils.getLocalizedNumber(suraState.lastReadAyah)
+                )
               } else {
                 stringResource(R.string.start_reading)
               }
             )
           },
           expanded = fabExpanded,
-          modifier = Modifier.padding(bottom = navigationBarPadding)
+          // one width for every page and ayah, and for "Start reading", so the button never shifts
+          modifier = Modifier
+            .padding(bottom = navigationBarPadding)
+            .then(if (fabExpanded) Modifier.widthIn(min = 252.dp) else Modifier)
         )
       }
     },

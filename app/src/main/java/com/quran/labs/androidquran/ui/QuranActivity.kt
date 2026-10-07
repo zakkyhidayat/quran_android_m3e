@@ -191,6 +191,7 @@ class QuranActivity : AppCompatActivity(),
           bookmarkActions = bookmarksActions(),
           syncManager = syncManager,
           latestPage = ::latestPage,
+          latestPageFlow = latestPageFlow,
           onRowClick = ::jumpTo
         )
 
