@@ -4,4 +4,6 @@
   <string name="madani_description">The classic Madani script.</string>
   <string name="tajweed_title">Tajweed Mushaf</string>
   <string name="tajweed_description">Mushaf with Tajweed coloring.</string>
+  <string name="naskh_title">IndoPak (Naskh) Mushaf</string>
+  <string name="naskh_description">The Naskh script in the Indo-Pak layout.</string>
 </resources>
