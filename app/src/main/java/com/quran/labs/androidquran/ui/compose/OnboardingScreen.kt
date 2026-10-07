@@ -205,7 +205,7 @@ fun OnboardingScreen(
   }
 
   Scaffold(
-    containerColor = MaterialTheme.colorScheme.surface,
+    containerColor = arrivalBackground(MaterialTheme.colorScheme.surface),
     contentWindowInsets = WindowInsets(0),
     topBar = {
       if (step != Step.WELCOME) {
@@ -595,7 +595,7 @@ private fun PagesDownloadCard(pages: PagesDownload, onDownload: () -> Unit) {
 @Composable
 fun PagesDownloadScreen(state: OnboardingState, onDownload: () -> Unit, onSkip: () -> Unit) {
   Scaffold(
-    containerColor = MaterialTheme.colorScheme.surface,
+    containerColor = arrivalBackground(MaterialTheme.colorScheme.surface),
     contentWindowInsets = WindowInsets(0)
   ) { padding ->
     Column(

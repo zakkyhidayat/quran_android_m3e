@@ -1,6 +1,11 @@
 package com.quran.labs.androidquran.ui.compose
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.interaction.InteractionSource
@@ -44,4 +49,25 @@ fun Modifier.pressScale(source: InteractionSource, pressed: Float = 0.96f): Modi
     scaleX = scale
     scaleY = scale
   }
+}
+
+/**
+ * The background of a screen that opens right after the system splash: it starts from the color
+ * the window already has (the splash's) and glides to the theme's own, so there is no flash of a
+ * different color between the two.
+ */
+@Composable
+fun arrivalBackground(target: Color): Color {
+  val context = LocalContext.current
+  // the system splash is painted in the app theme's surface color, before any dynamic color applies
+  val from = remember {
+    Color(com.google.android.material.color.MaterialColors.getColor(
+      context, com.google.android.material.R.attr.colorSurface, target.toArgb()
+    ))
+  }
+  val color = remember { androidx.compose.animation.Animatable(from) }
+  LaunchedEffect(target) {
+    color.animateTo(target, tween(320))
+  }
+  return color.value
 }
