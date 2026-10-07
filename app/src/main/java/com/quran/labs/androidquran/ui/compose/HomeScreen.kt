@@ -160,12 +160,7 @@ class HomeExtraItem(@StringRes val titleResId: Int, val onClick: () -> Unit)
  * stretches out in the middle of the way, then settles at its tab.
  */
 @Composable
-private fun TabIndicator(
-  pagerState: PagerState,
-  tabCount: Int,
-  labelWidths: Map<Int, Float>,
-  modifier: Modifier = Modifier
-) {
+private fun TabIndicator(pagerState: PagerState, tabCount: Int, modifier: Modifier = Modifier) {
   val color = MaterialTheme.colorScheme.primary
   Box(
     modifier = modifier
@@ -176,13 +171,8 @@ private fun TabIndicator(
         val progress = pagerState.currentPage + pagerState.currentPageOffsetFraction
         val within = progress - floor(progress)
         val stretch = 1f - abs(2f * within - 1f)
-        // as wide as the label of the tab it is under, as the Material 3 primary tab asks
-        val from = pagerState.currentPage.coerceIn(0, tabCount - 1)
-        val to = (from + 1).coerceAtMost(tabCount - 1)
-        val fromWidth = labelWidths[from] ?: 40.dp.toPx()
-        val toWidth = labelWidths[to] ?: fromWidth
-        val baseWidth = fromWidth + (toWidth - fromWidth) * within
-        val width = baseWidth + 20.dp.toPx() * stretch
+        val baseWidth = 40.dp.toPx()
+        val width = baseWidth + 28.dp.toPx() * stretch
         val center = progress * tabWidth + tabWidth / 2f
         drawRoundRect(
           color = color,
@@ -478,7 +468,6 @@ fun HomeScreen(
             scrollBehavior = searchScrollBehavior
           )
         }
-        val labelWidths = remember { mutableStateMapOf<Int, Float>() }
         Box {
         PrimaryTabRow(
           selectedTabIndex = pagerState.currentPage,
@@ -495,8 +484,6 @@ fun HomeScreen(
                   pagerState.animateScrollToPage(index, animationSpec = spring(dampingRatio = 0.8f, stiffness = 380f))
                 }
               },
-              // the state layer is a rounded pill rather than a square
-              modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp).clip(RoundedCornerShape(20.dp)),
               selectedContentColor = MaterialTheme.colorScheme.primary,
               unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             ) {
@@ -505,15 +492,14 @@ fun HomeScreen(
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = if (selectedTab) FontWeight.Bold else FontWeight.Medium,
                 maxLines = 1,
-                onTextLayout = { labelWidths[index] = it.size.width.toFloat() },
                 modifier = Modifier
-                  .heightIn(min = 40.dp)
+                  .heightIn(min = 48.dp)
                   .wrapContentHeight(Alignment.CenterVertically)
               )
             }
           }
         }
-        TabIndicator(pagerState, TabTitles.size, labelWidths, Modifier.align(Alignment.BottomStart))
+        TabIndicator(pagerState, TabTitles.size, Modifier.align(Alignment.BottomStart))
         }
       }
     }
