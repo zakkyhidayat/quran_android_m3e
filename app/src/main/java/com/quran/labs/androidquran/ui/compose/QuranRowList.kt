@@ -5,6 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -333,7 +334,7 @@ private fun HighlightColorRow(
   }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun QuranRowItem(
   row: QuranRow,
@@ -429,11 +430,14 @@ private fun QuranRowItem(
       null
     }
   ) {
+    // a long name scrolls sideways instead of being cut off
     Text(
       text = row.text.orEmpty(),
       style = MaterialTheme.typography.titleMedium,
       maxLines = 1,
-      overflow = TextOverflow.Ellipsis
+      softWrap = false,
+      overflow = TextOverflow.Clip,
+      modifier = Modifier.basicMarquee(initialDelayMillis = 1500)
     )
   }
 }

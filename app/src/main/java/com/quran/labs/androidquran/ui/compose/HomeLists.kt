@@ -44,6 +44,10 @@ class SuraListState(
   var lastReadSura by mutableIntStateOf(0)
     private set
 
+  /** The first ayah on the page last read. */
+  var lastReadAyah by mutableIntStateOf(0)
+    private set
+
   /** The page last read, or 0 when nothing was read yet. */
   var lastReadPage by mutableIntStateOf(0)
     private set
@@ -70,6 +74,7 @@ class SuraListState(
     rows = buildRows()
     val recentPage = latestPage()
     lastReadPage = if (recentPage == Constants.NO_PAGE) 0 else recentPage
+    lastReadAyah = if (recentPage == Constants.NO_PAGE) 0 else runCatching { quranInfo.getFirstAyahOnPage(recentPage) }.getOrDefault(0)
     lastReadSura = if (recentPage == Constants.NO_PAGE) 0 else quranDisplayData.safelyGetSuraOnPage(recentPage)
   }
 
@@ -81,7 +86,8 @@ class SuraListState(
       readingBookmarks.forEach { elements += quranRowFactory.fromReadingBookmark(context, it) }
     }
 
-    val wantPrefix = context.resources.getBoolean(R.bool.show_surat_prefix)
+    // the list is the surahs, so "Surah" in front of every name only repeats itself
+    val wantPrefix = false
     val wantTranslation = quranSettings.isShowSuraTranslatedName
     for (sura in 1..SURAS_COUNT) {
       elements += QuranRow.Builder()
