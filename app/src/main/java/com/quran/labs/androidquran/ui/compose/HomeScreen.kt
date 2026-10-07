@@ -282,6 +282,11 @@ fun HomeScreen(
             )
             Box(contentAlignment = Alignment.Center) {
               Text(longest, maxLines = 1, modifier = Modifier.alpha(0f).clearAndSetSemantics {})
+              Text(
+                stringResource(R.string.start_reading),
+                maxLines = 1,
+                modifier = Modifier.alpha(0f).clearAndSetSemantics {}
+              )
               Text(fabLabel, maxLines = 1)
             }
           },
