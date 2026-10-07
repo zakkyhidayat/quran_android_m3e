@@ -108,10 +108,9 @@
 
   <!-- one action in the row of the selected verse -->
   <style name="VerseActionButton">
-    <item name="android:layout_width">40dp</item>
+    <item name="android:layout_width">36dp</item>
     <item name="android:layout_height">36dp</item>
-    <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
-    <item name="android:tint">?attr/colorOnSecondaryContainer</item>
+    <item name="android:layout_marginStart">6dp</item>
     <item name="android:scaleType">center</item>
   </style>
 </resources>

@@ -1808,7 +1808,11 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
         return false
       }
 
-      if (sliderPage < 0) {
+      val keepSelected = showingTranslation &&
+        itemId != com.quran.labs.androidquran.common.toolbar.R.id.cab_close_ayah
+      if (keepSelected) {
+        // on a translation page the selection stays until close is pressed or another verse chosen
+      } else if (sliderPage < 0) {
         endAyahMode()
       } else {
         showSlider(sliderPage)

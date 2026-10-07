@@ -2,6 +2,9 @@ package com.quran.labs.androidquran.ui.translation
 
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.res.ColorStateList
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.widget.ImageButton
 import com.quran.labs.androidquran.ui.PagerActivity
 import android.graphics.Color
@@ -60,6 +63,7 @@ internal class TranslationAdapter(
   private var suraHeaderColor: Int = 0
   private var ayahSelectionColor: Int = 0
   private var isNightMode: Boolean = false
+  private var isSepiaMode: Boolean = false
 
   private var highlightedAyah: Int = 0
   private var highlightedRowCount: Int = 0
@@ -232,6 +236,7 @@ internal class TranslationAdapter(
     this.ayahFontSize = quranSettings.ayahTextSize
     this.translationFontSize = quranSettings.translationTextSize
     isNightMode = quranSettings.isNightMode
+    isSepiaMode = quranSettings.isSepiaMode
     if (isNightMode) {
       val originalTextBrightness = quranSettings.nightModeTextBrightness
       val backgroundBrightness = quranSettings.nightModeBackgroundBrightness
@@ -588,6 +593,34 @@ internal class TranslationAdapter(
     }
   }
 
+  /**
+   * Round buttons in the ink of the reading mode, like the icons of the top bar: dark on the light
+   * and sepia paper, light on the night background, each on a faint disc of its own. The bookmark
+   * turns green when it is set.
+   */
+  private fun styleActions(actions: ViewGroup) {
+    val ink = when {
+      isNightMode -> 0xFFE3DED3.toInt()
+      isSepiaMode -> 0xFF3B2F1E.toInt()
+      else -> 0xFF1F1D17.toInt()
+    }
+    val green = if (isNightMode) 0xFF7FDBB0.toInt() else 0xFF176B4D.toInt()
+    for (i in 0 until actions.childCount) {
+      val button = actions.getChildAt(i) as? ImageButton ?: continue
+      val set = button.id == R.id.verse_action_bookmark && selectedBookmarked
+      val color = if (set) green else ink
+      button.imageTintList = ColorStateList.valueOf(color)
+      button.background = RippleDrawable(
+        ColorStateList.valueOf(ColorUtils.setAlphaComponent(color, 60)),
+        GradientDrawable().apply {
+          shape = GradientDrawable.OVAL
+          setColor(ColorUtils.setAlphaComponent(color, if (set) 56 else 22))
+        },
+        null
+      )
+    }
+  }
+
   private fun pagerActivity(): PagerActivity? {
     var current: Context? = context
     while (current is ContextWrapper) {
@@ -611,6 +644,7 @@ internal class TranslationAdapter(
         if (animate) VerseActionsMotion.popOut(actions) else actions.visibility = View.GONE
       }
       if (show) {
+        styleActions(actions as ViewGroup)
         holder.bookmarkAction?.setImageResource(
           if (selectedBookmarked) {
             com.quran.labs.androidquran.common.toolbar.R.drawable.ic_bookmark

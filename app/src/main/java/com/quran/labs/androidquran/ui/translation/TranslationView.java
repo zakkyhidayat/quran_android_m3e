@@ -257,9 +257,7 @@ public class TranslationView extends FrameLayout implements View.OnClickListener
   @Override
   public void onClick(View v) {
     if (selectedAyah != null) {
-      hideMenu();
-      selectedAyah = null;
-      selectedAyahId = -1;
+      // a verse stays selected until another is, or the close button is pressed
       return;
     }
 
