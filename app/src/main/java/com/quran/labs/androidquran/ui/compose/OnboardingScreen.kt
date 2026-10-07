@@ -146,6 +146,9 @@ class OnboardingState {
   var translationsFailed by mutableStateOf(false)
   var pageStyles by mutableStateOf<List<PageStyleItem>>(emptyList())
   var pagePreviews by mutableStateOf<Map<String, ImageBitmap>>(emptyMap())
+
+  /** Styles whose preview is the full-color sample, not a Basmalah cut that takes the ink color. */
+  var pageSamples by mutableStateOf<Set<String>>(emptySet())
 }
 
 /** What the setup can change. The activity owns what each of these does. */
@@ -1027,7 +1030,7 @@ private fun PageStyles(state: OnboardingState, actions: OnboardingActions) {
           Icon(HomeIcons.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         }
       }
-      PageStylePreview(state.pagePreviews[style.key])
+      PageStylePreview(state.pagePreviews[style.key], tinted = style.key !in state.pageSamples)
 
       val status = buildList {
         if (style.inUse) add(stringResource(R.string.page_style_in_use))
@@ -1090,7 +1093,7 @@ private fun PageStyles(state: OnboardingState, actions: OnboardingActions) {
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun PageStylePreview(preview: ImageBitmap?) {
+private fun PageStylePreview(preview: ImageBitmap?, tinted: Boolean) {
   Surface(
     shape = RoundedCornerShape(16.dp),
     color = Color(0xFFFFFDF7),
@@ -1104,7 +1107,7 @@ private fun PageStylePreview(preview: ImageBitmap?) {
           bitmap = preview,
           contentDescription = stringResource(R.string.page_style_preview),
           contentScale = ContentScale.FillWidth,
-          colorFilter = ColorFilter.tint(Color(0xFF1B1B1B)),
+          colorFilter = if (tinted) ColorFilter.tint(Color(0xFF1B1B1B)) else null,
           modifier = Modifier.fillMaxWidth()
         )
       } else {

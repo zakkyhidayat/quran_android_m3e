@@ -754,6 +754,7 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
       .filter { it !in onboardingState.pagePreviews || (it == current && haveCurrentPages) }
       .forEach { key ->
         scope.launch {
+          var sampled = false
           val bitmap = withContext(Dispatchers.IO) {
             val cut = if (key == current && haveCurrentPages) {
               AyahPreview.load(
@@ -766,9 +767,10 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
             } else {
               null
             }
-            cut ?: pageStyleSample(key)
+            cut ?: pageStyleSample(key)?.also { sampled = true }
           }
           if (bitmap != null) {
+            onboardingState.pageSamples = if (sampled) onboardingState.pageSamples + key else onboardingState.pageSamples - key
             onboardingState.pagePreviews = onboardingState.pagePreviews + (key to bitmap.asImageBitmap())
           }
         }
