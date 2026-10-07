@@ -20,6 +20,7 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.Insets
 import com.quran.data.model.selection.SelectionIndicator
+import com.quran.data.model.selection.SelectionRectangle
 import com.quran.labs.androidquran.common.toolbar.R
 import com.quran.page.common.toolbar.dao.SelectedAyahPlacementType
 import com.quran.page.common.toolbar.di.AyahToolBarInjector
@@ -53,6 +54,7 @@ class AyahToolBar @JvmOverloads constructor(
   private val cardMaxWidth: Int
   private val sideMargin: Int
   private val gap: Int
+  private val versePillHeight: Float
   private val cornerRadius: Float
 
   /** Where the translation goes, under the actions. */
@@ -99,6 +101,7 @@ class AyahToolBar @JvmOverloads constructor(
     cardMaxWidth = resources.getDimensionPixelSize(R.dimen.toolbar_card_max_width)
     sideMargin = resources.getDimensionPixelSize(R.dimen.toolbar_side_margin)
     gap = resources.getDimensionPixelSize(R.dimen.toolbar_gap)
+    versePillHeight = 28 * resources.displayMetrics.density
     cornerRadius = resources.getDimension(R.dimen.toolbar_corner_radius)
 
     card = LinearLayout(context).apply {
@@ -325,10 +328,21 @@ class AyahToolBar @JvmOverloads constructor(
     val parentView = parent as View
     val width = card.measuredWidth.takeIf { it > 0 } ?: cardWidth(parentView.width)
     val height = measuredHeight.takeIf { it > 0 } ?: (toolBarHeight + pipHeight)
-    val internalPosition = if (position is SelectionIndicator.SelectedItemPosition) {
-      place(position, parentView.width, parentView.height, width, height)
-    } else {
-      position.toInternalPosition(parentView.width, parentView.height, width, height)
+    val internalPosition = when (position) {
+      is SelectionIndicator.SelectedItemPosition ->
+        place(position, parentView.width, parentView.height, width, height)
+      // the translation list reports the bottom of the verse number pill: place the window
+      // around it just like around an ayah on the page, so it always stays on the screen
+      is SelectionIndicator.SelectedPointPosition -> {
+        val pill = SelectionRectangle(
+          position.x - 1f, position.y - versePillHeight, position.x + 1f, position.y
+        )
+        place(
+          SelectionIndicator.SelectedItemPosition(pill, pill, position.xScroll, position.yScroll),
+          parentView.width, parentView.height, width, height
+        )
+      }
+      else -> position.toInternalPosition(parentView.width, parentView.height, width, height)
     }
 
     if (internalPosition != null) {

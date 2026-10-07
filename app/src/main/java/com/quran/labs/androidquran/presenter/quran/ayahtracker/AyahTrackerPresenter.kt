@@ -302,6 +302,14 @@ class AyahTrackerPresenter @Inject constructor(
       }
     } else if (eventType == SINGLE_TAP && recitationEventPresenter.hasRecitationSession()) {
       handleTap(event, eventType, page)
+    } else if (eventType == SINGLE_TAP && !ayahCoordinatesError) {
+      // a tap on an ayah selects it; a tap anywhere else is a normal click
+      val tapped = getAyahForPosition(page, event.x, event.y)
+      if (tapped != null) {
+        handleLongPress(tapped)
+      } else {
+        readingEventPresenter.onClick()
+      }
     } else {
       // normal click
       readingEventPresenter.onClick()
@@ -323,6 +331,9 @@ class AyahTrackerPresenter @Inject constructor(
       } else if (eventType == LONG_PRESS) {
         handleLongPress(result)
       }
+    } else if (eventType == SINGLE_TAP) {
+      // a tap on the blank part of the page lets go of the selection
+      readingEventPresenter.onAyahSelection(AyahSelection.None)
     }
   }
 

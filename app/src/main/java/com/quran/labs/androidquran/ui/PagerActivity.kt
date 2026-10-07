@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.quran.labs.androidquran.common.ui.core.QuranTheme
 import com.quran.labs.androidquran.ui.compose.ReaderBarActions
 import com.quran.labs.androidquran.ui.compose.ReaderBarState
+import com.quran.labs.androidquran.ui.compose.MarkerPill
 import com.quran.labs.androidquran.ui.compose.ReaderModeBar
 import com.quran.labs.androidquran.ui.compose.ReaderView
 import com.quran.labs.androidquran.ui.compose.ReaderTopBar
@@ -168,6 +169,7 @@ import kotlin.math.abs
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -197,6 +199,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
   ActivityCompat.OnRequestPermissionsResultCallback, AudioPresenterScreen,
   ReadingBookmarkPresenter.Screen {
   private var lastPopupTime: Long = 0
+  private var markerJob: kotlinx.coroutines.Job? = null
   private var shouldReconnect = false
   private var showingTranslation = false
   private var needsPermissionToDownloadOver3g = true
@@ -548,13 +551,9 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
         val page = quranInfo.getPageFromPosition(position, isDualPageVisible)
 
         if (quranSettings.shouldDisplayMarkerPopup()) {
-          lastPopupTime = QuranDisplayHelper.displayMarkerPopup(
-            this@PagerActivity, quranInfo, page, lastPopupTime
-          )
+          showMarkerPopup(page)
           if (isDualPages) {
-            lastPopupTime = QuranDisplayHelper.displayMarkerPopup(
-              this@PagerActivity, quranInfo, page - 1, lastPopupTime
-            )
+            showMarkerPopup(page - 1)
           }
         }
 
@@ -1045,6 +1044,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       onReadingMode = { mode ->
         quranSettings.setReadingMode(mode)
         readerBar.readingMode = mode
+        applyReadingBackground()
         refreshQuranPages()
       },
       onSearch = { startActivity(Intent(this, SearchActivity::class.java)) },
@@ -1073,9 +1073,20 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       windowInsets
     }
 
+    // below the page, where the navigation bar is transparent, the page's own color shows
+    window.navigationBarColor = android.graphics.Color.TRANSPARENT
+    if (android.os.Build.VERSION.SDK_INT >= 29) {
+      window.isNavigationBarContrastEnforced = false
+    }
+    applyReadingBackground()
+
     findViewById<ComposeView>(R.id.reader_modes).apply {
       setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
       setContent { QuranTheme { ReaderModeBar(readerBar.view, ::onReaderView) } }
+    }
+    findViewById<ComposeView>(R.id.reader_marker).apply {
+      setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+      setContent { QuranTheme { MarkerPill(readerBar.marker) } }
     }
     // when the audio bar is up it takes the bottom of the page, so the choices sit above it
     audioStatusBar.addOnLayoutChangeListener { v, _, top, _, bottom, _, _, _, _ ->
@@ -1086,6 +1097,34 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     readerBar.readingMode = quranSettings.readingMode
     readerBar.arabicShown = quranSettings.wantArabicInTranslationView()
     readerBar.showingTranslation = showingTranslation
+  }
+
+  /** A new juz or hizb starts on this page: say so just above the reading choices, then let it go. */
+  private fun showMarkerPopup(page: Int) {
+    if (System.currentTimeMillis() - lastPopupTime < 3000) {
+      return
+    }
+    val text = QuranDisplayHelper.markerPopupText(this, quranInfo, page) ?: return
+    lastPopupTime = System.currentTimeMillis()
+    readerBar.marker = text
+    markerJob?.cancel()
+    markerJob = lifecycleScope.launch {
+      delay(2500)
+      readerBar.marker = null
+    }
+  }
+
+  /** The reading mode's paper color behind everything, so the strip under the page matches it. */
+  private fun applyReadingBackground() {
+    val color = when {
+      quranSettings.isNightMode -> {
+        val level = quranSettings.nightModeBackgroundBrightness
+        android.graphics.Color.rgb(level, level, level)
+      }
+      quranSettings.isSepiaMode -> 0xFFF4E8CC.toInt()
+      else -> 0xFFFDFBEF.toInt()
+    }
+    findViewById<View>(R.id.sliding_panel).setBackgroundColor(color)
   }
 
   /** The bottom choices: the page, or the translation view with or without the Arabic. */
@@ -1327,7 +1366,9 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       )
       view.updatePadding(left = insets.left, right = insets.right)
       val params = view.layoutParams as FrameLayout.LayoutParams
-      params.bottomMargin = if (audioStatusBar.isVisible) {
+      // above the floating reading choices (48dp, plus room for their shadow)
+      val readingChoices = (64 * resources.displayMetrics.density).toInt()
+      params.bottomMargin = readingChoices + if (audioStatusBar.isVisible) {
         audioStatusBar.height
       } else {
         insets.bottom
@@ -1702,6 +1743,8 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
         shareAyah(startSuraAyah, endSuraAyah, false)
       } else if (itemId == com.quran.labs.androidquran.common.toolbar.R.id.cab_copy_ayah) {
         shareAyah(startSuraAyah, endSuraAyah, true)
+      } else if (itemId == com.quran.labs.androidquran.common.toolbar.R.id.cab_close_ayah) {
+        // nothing to do: the selection ends just below
       } else {
         return false
       }

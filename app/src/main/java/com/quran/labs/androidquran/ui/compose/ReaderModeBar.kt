@@ -1,6 +1,16 @@
 package com.quran.labs.androidquran.ui.compose
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -35,13 +45,46 @@ enum class ReaderView { PAGE, BOTH, TRANSLATION }
  * shifts when you switch.
  */
 @Composable
-fun ReaderModeBar(current: ReaderView, onSelect: (ReaderView) -> Unit, modifier: Modifier = Modifier) {
+fun ReaderModeBar(current: ReaderView, onSelect: (ReaderView) -> Unit) {
+  ModeRow(current, onSelect)
+}
+
+/**
+ * "¼ Hizb 3": settles at the top of the page, in the blank margin above the text, when a new juz
+ * or hizb starts, and leaves by itself.
+ */
+@Composable
+fun MarkerPill(marker: String?) {
+  var shown by remember { mutableStateOf("") }
+  if (marker != null) shown = marker
+  AnimatedVisibility(
+    visible = marker != null,
+    enter = fadeIn() + slideInVertically { -it / 2 },
+    exit = fadeOut() + slideOutVertically { -it / 2 }
+  ) {
+    Surface(
+      shape = CircleShape,
+      color = MaterialTheme.colorScheme.inverseSurface,
+      contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+      shadowElevation = 3.dp
+    ) {
+      Text(
+        text = shown,
+        style = MaterialTheme.typography.labelLarge,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+      )
+    }
+  }
+}
+
+@Composable
+private fun ModeRow(current: ReaderView, onSelect: (ReaderView) -> Unit) {
   Surface(
     shape = CircleShape,
     color = MaterialTheme.colorScheme.surfaceContainerHigh,
     tonalElevation = 3.dp,
     shadowElevation = 6.dp,
-    modifier = modifier.padding(8.dp)
+    modifier = Modifier.padding(8.dp)
   ) {
     Row(
       verticalAlignment = Alignment.CenterVertically,

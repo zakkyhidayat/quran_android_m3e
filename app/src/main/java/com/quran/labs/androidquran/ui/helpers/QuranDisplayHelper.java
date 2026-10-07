@@ -60,9 +60,19 @@ public class QuranDisplayHelper {
     if (System.currentTimeMillis() - lastPopupTime < 3000) {
       return lastPopupTime;
     }
+    String result = markerPopupText(context, quranInfo, page);
+    if (result == null) {
+      return lastPopupTime;
+    }
+    ToastCompat.makeText(context, result, Toast.LENGTH_SHORT).show();
+    return System.currentTimeMillis();
+  }
+
+  /** What the juz or hizb marker says when this page starts a new one, or null when it doesn't. */
+  public static String markerPopupText(Context context, QuranInfo quranInfo, int page) {
     int rub3 = quranInfo.getRub3FromPage(page);
     if (rub3 == -1) {
-      return lastPopupTime;
+      return null;
     }
     int hizb = (rub3 / 4) + 1;
     StringBuilder sb = new StringBuilder();
@@ -83,9 +93,7 @@ public class QuranDisplayHelper {
           .append(QuranUtils.getLocalizedNumber(hizb));
     }
 
-    String result = sb.toString();
-    ToastCompat.makeText(context, result, Toast.LENGTH_SHORT).show();
-    return System.currentTimeMillis();
+    return sb.toString();
   }
 
   // same logic used in displayMarkerPopup method

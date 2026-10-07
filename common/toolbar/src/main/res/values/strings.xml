@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="bookmark_ayah">Bookmark this Ayah</string>
+  <string name="close_ayah_window">Close</string>
   <string name="share_ayah">Share Ayah Link</string>
   <string name="share_ayah_text">Share Ayah Text</string>
   <string name="translation_ayah">Ayah Translation/Tafseer</string>

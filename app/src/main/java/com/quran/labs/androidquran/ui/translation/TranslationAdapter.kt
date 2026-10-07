@@ -9,6 +9,7 @@ import android.text.method.LinkMovementMethod
 import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
 import android.text.style.SuperscriptSpan
+import androidx.core.graphics.ColorUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -246,9 +247,19 @@ internal class TranslationAdapter(
         onVerseSelectedListener.onVerseSelected(ayahInfo)
         return
       }
+    } else if (position != RecyclerView.NO_POSITION && isVerseContent(data[position].type)) {
+      // with nothing selected, a tap on a verse selects it
+      selectVerseRows(view)
+      return
     }
     onClickListener.onClick(view)
   }
+
+  private fun isVerseContent(@TranslationViewRow.Type type: Int): Boolean =
+    type == TranslationViewRow.Type.QURAN_TEXT ||
+      type == TranslationViewRow.Type.TRANSLATION_TEXT ||
+      type == TranslationViewRow.Type.TRANSLATOR ||
+      type == TranslationViewRow.Type.VERSE_NUMBER
 
   private fun selectVerseRows(view: View): Boolean {
     val position = recyclerView.getChildAdapterPosition(view)
@@ -445,10 +456,21 @@ internal class TranslationAdapter(
   private fun collapsedFootnoteSpan(number: Int): SpannableString {
     val text = QuranUtils.getLocalizedNumber(number)
     val spannable = SpannableString(text)
-    spannable.setSpan(SuperscriptSpan(), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-    spannable.setSpan(RelativeSizeSpan(0.7f), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    // a rounded chip at the size of the text, not a tiny superscript, so it can be read and tapped
+    val density = context.resources.displayMetrics.density
+    // the brand green on paper, the light mint on the night background
+    val chipText = if (isNightMode) inlineAyahColor else 0xFF176B4D.toInt()
+    spannable.setSpan(
+      FootnoteChipSpan(
+        textColor = chipText,
+        chipColor = ColorUtils.setAlphaComponent(chipText, 40),
+        horizontalPadding = 8 * density,
+        minWidth = 28 * density,
+        margin = 3 * density
+      ),
+      0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+    )
     spannable.setSpan(ExpandFootnoteSpan(number, ::expandFootnote), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-    spannable.setSpan(ForegroundColorSpan(inlineAyahColor), 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
     return spannable
   }
 

@@ -44,6 +44,9 @@ class ReaderBarState {
   var readingMode by mutableStateOf(Constants.READING_MODE_LIGHT)
   var arabicShown by mutableStateOf(true)
 
+  /** A juz or hizb marker to say out loud for a moment, like "¼ Hizb 3". */
+  var marker by mutableStateOf<String?>(null)
+
   /** Page, or the translation view with or without the Arabic above each translation. */
   val view: ReaderView
     get() = when {
@@ -74,7 +77,7 @@ class ReaderBarActions(
 @Composable
 fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
   TopAppBar(
-    title = { ReaderTitle(state, actions) },
+    title = { ReaderTitle(state) },
     navigationIcon = {
       IconButton(onClick = actions.onBack) {
         Icon(QuranIcons.ArrowBack, contentDescription = stringResource(R.string.menu_back_to_page))
@@ -100,34 +103,16 @@ fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
   )
 }
 
-/**
- * The surah, then the page and juz in smaller type. while reading translations, tapping it opens
- * the list of translations to show.
- */
+/** The surah, then the page and juz in smaller type. */
 @Composable
-private fun ReaderTitle(state: ReaderBarState, actions: ReaderBarActions) {
-  var pickerOpen by remember { mutableStateOf(false) }
-  val canPick = state.showingTranslation && state.translations.isNotEmpty()
-
-  Column(
-    modifier = if (canPick) Modifier.clickable { pickerOpen = true } else Modifier
-  ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Text(
-        text = state.title,
-        style = MaterialTheme.typography.titleLarge,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.weight(1f, fill = false)
-      )
-      if (canPick) {
-        Icon(
-          QuranIcons.ExpandMore,
-          contentDescription = stringResource(R.string.translations),
-          modifier = Modifier.padding(start = 4.dp)
-        )
-      }
-    }
+private fun ReaderTitle(state: ReaderBarState) {
+  Column {
+    Text(
+      text = state.title,
+      style = MaterialTheme.typography.titleLarge,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
     Text(
       text = state.subtitle,
       style = MaterialTheme.typography.bodySmall,
@@ -136,24 +121,6 @@ private fun ReaderTitle(state: ReaderBarState, actions: ReaderBarActions) {
       overflow = TextOverflow.Ellipsis
     )
   }
-
-  ExpressiveMenu(
-    expanded = pickerOpen,
-    onDismiss = { pickerOpen = false },
-    sections = listOf(
-      MenuSection(
-        title = stringResource(R.string.translations),
-        entries = state.translations.map { item ->
-          MenuEntry(item.name, selected = item.checked, keepOpen = true) {
-            actions.onTranslationChecked(item.filename)
-          }
-        }
-      ),
-      MenuSection(
-        entries = listOf(MenuEntry(stringResource(R.string.more_translations), onClick = actions.onMoreTranslations))
-      )
-    )
-  )
 }
 
 @Composable

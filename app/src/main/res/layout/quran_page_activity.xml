@@ -33,6 +33,13 @@
         android:layout_gravity="bottom|center_horizontal"
         android:layout_marginBottom="0dp" />
 
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/reader_marker"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="10dp" />
+
     <com.quran.page.common.toolbar.AyahToolBar
         android:id="@+id/ayah_toolbar"
         android:layout_width="wrap_content"
