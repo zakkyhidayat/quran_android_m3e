@@ -1304,6 +1304,20 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     refreshTranslationPages()
   }
 
+  /** An action of the selected ayah, from the row beside its number on a translation page. */
+  fun performAyahAction(itemId: Int) {
+    ayahToolBar.performItem(itemId)
+  }
+
+  private fun updateSelectedVerseBookmark(bookmarked: Boolean) {
+    val pos = viewPager.currentItem - 1
+    for (count in 0..2) {
+      if (pos + count < 0) continue
+      (pagerAdapter.getFragmentIfExists(pos + count) as? TranslationFragment)
+        ?.setSelectedBookmarked(bookmarked)
+    }
+  }
+
   private fun refreshTranslationPages() {
     // the translation in the ayah window follows the switches too
     (supportFragmentManager.findFragmentById(ayahToolBar.contentContainer.id) as? AyahTranslationFragment)
@@ -1905,6 +1919,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     val start = selectionStart
     if (start != null && start == suraAyah) {
       ayahToolBar.setBookmarked(bookmarked)
+      updateSelectedVerseBookmark(bookmarked)
     }
   }
 

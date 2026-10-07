@@ -118,6 +118,11 @@ public class TranslationView extends FrameLayout implements View.OnClickListener
         .applyToView(this);
   }
 
+  /** The bookmark action beside the selected verse's number follows whether it is bookmarked. */
+  public void setSelectedBookmarked(boolean bookmarked) {
+    translationAdapter.setSelectedBookmarked(bookmarked);
+  }
+
   public void setPageController(PageController controller) {
     this.pageController = controller;
   }

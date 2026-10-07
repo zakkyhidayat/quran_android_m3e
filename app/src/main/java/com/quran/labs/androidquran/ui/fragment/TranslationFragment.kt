@@ -161,6 +161,12 @@ class TranslationFragment : Fragment(), AyahInteractionHandler, QuranPage,
     return false
   }
 
+  fun setSelectedBookmarked(bookmarked: Boolean) {
+    if (::translationView.isInitialized) {
+      translationView.setSelectedBookmarked(bookmarked)
+    }
+  }
+
   override fun handleRetryClicked() {}
   override fun onScrollChanged(y: Float) {
     if (isVisible) {

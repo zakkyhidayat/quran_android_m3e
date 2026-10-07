@@ -356,6 +356,10 @@ class AyahToolBar @JvmOverloads constructor(
         selectionIndicator is SelectionIndicator.ScrollOnly) {
       lastIndicator = null
       hideMenu()
+    } else if (!contentEnabled()) {
+      // a translation page has its actions in the row of the verse itself, not in a window
+      lastIndicator = null
+      hideMenu()
     } else {
       val showContent = contentEnabled()
       contentContainer.visibility = if (showContent) VISIBLE else GONE
@@ -519,6 +523,11 @@ class AyahToolBar @JvmOverloads constructor(
 
   fun setOnItemSelectedListener(listener: OnMenuItemClickListener?) {
     itemSelectedListener = listener
+  }
+
+  /** Runs an action as if its button was pressed; the verse row on a translation page uses it. */
+  fun performItem(itemId: Int) {
+    menu.findItem(itemId)?.let { itemSelectedListener?.onMenuItemClick(it) }
   }
 
   override fun onClick(v: View) {

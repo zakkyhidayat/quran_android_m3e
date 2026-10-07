@@ -1,6 +1,9 @@
 package com.quran.labs.androidquran.ui.translation
 
 import android.content.Context
+import android.content.ContextWrapper
+import android.widget.ImageButton
+import com.quran.labs.androidquran.ui.PagerActivity
 import android.graphics.Color
 import android.text.SpannableString
 import android.text.SpannableStringBuilder
@@ -45,6 +48,7 @@ internal class TranslationAdapter(
 ) : RecyclerView.Adapter<TranslationAdapter.RowViewHolder>() {
   private val inflater: LayoutInflater = LayoutInflater.from(context)
   private val data: MutableList<TranslationViewRow> = mutableListOf()
+  private var selectedBookmarked = false
 
   private var ayahFontSize: Int = 0
   private var translationFontSize: Int = 0
@@ -573,9 +577,42 @@ internal class TranslationAdapter(
     }
   }
 
+  /** Whether the selected verse is bookmarked, for the bookmark action beside its number. */
+  fun setSelectedBookmarked(bookmarked: Boolean) {
+    if (selectedBookmarked != bookmarked) {
+      selectedBookmarked = bookmarked
+      if (highlightedRowCount > 0 && highlightedStartPosition > -1) {
+        notifyItemRangeChanged(highlightedStartPosition, highlightedRowCount, HIGHLIGHT_CHANGE)
+      }
+    }
+  }
+
+  private fun pagerActivity(): PagerActivity? {
+    var current: Context? = context
+    while (current is ContextWrapper) {
+      if (current is PagerActivity) return current
+      current = current.baseContext
+    }
+    return null
+  }
+
   private fun updateHighlight(row: TranslationViewRow, holder: RowViewHolder) {
     // toggle highlighting of the ayah, but not for sura headers and basmallah
     val isHighlighted = row.ayahInfo.ayahId == highlightedAyah
+    holder.actions?.let { actions ->
+      val show = isHighlighted && highlightType == HighlightTypes.SELECTION &&
+        row.type == TranslationViewRow.Type.VERSE_NUMBER
+      actions.visibility = if (show) View.VISIBLE else View.GONE
+      if (show) {
+        holder.bookmarkAction?.setImageResource(
+          if (selectedBookmarked) {
+            com.quran.labs.androidquran.common.toolbar.R.drawable.ic_bookmark
+          } else {
+            com.quran.labs.androidquran.common.toolbar.R.drawable.ic_bookmark_border
+          }
+        )
+      }
+    }
     if (row.type != TranslationViewRow.Type.SURA_HEADER &&
       row.type != TranslationViewRow.Type.BASMALLAH &&
       row.type != TranslationViewRow.Type.SPACER
@@ -598,10 +635,21 @@ internal class TranslationAdapter(
     val text: TextView? = wrapperView.findViewById(R.id.text)
     val divider: DividerView? = wrapperView.findViewById(R.id.divider)
     val ayahNumber: AyahNumberView? = wrapperView.findViewById(R.id.ayah_number)
+    val actions: View? = wrapperView.findViewById(R.id.verse_actions)
+    val bookmarkAction: ImageButton? = wrapperView.findViewById(R.id.verse_action_bookmark)
 
     init {
       wrapperView.setOnClickListener(defaultClickListener)
       wrapperView.setOnLongClickListener(defaultLongClickListener)
+      listOf(
+        R.id.verse_action_bookmark to com.quran.labs.androidquran.common.toolbar.R.id.cab_bookmark_ayah,
+        R.id.verse_action_link to com.quran.labs.androidquran.common.toolbar.R.id.cab_share_ayah_link,
+        R.id.verse_action_share to com.quran.labs.androidquran.common.toolbar.R.id.cab_share_ayah_text,
+        R.id.verse_action_copy to com.quran.labs.androidquran.common.toolbar.R.id.cab_copy_ayah,
+        R.id.verse_action_close to com.quran.labs.androidquran.common.toolbar.R.id.cab_close_ayah
+      ).forEach { (viewId, menuId) ->
+        wrapperView.findViewById<View>(viewId)?.setOnClickListener { pagerActivity()?.performAyahAction(menuId) }
+      }
     }
   }
 

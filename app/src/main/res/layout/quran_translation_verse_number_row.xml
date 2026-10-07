@@ -1,15 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.quran.labs.androidquran.view.AyahNumberView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/ayah_number"
     android:layout_width="match_parent"
-    android:layout_height="44dp"
-    android:paddingStart="8dp"
-    app:verseBoxWidth="64dp"
-    app:verseBoxHeight="28dp"
-    app:nightBackgroundColor="@color/translation_verse_background_night_color"
-    app:backgroundColor="@color/translation_verse_background_color"
-    android:textColor="@color/translation_verse_text_color"
-    android:textSize="13sp"
-    />
+    android:layout_height="44dp">
+
+  <com.quran.labs.androidquran.view.AyahNumberView
+      android:id="@+id/ayah_number"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:paddingStart="8dp"
+      app:verseBoxWidth="64dp"
+      app:verseBoxHeight="28dp"
+      app:nightBackgroundColor="@color/translation_verse_background_night_color"
+      app:backgroundColor="@color/translation_verse_background_color"
+      android:textColor="@color/translation_verse_text_color"
+      android:textSize="13sp" />
+
+  <!-- the actions of the selected verse, right beside its number: bookmark, link, share, copy, close -->
+  <LinearLayout
+      android:id="@+id/verse_actions"
+      android:layout_width="wrap_content"
+      android:layout_height="36dp"
+      android:layout_gravity="center_vertical|start"
+      android:layout_marginStart="88dp"
+      android:background="@drawable/bg_verse_actions"
+      android:gravity="center_vertical"
+      android:orientation="horizontal"
+      android:paddingStart="4dp"
+      android:paddingEnd="4dp"
+      android:visibility="gone">
+
+    <ImageButton
+        android:id="@+id/verse_action_bookmark"
+        style="@style/VerseActionButton"
+        android:contentDescription="@string/bookmark_ayah"
+        android:src="@drawable/ic_bookmark_border" />
+
+    <ImageButton
+        android:id="@+id/verse_action_link"
+        style="@style/VerseActionButton"
+        android:contentDescription="@string/share_ayah"
+        android:src="@drawable/ic_link" />
+
+    <ImageButton
+        android:id="@+id/verse_action_share"
+        style="@style/VerseActionButton"
+        android:contentDescription="@string/share_ayah_text"
+        android:src="@drawable/ic_share" />
+
+    <ImageButton
+        android:id="@+id/verse_action_copy"
+        style="@style/VerseActionButton"
+        android:contentDescription="@string/copy_ayah"
+        android:src="@drawable/ic_copy" />
+
+    <ImageButton
+        android:id="@+id/verse_action_close"
+        style="@style/VerseActionButton"
+        android:contentDescription="@string/close_ayah_window"
+        android:src="@drawable/ic_close" />
+  </LinearLayout>
+</FrameLayout>
