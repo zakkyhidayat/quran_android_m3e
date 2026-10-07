@@ -84,11 +84,8 @@ class SuraListState(
   suspend fun onResume(latestPage: suspend () -> Int) {
     readingBookmarks = placed(readingBookmarksDao.readingBookmarks())
     rows = buildRows()
-    val recentPage = latestPage()
-    lastReadLoaded = true
-    lastReadPage = if (recentPage == Constants.NO_PAGE) 0 else recentPage
-    lastReadAyah = if (recentPage == Constants.NO_PAGE) 0 else runCatching { quranInfo.getFirstAyahOnPage(recentPage) }.getOrDefault(0)
-    lastReadSura = if (recentPage == Constants.NO_PAGE) 0 else quranDisplayData.safelyGetSuraOnPage(recentPage)
+    // which surah was read last is set by onLatestPage, once the list is on screen, so that the
+    // change can be seen happening
   }
 
   private fun buildRows(): List<QuranRow> {

@@ -3,6 +3,8 @@ package com.quran.labs.androidquran.ui.compose
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -365,23 +367,35 @@ private fun QuranRowItem(
   }
   val trailing = row.itemCount ?: row.page
 
+  // becoming (or ceasing to be) the surah last read fades the colors instead of switching them;
+  // Material 3 Expressive moves color with its "effects" spring, not the spatial one
+  val colorScheme = MaterialTheme.colorScheme
+  val effects = MaterialTheme.motionScheme.defaultEffectsSpec<Color>()
+  val containerColor by animateColorAsState(
+    if (current) colorScheme.primaryContainer else colorScheme.surfaceContainerHigh,
+    effects,
+    label = "currentContainer"
+  )
+  val contentColor by animateColorAsState(
+    if (current) colorScheme.onPrimaryContainer else colorScheme.onSurface,
+    effects,
+    label = "currentContent"
+  )
+  val supportingColor by animateColorAsState(
+    if (current) colorScheme.onPrimaryContainer else colorScheme.onSurfaceVariant,
+    effects,
+    label = "currentSupporting"
+  )
+
   SegmentedListItem(
     onClick = onClick,
     onLongClick = onLongClick,
     selected = selected,
     shapes = shapes,
     colors = ListItemDefaults.segmentedColors(
-      containerColor = if (current) {
-        MaterialTheme.colorScheme.primaryContainer
-      } else {
-        MaterialTheme.colorScheme.surfaceContainerHigh
-      },
-      contentColor = if (current) MaterialTheme.colorScheme.onPrimaryContainer else Color.Unspecified,
-      supportingContentColor = if (current) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-      } else {
-        Color.Unspecified
-      }
+      containerColor = containerColor,
+      contentColor = contentColor,
+      supportingContentColor = supportingColor
     ),
     modifier = Modifier.padding(horizontal = 16.dp),
     leadingContent = { QuranRowLeading(row, current) },
@@ -390,21 +404,27 @@ private fun QuranRowItem(
     } else {
       {
         Column {
-          if (current) {
-            // on the metadata line itself, so the row keeps the height of the others
-            Text(
-              text = buildAnnotatedString {
-                withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
-                  append(stringResource(R.string.last_read_label))
-                  append(" · ")
-                }
-                append(metadata.orEmpty())
-              },
-              maxLines = 1,
-              overflow = TextOverflow.Ellipsis
-            )
-          } else if (!metadata.isNullOrEmpty()) {
-            Text(text = metadata, maxLines = 2, overflow = TextOverflow.Ellipsis)
+          Crossfade(
+            targetState = current,
+            animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+            label = "lastReadLabel"
+          ) { isCurrent ->
+            if (isCurrent) {
+              // on the metadata line itself, so the row keeps the height of the others
+              Text(
+                text = buildAnnotatedString {
+                  withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
+                    append(stringResource(R.string.last_read_label))
+                    append(" · ")
+                  }
+                  append(metadata.orEmpty())
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+              )
+            } else if (!metadata.isNullOrEmpty()) {
+              Text(text = metadata, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
           }
           if (tags.isNotEmpty()) {
             FlowRow(
@@ -484,21 +504,30 @@ private fun QuranRowLeading(row: QuranRow, current: Boolean = false) {
 }
 
 /** The surah number, in a scalloped "cookie" shape from the expressive shape library. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SuraNumberBadge(number: String, current: Boolean = false) {
+  val effects = MaterialTheme.motionScheme.defaultEffectsSpec<Color>()
+  val badgeColor by animateColorAsState(
+    if (current) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+    effects,
+    label = "badge"
+  )
+  val numberColor by animateColorAsState(
+    if (current) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+    effects,
+    label = "badgeNumber"
+  )
   Box(
     modifier = Modifier
       .size(48.dp)
-      .background(
-        if (current) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
-        MaterialShapes.Cookie9Sided.toShape()
-      ),
+      .background(badgeColor, MaterialShapes.Cookie9Sided.toShape()),
     contentAlignment = Alignment.Center
   ) {
     Text(
       text = number,
       style = MaterialTheme.typography.titleMedium,
-      color = if (current) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
+      color = numberColor
     )
   }
 }

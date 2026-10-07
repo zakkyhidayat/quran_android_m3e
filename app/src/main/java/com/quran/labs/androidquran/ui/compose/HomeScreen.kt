@@ -170,8 +170,13 @@ fun HomeScreen(
     }
   }
   LaunchedEffect(suraState) {
-    lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-      latestPageFlow.collect { suraState.onLatestPage(it) }
+    lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+      latestPageFlow.collect { page ->
+        // coming back from reading, wait a moment so the highlight is seen moving to its new
+        // surah rather than already being there
+        if (suraState.lastReadLoaded) delay(300)
+        suraState.onLatestPage(page)
+      }
     }
   }
   LaunchedEffect(juzState) {
