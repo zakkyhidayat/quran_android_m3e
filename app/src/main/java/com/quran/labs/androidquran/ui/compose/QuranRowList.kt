@@ -51,6 +51,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.res.ResourcesCompat
@@ -387,14 +390,19 @@ private fun QuranRowItem(
       {
         Column {
           if (current) {
+            // on the metadata line itself, so the row keeps the height of the others
             Text(
-              text = stringResource(R.string.last_read_label),
-              style = MaterialTheme.typography.labelMedium,
-              fontWeight = FontWeight.Bold,
-              color = MaterialTheme.colorScheme.primary
+              text = buildAnnotatedString {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
+                  append(stringResource(R.string.last_read_label))
+                  append(" · ")
+                }
+                append(metadata.orEmpty())
+              },
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
             )
-          }
-          if (!metadata.isNullOrEmpty()) {
+          } else if (!metadata.isNullOrEmpty()) {
             Text(text = metadata, maxLines = 2, overflow = TextOverflow.Ellipsis)
           }
           if (tags.isNotEmpty()) {
