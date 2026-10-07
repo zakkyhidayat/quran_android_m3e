@@ -627,7 +627,9 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
     }
     state.theme = quranSettings.currentTheme()
     state.amoled = quranSettings.useAmoled()
-    state.dualPageAvailable = quranScreenInfo.isDualPageMode
+    // two pages side by side only suits a tablet or an unfolded foldable, not a phone
+    state.dualPageAvailable = quranScreenInfo.isDualPageMode &&
+      resources.configuration.smallestScreenWidthDp >= 600
     state.splitTranslation = quranSettings.isQuranSplitWithTranslation()
     state.dualPage = QuranUtils.isDualPagesInLandscape(this, quranScreenInfo)
     state.dynamicColor = QuranThemeSettings.isDynamicColorAvailable && quranSettings.useDynamicColors()

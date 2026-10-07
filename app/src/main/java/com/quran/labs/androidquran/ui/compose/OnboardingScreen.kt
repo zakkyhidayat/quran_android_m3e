@@ -419,11 +419,14 @@ private fun ChoiceCard(
   modifier: Modifier = Modifier,
   selected: Boolean = false,
   onClick: (() -> Unit)? = null,
+  unselectedColor: Color = Color.Unspecified,
   content: @Composable ColumnScope.() -> Unit
 ) {
   val shape = RoundedCornerShape(24.dp)
   val color = if (selected) {
     MaterialTheme.colorScheme.secondaryContainer
+  } else if (unselectedColor != Color.Unspecified) {
+    unselectedColor
   } else {
     MaterialTheme.colorScheme.surfaceContainerHigh
   }
@@ -627,7 +630,12 @@ private fun ColorSchemeChoice(state: OnboardingState, actions: OnboardingActions
 }
 
 @Composable
-internal fun ColorSchemeOptions(dynamic: Boolean, showTitle: Boolean, onSelect: (Boolean) -> Unit) {
+internal fun ColorSchemeOptions(
+  dynamic: Boolean,
+  showTitle: Boolean,
+  unselectedColor: Color = Color.Unspecified,
+  onSelect: (Boolean) -> Unit
+) {
   val context = LocalContext.current
   val dark = isSystemInDarkTheme()
   val original = if (dark) darkSwatches else lightSwatches
@@ -651,13 +659,15 @@ internal fun ColorSchemeOptions(dynamic: Boolean, showTitle: Boolean, onSelect: 
     selected = !dynamic,
     title = R.string.onboarding_colors_original,
     summary = R.string.onboarding_colors_original_summary,
-    swatches = original
+    swatches = original,
+    unselectedColor = unselectedColor
   ) { onSelect(false) }
   ColorOption(
     selected = dynamic,
     title = R.string.onboarding_colors_dynamic,
     summary = R.string.onboarding_colors_dynamic_summary,
-    swatches = dynamicSwatches
+    swatches = dynamicSwatches,
+    unselectedColor = unselectedColor
   ) { onSelect(true) }
 }
 
@@ -670,9 +680,10 @@ private fun ColorOption(
   @StringRes title: Int,
   @StringRes summary: Int,
   swatches: List<Color>,
+  unselectedColor: Color,
   onClick: () -> Unit
 ) {
-  ChoiceCard(selected = selected, onClick = onClick) {
+  ChoiceCard(selected = selected, onClick = onClick, unselectedColor = unselectedColor) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Column(Modifier.weight(1f)) {
         Text(stringResource(title), style = MaterialTheme.typography.titleMedium)

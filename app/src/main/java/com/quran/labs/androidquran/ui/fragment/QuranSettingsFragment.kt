@@ -124,6 +124,13 @@ class QuranSettingsFragment : QuranPreferenceFragment() {
       }
     }
 
+    // two pages side by side is for tablets and unfolded foldables, so a phone doesn't see it
+    if (resources.configuration.smallestScreenWidthDp < 600) {
+      findPreference<Preference>(getString(R.string.prefs_category_dual_screen_key))?.let {
+        preferenceScreen.removePreference(it)
+      }
+    }
+
     val pageChangePref: Preference? = findPreference(Constants.PREF_PAGE_TYPE)
     if (pageTypes.size < 2 && pageChangePref != null) {
       val readingPrefs: Preference? = findPreference(Constants.PREF_READING_CATEGORY)

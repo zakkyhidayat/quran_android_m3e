@@ -528,7 +528,8 @@ private fun ColorSchemePreferenceItem(
       Column(Modifier.padding(top = 8.dp, bottom = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         ColorSchemeOptions(
           dynamic = preference.value == Constants.COLOR_SCHEME_DYNAMIC,
-          showTitle = false
+          showTitle = false,
+          unselectedColor = MaterialTheme.colorScheme.surfaceContainerHighest
         ) { dynamic ->
           val value = if (dynamic) Constants.COLOR_SCHEME_DYNAMIC else Constants.COLOR_SCHEME_ORIGINAL
           if (preference.callChangeListener(value)) preference.value = value
