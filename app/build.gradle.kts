@@ -17,9 +17,9 @@ plugins {
 // whether or not to use Firebase (analytics and crashlytics). this fork has no Firebase project
 // (no google-services.json), so it is off unless -PenableFirebase is passed.
 val useFirebase = project.hasProperty("enableFirebase")
-// audio playback (recitation audio, qari list, audio manager, Android Auto) is disabled by
-// default in this fork. pass -PenableAudio to bring all of it back.
-val audioEnabled = project.hasProperty("enableAudio")
+// audio playback (recitation audio, qari list, audio manager, Android Auto) is on, as in the
+// original app. pass -PdisableAudio to build without all of it.
+val audioEnabled = !project.hasProperty("disableAudio")
 val oauthProperties = Properties().apply {
   // Optional local sync config. Android OAuth uses PKCE, so client secrets are intentionally unsupported.
   val oauthPropertiesFile = rootProject.file("oauth.properties")
