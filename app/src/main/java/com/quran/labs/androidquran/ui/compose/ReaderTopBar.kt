@@ -11,6 +11,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -88,12 +92,21 @@ fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
     },
     actions = {
       ReaderTranslationsButton(state, actions, ink)
-      IconButton(
+      ExpressiveIconButton(
         onClick = actions.onBookmark,
-        colors = IconButtonDefaults.iconButtonColors(
-          containerColor = if (state.isBookmarked) Color(0xFF176B4D).copy(alpha = 0.2f) else ink.copy(alpha = 0.08f)
-        )
+        containerColor = if (state.isBookmarked) Color(0xFF176B4D).copy(alpha = 0.2f) else ink.copy(alpha = 0.08f)
       ) {
+        // the icon pops when the bookmark is set
+        val pop = remember { Animatable(1f) }
+        var first by remember { mutableStateOf(true) }
+        LaunchedEffect(state.isBookmarked) {
+          if (first) {
+            first = false
+          } else {
+            pop.snapTo(0.55f)
+            pop.animateTo(1f, spring(dampingRatio = 0.35f, stiffness = 420f))
+          }
+        }
         Icon(
           imageVector = if (state.isBookmarked) HomeIcons.BookmarkFilled else QuranIcons.BookmarkBorder,
           contentDescription = stringResource(R.string.menu_bookmarks),
@@ -101,6 +114,10 @@ fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
             if (state.readingMode == Constants.READING_MODE_NIGHT) Color(0xFF7FDBB0) else Color(0xFF176B4D)
           } else {
             ink
+          },
+          modifier = Modifier.graphicsLayer {
+            scaleX = pop.value
+            scaleY = pop.value
           }
         )
       }
@@ -150,11 +167,8 @@ private fun ReaderTitle(state: ReaderBarState, ink: Color) {
 @Composable
 private fun ReaderTranslationsButton(state: ReaderBarState, actions: ReaderBarActions, ink: Color) {
   var open by remember { mutableStateOf(false) }
-  IconButton(
-    onClick = { open = true },
-    colors = IconButtonDefaults.iconButtonColors(containerColor = ink.copy(alpha = 0.08f))
-  ) {
-    Icon(HomeIcons.Translate, contentDescription = stringResource(R.string.translations))
+  ExpressiveIconButton(onClick = { open = true }, containerColor = ink.copy(alpha = 0.08f)) {
+    Icon(HomeIcons.Translate, contentDescription = stringResource(R.string.translations), tint = ink)
   }
   ExpressiveMenu(
     expanded = open,
@@ -177,13 +191,11 @@ private fun ReaderTranslationsButton(state: ReaderBarState, actions: ReaderBarAc
 @Composable
 private fun ReaderOverflowMenu(state: ReaderBarState, actions: ReaderBarActions, ink: Color) {
   var expanded by remember { mutableStateOf(false) }
-  IconButton(
-    onClick = { expanded = true },
-    colors = IconButtonDefaults.iconButtonColors(containerColor = ink.copy(alpha = 0.08f))
-  ) {
+  ExpressiveIconButton(onClick = { expanded = true }, containerColor = ink.copy(alpha = 0.08f)) {
     Icon(
       HomeIcons.MoreVert,
-      contentDescription = stringResource(androidx.appcompat.R.string.abc_action_menu_overflow_description)
+      contentDescription = stringResource(androidx.appcompat.R.string.abc_action_menu_overflow_description),
+      tint = ink
     )
   }
   val modes = listOf(

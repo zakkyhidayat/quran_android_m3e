@@ -5,7 +5,18 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Alignment
@@ -275,13 +286,35 @@ fun HomeScreen(
       .only(WindowInsetsSides.Horizontal),
     snackbarHost = { SnackbarHost(snackbarHostState) },
     floatingActionButton = {
+      // it arrives from the corner on a bouncy spring, and goes away quickly
       AnimatedVisibility(
         visible = !selecting && !isSearchOpen && fabReady,
-        enter = fadeIn() + scaleIn(),
-        exit = fadeOut() + scaleOut()
+        enter = fadeIn() +
+          scaleIn(
+            animationSpec = spring(dampingRatio = 0.5f, stiffness = 380f),
+            initialScale = 0.4f,
+            transformOrigin = TransformOrigin(1f, 1f)
+          ) +
+          slideInVertically(spring(dampingRatio = 0.6f, stiffness = 380f)) { it / 2 },
+        exit = fadeOut() + scaleOut(targetScale = 0.6f, transformOrigin = TransformOrigin(1f, 1f))
       ) {
+        // pressed, the button squares off and sinks, then springs back
+        val fabSource = remember { MutableInteractionSource() }
+        val fabPressed by fabSource.collectIsPressedAsState()
+        val fabCorner by animateDpAsState(
+          targetValue = if (fabPressed) 14.dp else 28.dp,
+          animationSpec = spring(dampingRatio = 0.5f, stiffness = 520f),
+          label = "fabCorner"
+        )
+        val fabScale by animateFloatAsState(
+          targetValue = if (fabPressed) 0.94f else 1f,
+          animationSpec = spring(dampingRatio = 0.45f, stiffness = 520f),
+          label = "fabScale"
+        )
         ExtendedFloatingActionButton(
           onClick = actions.onLastPage,
+          shape = RoundedCornerShape(fabCorner),
+          interactionSource = fabSource,
           icon = { Icon(QuranIcons.MenuBook, contentDescription = null) },
           text = {
             // the button is as wide as the longest label there can be (page 604, 114:6), so it
@@ -298,11 +331,23 @@ fun HomeScreen(
                 maxLines = 1,
                 modifier = Modifier.alpha(0f).clearAndSetSemantics {}
               )
-              Text(fabLabel, maxLines = 1)
+              // when the page you are on changes, the words roll up like a counter
+              AnimatedContent(
+                targetState = fabLabel,
+                transitionSpec = {
+                  (slideInVertically(spring(dampingRatio = 0.6f, stiffness = 500f)) { it } + fadeIn()) togetherWith
+                    (slideOutVertically { -it } + fadeOut())
+                },
+                label = "fabLabel"
+              ) { label -> Text(label, maxLines = 1) }
             }
           },
           modifier = Modifier
             .padding(bottom = navigationBarPadding)
+            .graphicsLayer {
+              scaleX = fabScale
+              scaleY = fabScale
+            }
             .semantics { contentDescription = fabDescription }
         )
       }

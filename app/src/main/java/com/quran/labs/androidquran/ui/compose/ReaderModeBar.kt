@@ -2,6 +2,11 @@ package com.quran.labs.androidquran.ui.compose
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -59,7 +64,7 @@ fun MarkerPill(marker: String?) {
   if (marker != null) shown = marker
   AnimatedVisibility(
     visible = marker != null,
-    enter = fadeIn() + slideInVertically { -it / 2 },
+    enter = fadeIn() + slideInVertically(spring(dampingRatio = 0.55f, stiffness = 420f)) { -it },
     exit = fadeOut() + slideOutVertically { -it / 2 }
   ) {
     Surface(
@@ -86,13 +91,26 @@ private fun ModeRow(current: ReaderView, onSelect: (ReaderView) -> Unit) {
     shadowElevation = 4.dp,
     modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
   ) {
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      modifier = Modifier.padding(horizontal = 4.dp).height(48.dp)
-    ) {
-      ModeButton(ReaderView.PAGE, QuranIcons.MenuBook, R.string.reader_view_page, current, onSelect)
-      ModeButton(ReaderView.BOTH, HomeIcons.Notes, R.string.reader_view_both, current, onSelect)
-      ModeButton(ReaderView.TRANSLATION, HomeIcons.Translate, R.string.reader_view_translation, current, onSelect)
+    // the green pill is one shape that travels to the chosen button on a bouncy spring
+    val pillOffset by animateDpAsState(
+      targetValue = (64 * current.ordinal).dp,
+      animationSpec = spring(dampingRatio = 0.55f, stiffness = 420f),
+      label = "pill"
+    )
+    Box(modifier = Modifier.padding(horizontal = 4.dp).height(48.dp)) {
+      Box(
+        Modifier
+          .offset(x = pillOffset)
+          .align(Alignment.CenterStart)
+          .width(64.dp)
+          .height(40.dp)
+          .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape)
+      )
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(48.dp)) {
+        ModeButton(ReaderView.PAGE, QuranIcons.MenuBook, R.string.reader_view_page, current, onSelect)
+        ModeButton(ReaderView.BOTH, HomeIcons.Notes, R.string.reader_view_both, current, onSelect)
+        ModeButton(ReaderView.TRANSLATION, HomeIcons.Translate, R.string.reader_view_translation, current, onSelect)
+      }
     }
   }
 }
@@ -106,13 +124,15 @@ private fun ModeButton(
   onSelect: (ReaderView) -> Unit
 ) {
   val selected = view == current
-  val container by animateColorAsState(
-    if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-    label = "container"
-  )
   val tint by animateColorAsState(
     if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
     label = "tint"
+  )
+  // the chosen icon swells a little as the pill arrives
+  val swell by animateFloatAsState(
+    targetValue = if (selected) 1.14f else 1f,
+    animationSpec = spring(dampingRatio = 0.4f, stiffness = 500f),
+    label = "swell"
   )
   Box(
     contentAlignment = Alignment.Center,
@@ -120,9 +140,18 @@ private fun ModeButton(
       .width(64.dp)
       .height(40.dp)
       .clip(CircleShape)
-      .background(container)
       .selectable(selected = selected, role = Role.RadioButton, onClick = { onSelect(view) })
   ) {
-    Icon(icon, contentDescription = stringResource(label), tint = tint, modifier = Modifier.size(24.dp))
+    Icon(
+      icon,
+      contentDescription = stringResource(label),
+      tint = tint,
+      modifier = Modifier
+        .size(24.dp)
+        .graphicsLayer {
+          scaleX = swell
+          scaleY = swell
+        }
+    )
   }
 }
