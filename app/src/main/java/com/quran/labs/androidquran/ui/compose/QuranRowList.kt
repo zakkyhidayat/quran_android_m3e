@@ -437,7 +437,7 @@ private fun QuranRowItem(
       maxLines = 1,
       softWrap = false,
       overflow = TextOverflow.Clip,
-      modifier = Modifier.basicMarquee(initialDelayMillis = 1500)
+      modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 1500)
     )
   }
 }

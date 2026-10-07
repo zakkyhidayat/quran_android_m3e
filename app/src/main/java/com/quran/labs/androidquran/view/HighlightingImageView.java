@@ -59,6 +59,9 @@ public class HighlightingImageView extends AppCompatImageView {
   private static final boolean DEBUG_BOUNDS = false;
 
   private static int overlayTextColor = -1;
+  private static final int PAGE_LIFT_DP = 56;
+  private int topOffset;
+  private int bottomOffset;
   private static int headerFooterSize;
   private static int headerFooterFontSize;
   private static int scrollableHeaderFooterSize;
@@ -149,9 +152,9 @@ public class HighlightingImageView extends AppCompatImageView {
             bottomSafeOffset = cutout.getSafeInsetBottom();
             horizontalSafeOffset = Math.max(cutout.getSafeInsetLeft(), cutout.getSafeInsetRight());
             setPadding(horizontalSafeOffset,
-                topSafeOffset + verticalOffsetForScrolling,
+                topSafeOffset + topOffset,
                 horizontalSafeOffset,
-                bottomSafeOffset + verticalOffsetForScrolling);
+                bottomSafeOffset + bottomOffset);
           }
         })
         .applyToView(this);
@@ -161,10 +164,20 @@ public class HighlightingImageView extends AppCompatImageView {
     int topBottom = scrollable ? scrollableHeaderFooterSize :
         landscape ? dualPageHeaderFooterSize : headerFooterSize;
     verticalOffsetForScrolling = topBottom;
+    if (!scrollable && !landscape) {
+      // the page info overlay is gone, so its room at the top goes, and the page sits a little
+      // higher: the slack under a centered page moves to the bottom
+      final float density = getResources().getDisplayMetrics().density;
+      topOffset = 0;
+      bottomOffset = (int) (PAGE_LIFT_DP * density);
+    } else {
+      topOffset = topBottom;
+      bottomOffset = topBottom;
+    }
     setPadding(horizontalSafeOffset,
-        topBottom + topSafeOffset,
+        topOffset + topSafeOffset,
         horizontalSafeOffset,
-        topBottom + bottomSafeOffset);
+        bottomOffset + bottomSafeOffset);
     fontSize = scrollable ? scrollableHeaderFooterFontSize :
         landscape ? dualPageHeaderFooterFontSize : headerFooterFontSize;
   }

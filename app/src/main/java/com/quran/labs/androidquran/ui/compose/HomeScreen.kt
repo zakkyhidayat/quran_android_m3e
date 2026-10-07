@@ -247,12 +247,8 @@ fun HomeScreen(
           text = {
             Text(
               if (suraState.lastReadPage != 0) {
-                stringResource(
-                  R.string.continue_reading_page,
-                  QuranUtils.getLocalizedNumber(suraState.lastReadPage),
-                  QuranUtils.getLocalizedNumber(suraState.lastReadSura) + ":" +
-                    QuranUtils.getLocalizedNumber(suraState.lastReadAyah)
-                )
+                // the same words every time, so the button never changes width
+                stringResource(R.string.continue_reading)
               } else {
                 stringResource(R.string.start_reading)
               }
