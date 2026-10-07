@@ -53,6 +53,7 @@ class InlineTranslationView @JvmOverloads constructor(
 
   private fun init(context: Context) {
     isFillViewport = true
+    ScrollbarStyle.show(this)
     linearLayout = LinearLayout(context).apply {
       orientation = LinearLayout.VERTICAL
     }
@@ -95,6 +96,8 @@ class InlineTranslationView @JvmOverloads constructor(
         i++
       }
       addFooterSpacer()
+      // show that there is more to scroll to
+      awakenScrollBars()
     }
   }
 

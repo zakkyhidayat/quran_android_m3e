@@ -17,6 +17,7 @@ import com.quran.data.model.SuraAyah;
 import com.quran.data.model.highlight.HighlightType;
 import com.quran.data.model.selection.SelectionIndicator;
 import com.quran.data.model.selection.SelectionRectangle;
+import com.quran.labs.androidquran.view.ScrollbarStyle;
 import com.quran.labs.androidquran.common.LocalTranslationDisplaySort;
 import com.quran.labs.androidquran.common.QuranAyahInfo;
 import com.quran.labs.androidquran.common.TranslationMetadata;
@@ -62,6 +63,7 @@ public class TranslationView extends FrameLayout implements View.OnClickListener
     translationRecycler.setItemAnimator(new DefaultItemAnimator());
     translationAdapter = new TranslationAdapter(context, translationRecycler, this, this, this);
     translationRecycler.setAdapter(translationAdapter);
+    ScrollbarStyle.show(translationRecycler);
     // the last verse can scroll up past the floating reading choices
     translationRecycler.setClipToPadding(false);
     translationRecycler.setPadding(0, 0, 0,

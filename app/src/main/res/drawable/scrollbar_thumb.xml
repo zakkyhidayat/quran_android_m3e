@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- the scrollbar of the long texts: a slim rounded thumb -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+  <solid android:color="?attr/colorOutline" />
+  <corners android:radius="3dp" />
+  <size android:width="6dp" android:height="48dp" />
+</shape>
