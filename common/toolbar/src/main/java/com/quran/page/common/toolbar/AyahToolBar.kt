@@ -54,6 +54,8 @@ class AyahToolBar @JvmOverloads constructor(
   private val cardMaxWidth: Int
   private val sideMargin: Int
   private val gap: Int
+  private val crowdedRoom: Float
+  private val bottomClearance: Float
   private val versePillHeight: Float
   private val cornerRadius: Float
 
@@ -102,6 +104,8 @@ class AyahToolBar @JvmOverloads constructor(
     sideMargin = resources.getDimensionPixelSize(R.dimen.toolbar_side_margin)
     gap = resources.getDimensionPixelSize(R.dimen.toolbar_gap)
     versePillHeight = 28 * resources.displayMetrics.density
+    crowdedRoom = 180 * resources.displayMetrics.density
+    bottomClearance = 96 * resources.displayMetrics.density
     cornerRadius = resources.getDimension(R.dimen.toolbar_corner_radius)
 
     card = LinearLayout(context).apply {
@@ -178,12 +182,22 @@ class AyahToolBar @JvmOverloads constructor(
   /** How tall the window may get, from the room above or below the selected ayah. */
   private fun maxCardHeight(parentHeight: Int): Int {
     val indicator = lastIndicator
+    if (indicator is SelectionIndicator.SelectedItemPosition && isCrowded(indicator, parentHeight)) {
+      // the ayah fills the page: the window takes the lower part of the screen over it
+      return (parentHeight * 0.45f).toInt()
+    }
     val room = if (indicator is SelectionIndicator.SelectedItemPosition) {
       max(indicator.firstItem.top, parentHeight - indicator.lastItem.bottom) - pipHeight - gap
     } else {
       parentHeight / 2
     }.toInt()
     return room.coerceIn(toolBarHeight + 3 * gap, (parentHeight * 0.6f).toInt())
+  }
+
+  /** A very long ayah (like 2:282) leaves no room above or below it for the window. */
+  private fun isCrowded(position: SelectionIndicator.SelectedItemPosition, parentHeight: Int): Boolean {
+    val room = max(position.firstItem.top, parentHeight - position.lastItem.bottom)
+    return room < crowdedRoom
   }
 
   override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -404,13 +418,20 @@ class AyahToolBar @JvmOverloads constructor(
     val roomAbove = first.top
     val roomBelow = parentHeight - last.bottom
     // below first: the lines under the ayah are the ones still to be read
+    val crowded = isCrowded(position, parentHeight)
     val above = when {
+      crowded -> false
       roomBelow >= height + gap -> false
       roomAbove >= height + gap -> true
       else -> roomAbove > roomBelow
     }
     val chosen = if (above) first else last
-    var y = if (above) first.top - height - gap / 2 else last.bottom + gap / 2
+    var y = when {
+      // over the ayah, at the bottom, clear of the reading choices floating there
+      crowded -> parentHeight - height - bottomClearance
+      above -> first.top - height - gap / 2
+      else -> last.bottom + gap / 2
+    }
     y = y.coerceIn(0f, max(0f, parentHeight - height.toFloat()))
     y += position.yScroll
 
