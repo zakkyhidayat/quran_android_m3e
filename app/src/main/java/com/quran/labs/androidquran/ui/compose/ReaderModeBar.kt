@@ -89,7 +89,7 @@ private fun ModeRow(current: ReaderView, onSelect: (ReaderView) -> Unit) {
     color = MaterialTheme.colorScheme.surfaceContainerHigh,
     tonalElevation = 3.dp,
     shadowElevation = 4.dp,
-    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
+    modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 6.dp)
   ) {
     // the green pill is one shape that travels to the chosen button on a bouncy spring
     val pillOffset by animateDpAsState(

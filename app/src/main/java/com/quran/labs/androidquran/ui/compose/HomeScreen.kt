@@ -6,6 +6,13 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import kotlin.math.abs
+import kotlin.math.floor
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -69,6 +76,8 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.ListItemDefaults
@@ -138,6 +147,35 @@ class HomeActions(
 class HomeJump(val label: String, val go: () -> Unit)
 
 class HomeExtraItem(@StringRes val titleResId: Int, val onClick: () -> Unit)
+
+/**
+ * The bar under the selected tab. It moves with your finger while you swipe between the tabs and
+ * stretches out in the middle of the way, then settles at its tab.
+ */
+@Composable
+private fun TabIndicator(pagerState: PagerState, tabCount: Int, modifier: Modifier = Modifier) {
+  val color = MaterialTheme.colorScheme.primary
+  Box(
+    modifier = modifier
+      .fillMaxWidth()
+      .height(4.dp)
+      .drawBehind {
+        val tabWidth = size.width / tabCount
+        val progress = pagerState.currentPage + pagerState.currentPageOffsetFraction
+        val within = progress - floor(progress)
+        val stretch = 1f - abs(2f * within - 1f)
+        val baseWidth = 40.dp.toPx()
+        val width = baseWidth + 28.dp.toPx() * stretch
+        val center = progress * tabWidth + tabWidth / 2f
+        drawRoundRect(
+          color = color,
+          topLeft = Offset(center - width / 2f, 0f),
+          size = Size(width, size.height),
+          cornerRadius = CornerRadius(4.dp.toPx())
+        )
+      }
+  )
+}
 
 private val TabTitles = listOf(
   R.string.quran_sura,
@@ -423,23 +461,22 @@ fun HomeScreen(
             scrollBehavior = searchScrollBehavior
           )
         }
+        Box {
         PrimaryTabRow(
           selectedTabIndex = pagerState.currentPage,
           containerColor = MaterialTheme.colorScheme.surface,
-          indicator = {
-            TabRowDefaults.PrimaryIndicator(
-              modifier = Modifier.tabIndicatorOffset(pagerState.currentPage),
-              width = 40.dp,
-              height = 4.dp,
-              shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
-            )
-          }
+          // the indicator is drawn below, so it can follow the page while it is being swiped
+          indicator = {}
         ) {
           TabTitles.forEachIndexed { index, titleResId ->
             val selectedTab = pagerState.currentPage == index
             Tab(
               selected = selectedTab,
-              onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+              onClick = {
+                scope.launch {
+                  pagerState.animateScrollToPage(index, animationSpec = spring(dampingRatio = 0.8f, stiffness = 380f))
+                }
+              },
               selectedContentColor = MaterialTheme.colorScheme.primary,
               unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             ) {
@@ -454,6 +491,8 @@ fun HomeScreen(
               )
             }
           }
+        }
+        TabIndicator(pagerState, TabTitles.size, Modifier.align(Alignment.BottomStart))
         }
       }
     }

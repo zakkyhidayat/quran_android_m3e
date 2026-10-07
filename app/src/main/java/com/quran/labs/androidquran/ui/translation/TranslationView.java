@@ -100,11 +100,12 @@ public class TranslationView extends FrameLayout implements View.OnClickListener
     Insetter.builder()
         .setOnApplyInsetsListener((view, insets, initialState) -> {
           final DisplayCutoutCompat cutout = insets.getDisplayCutout();
-          if (cutout != null) {
-            final int topSafeOffset = cutout.getSafeInsetTop();
-            final int bottomSafeOffset = cutout.getSafeInsetBottom();
-            final int horizontalSafeOffset =
-                Math.max(cutout.getSafeInsetLeft(), cutout.getSafeInsetRight());
+          {
+            // the top bar already clears the camera cutout, so the list starts just below it
+            final int topSafeOffset = (int) (8 * getResources().getDisplayMetrics().density);
+            final int bottomSafeOffset = cutout != null ? cutout.getSafeInsetBottom() : 0;
+            final int horizontalSafeOffset = cutout != null
+                ? Math.max(cutout.getSafeInsetLeft(), cutout.getSafeInsetRight()) : 0;
 
             if (spacerDecoration == null) {
               spacerDecoration = new SpacerDecoration(topSafeOffset, bottomSafeOffset);
@@ -140,11 +141,8 @@ public class TranslationView extends FrameLayout implements View.OnClickListener
     for (int i = 0, size = verses.size(); i < size; i++) {
       QuranAyahInfo verse = verses.get(i);
       int sura = verse.sura;
-      if (sura != currentSura) {
-        rows.add(new TranslationViewRow(TranslationViewRow.Type.SURA_HEADER, verse,
-            quranDisplayData.getSuraName(getContext(), sura, true)));
-        currentSura = sura;
-      }
+      // the surah's name is in the top bar, so the list does not repeat it as a heading
+      currentSura = sura;
 
       if (verse.ayah == 1 && sura != 1 && sura != 9) {
         rows.add(new TranslationViewRow(TranslationViewRow.Type.BASMALLAH, verse));

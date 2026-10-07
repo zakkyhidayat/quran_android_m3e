@@ -8,6 +8,15 @@ import androidx.activity.compose.BackHandler
 import android.os.Build
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -231,7 +240,7 @@ fun OnboardingScreen(
       targetState = index,
       transitionSpec = {
         val forward = targetState > initialState
-        (slideInHorizontally { if (forward) it / 4 else -it / 4 } + fadeIn())
+        (slideInHorizontally(spring(dampingRatio = 0.75f, stiffness = 380f)) { if (forward) it / 3 else -it / 3 } + fadeIn())
           .togetherWith(slideOutHorizontally { if (forward) -it / 4 else it / 4 } + fadeOut())
       },
       label = "onboarding step",
@@ -422,24 +431,64 @@ private fun ChoiceCard(
   unselectedColor: Color = Color.Unspecified,
   content: @Composable ColumnScope.() -> Unit
 ) {
-  val shape = RoundedCornerShape(24.dp)
-  val color = if (selected) {
+  // the card gives way under the finger and pops when it becomes the chosen one
+  val source = remember { MutableInteractionSource() }
+  val pressed by source.collectIsPressedAsState()
+  val corner by animateDpAsState(
+    targetValue = if (pressed) 16.dp else 24.dp,
+    animationSpec = spring(dampingRatio = 0.5f, stiffness = 520f),
+    label = "corner"
+  )
+  val pressScale by animateFloatAsState(
+    targetValue = if (pressed) 0.97f else 1f,
+    animationSpec = spring(dampingRatio = 0.5f, stiffness = 520f),
+    label = "pressScale"
+  )
+  val pop = remember { Animatable(1f) }
+  var firstSelection by remember { mutableStateOf(true) }
+  LaunchedEffect(selected) {
+    if (firstSelection) {
+      firstSelection = false
+    } else if (selected) {
+      pop.snapTo(0.95f)
+      pop.animateTo(1f, spring(dampingRatio = 0.35f, stiffness = 450f))
+    }
+  }
+  val target = if (selected) {
     MaterialTheme.colorScheme.secondaryContainer
   } else if (unselectedColor != Color.Unspecified) {
     unselectedColor
   } else {
     MaterialTheme.colorScheme.surfaceContainerHigh
   }
-  val border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+  val color by animateColorAsState(target, MaterialTheme.motionScheme.defaultEffectsSpec(), label = "cardColor")
+  val borderColor by animateColorAsState(
+    if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+    MaterialTheme.motionScheme.defaultEffectsSpec(),
+    label = "cardBorder"
+  )
+  val shape = RoundedCornerShape(corner)
+  val border = BorderStroke(2.dp, borderColor)
+  val scaleModifier = Modifier.graphicsLayer {
+    scaleX = pressScale * pop.value
+    scaleY = pressScale * pop.value
+  }
   val inner: @Composable () -> Unit = {
     Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), content = content)
   }
   if (onClick != null) {
-    Surface(onClick = onClick, shape = shape, color = color, border = border, modifier = modifier.fillMaxWidth()) {
+    Surface(
+      onClick = onClick,
+      interactionSource = source,
+      shape = shape,
+      color = color,
+      border = border,
+      modifier = modifier.fillMaxWidth().then(scaleModifier)
+    ) {
       inner()
     }
   } else {
-    Surface(shape = shape, color = color, border = border, modifier = modifier.fillMaxWidth()) {
+    Surface(shape = shape, color = color, border = border, modifier = modifier.fillMaxWidth().then(scaleModifier)) {
       inner()
     }
   }

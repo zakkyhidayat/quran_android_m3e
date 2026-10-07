@@ -59,7 +59,7 @@ public class HighlightingImageView extends AppCompatImageView {
   private static final boolean DEBUG_BOUNDS = false;
 
   private static int overlayTextColor = -1;
-  private static final int PAGE_LIFT_DP = 86;
+  private static final int PAGE_LIFT_DP = 96;
   private int topOffset;
   private int bottomOffset;
   private static int headerFooterSize;
