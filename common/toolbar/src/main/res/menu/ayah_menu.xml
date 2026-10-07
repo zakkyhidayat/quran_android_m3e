@@ -15,6 +15,9 @@
     <item android:id="@+id/cab_play_from_here"
           android:icon="@drawable/ic_play"
           android:title="@string/play_from_here" />
+    <item android:id="@+id/cab_dock"
+          android:icon="@drawable/ic_dock_top"
+          android:title="@string/dock_window_top" />
     <item android:id="@+id/cab_close_ayah"
           android:icon="@drawable/ic_close"
           android:title="@string/close_ayah_window" />

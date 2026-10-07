@@ -1,6 +1,8 @@
 package com.quran.labs.androidquran.ui.compose
 
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
@@ -10,9 +12,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.SelectableDropdownMenuItem
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.quran.labs.androidquran.common.ui.core.QuranIcons
 
@@ -26,6 +31,8 @@ class MenuEntry(
   val icon: ImageVector? = null,
   val selected: Boolean? = null,
   val keepOpen: Boolean = false,
+  /** A non-null value makes it an on/off row: a switch at the end instead of a check. */
+  val toggled: Boolean? = null,
   val onClick: () -> Unit
 )
 
@@ -60,7 +67,20 @@ fun ExpressiveMenu(
             entry.selected == true -> ({ Icon(QuranIcons.Check, contentDescription = null) })
             else -> null
           }
-          if (entry.selected != null) {
+          if (entry.toggled != null) {
+            DropdownMenuItem(
+              onClick = click,
+              text = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                  Text(entry.label, modifier = Modifier.weight(1f, fill = false))
+                  Spacer(Modifier.width(16.dp))
+                  Switch(checked = entry.toggled, onCheckedChange = null)
+                }
+              },
+              shape = shapes.shape,
+              leadingIcon = leading
+            )
+          } else if (entry.selected != null) {
             SelectableDropdownMenuItem(
               selected = entry.selected,
               onClick = click,

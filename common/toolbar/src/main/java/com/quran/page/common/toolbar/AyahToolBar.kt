@@ -91,6 +91,17 @@ class AyahToolBar @JvmOverloads constructor(
 
   var insets: Insets = Insets.NONE
 
+  /**
+   * Where the window goes: [DOCK_AUTO] beside the ayah, wherever there is room, or [DOCK_TOP] and
+   * [DOCK_BOTTOM] to keep it at one edge of the page.
+   */
+  var dock: Int = DOCK_AUTO
+    set(value) {
+      field = value
+      lastIndicator?.let { indicator -> post { updatePosition(indicator) } }
+    }
+  var onDockChanged: (Int) -> Unit = {}
+
   @Inject
   lateinit var ayahToolBarPresenter: AyahToolBarPresenter
 
@@ -182,6 +193,7 @@ class AyahToolBar @JvmOverloads constructor(
   /** How tall the window may get, from the room above or below the selected ayah. */
   private fun maxCardHeight(parentHeight: Int): Int {
     val indicator = lastIndicator
+    if (dock != DOCK_AUTO) return (parentHeight * 0.45f).toInt()
     if (indicator is SelectionIndicator.SelectedItemPosition && isCrowded(indicator, parentHeight)) {
       // the ayah fills the page: the window takes the lower part of the screen over it
       return (parentHeight * 0.45f).toInt()
@@ -306,6 +318,17 @@ class AyahToolBar @JvmOverloads constructor(
     updateBookmarkIcon()
   }
 
+  /** The dock button shows the edge it would move the window to: up when it is low, down when high. */
+  private fun updateDockIcon(atBottom: Boolean) {
+    val item = menu.findItem(R.id.cab_dock) ?: return
+    item.setIcon(if (atBottom) R.drawable.ic_dock_top else R.drawable.ic_dock_bottom)
+    item.title = context.getString(if (atBottom) R.string.dock_window_top else R.string.dock_window_bottom)
+    val button = findViewById<ImageButton>(R.id.cab_dock) ?: return
+    button.setImageDrawable(item.icon)
+    button.contentDescription = item.title
+    button.imageTintList = ColorStateList.valueOf(contentColor)
+  }
+
   private fun updateBookmarkIcon() {
     val bookmarkItem = menu.findItem(R.id.cab_bookmark_ayah) ?: return
     val bookmarkButton = findViewById<ImageButton>(R.id.cab_bookmark_ayah) ?: return
@@ -396,6 +419,7 @@ class AyahToolBar @JvmOverloads constructor(
       }
 
       setPosition(actualX, y)
+      updateDockIcon(y + height / 2f > parentView.height / 2f)
       if (needsLayout) {
         requestLayout()
       }
@@ -420,6 +444,8 @@ class AyahToolBar @JvmOverloads constructor(
     // below first: the lines under the ayah are the ones still to be read
     val crowded = isCrowded(position, parentHeight)
     val above = when {
+      dock == DOCK_TOP -> true
+      dock == DOCK_BOTTOM -> false
       crowded -> false
       roomBelow >= height + gap -> false
       roomAbove >= height + gap -> true
@@ -427,6 +453,8 @@ class AyahToolBar @JvmOverloads constructor(
     }
     val chosen = if (above) first else last
     var y = when {
+      dock == DOCK_TOP -> gap.toFloat()
+      dock == DOCK_BOTTOM -> parentHeight - height - bottomClearance
       // over the ayah, at the bottom, clear of the reading choices floating there
       crowded -> parentHeight - height - bottomClearance
       above -> first.top - height - gap / 2
@@ -482,6 +510,17 @@ class AyahToolBar @JvmOverloads constructor(
   }
 
   override fun onClick(v: View) {
+    if (v.id == R.id.cab_dock) {
+      // the button always offers the other edge than the one the window is at
+      val atBottom = when (dock) {
+        DOCK_TOP -> false
+        DOCK_BOTTOM -> true
+        else -> translationY + measuredHeight / 2 > (parent as View).height / 2
+      }
+      dock = if (atBottom) DOCK_TOP else DOCK_BOTTOM
+      onDockChanged(dock)
+      return
+    }
     val item = menu.findItem(v.id) ?: return
     val subMenu = if (item.hasSubMenu()) item.subMenu else null
     if (subMenu != null) {
@@ -507,5 +546,11 @@ class AyahToolBar @JvmOverloads constructor(
       item.isVisible = isVisible
       resetMenu(true)
     }
+  }
+
+  companion object {
+    const val DOCK_AUTO = 0
+    const val DOCK_TOP = 1
+    const val DOCK_BOTTOM = 2
   }
 }

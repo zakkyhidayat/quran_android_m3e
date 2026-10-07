@@ -99,6 +99,7 @@ object Constants {
   const val PREF_APP_THEME = "appTheme"
   const val PREF_APP_COLOR_SCHEME = "appColorScheme"
   const val PREF_AMOLED = "useAmoled"
+  const val PREF_AYAH_WINDOW_DOCK = "ayahWindowDock"
   const val PREF_MOBILE_SYNC_LEGACY_BOOKMARKS_MIGRATED = "mobileSyncLegacyBookmarksMigrated"
   const val PREF_HAS_SEEN_MOVABLE_BOOKMARK_EDUCATION = "hasSeenMovableBookmarkEducation"
   const val PREF_LAST_SEEN_ANNOUNCEMENT = "lastSeenAnnouncement"

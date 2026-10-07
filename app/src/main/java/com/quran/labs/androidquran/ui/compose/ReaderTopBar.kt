@@ -11,6 +11,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -86,7 +87,12 @@ fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
       }
     },
     actions = {
-      IconButton(onClick = actions.onBookmark) {
+      IconButton(
+        onClick = actions.onBookmark,
+        colors = IconButtonDefaults.iconButtonColors(
+          containerColor = if (state.isBookmarked) Color(0xFF176B4D).copy(alpha = 0.2f) else ink.copy(alpha = 0.08f)
+        )
+      ) {
         Icon(
           imageVector = if (state.isBookmarked) HomeIcons.BookmarkFilled else QuranIcons.BookmarkBorder,
           contentDescription = stringResource(R.string.menu_bookmarks),
@@ -97,7 +103,7 @@ fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
           }
         )
       }
-      ReaderOverflowMenu(state, actions)
+      ReaderOverflowMenu(state, actions, ink)
     },
     colors = TopAppBarDefaults.topAppBarColors(
       containerColor = Color.Transparent,
@@ -137,9 +143,12 @@ private fun ReaderTitle(state: ReaderBarState, ink: Color) {
 }
 
 @Composable
-private fun ReaderOverflowMenu(state: ReaderBarState, actions: ReaderBarActions) {
+private fun ReaderOverflowMenu(state: ReaderBarState, actions: ReaderBarActions, ink: Color) {
   var expanded by remember { mutableStateOf(false) }
-  IconButton(onClick = { expanded = true }) {
+  IconButton(
+    onClick = { expanded = true },
+    colors = IconButtonDefaults.iconButtonColors(containerColor = ink.copy(alpha = 0.08f))
+  ) {
     Icon(
       HomeIcons.MoreVert,
       contentDescription = stringResource(androidx.appcompat.R.string.abc_action_menu_overflow_description)

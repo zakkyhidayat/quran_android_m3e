@@ -291,6 +291,15 @@ public class QuranSettings {
     return prefs.getBoolean(Constants.PREF_AUTO_BACKUP, true);
   }
 
+  /** Where the ayah window goes: 0 beside the ayah, 1 at the top, 2 at the bottom. */
+  public int getAyahWindowDock() {
+    return prefs.getInt(Constants.PREF_AYAH_WINDOW_DOCK, 0);
+  }
+
+  public void setAyahWindowDock(int dock) {
+    prefs.edit().putInt(Constants.PREF_AYAH_WINDOW_DOCK, dock).apply();
+  }
+
   public void setUseAmoled(boolean useAmoled) {
     prefs.edit().putBoolean(Constants.PREF_AMOLED, useAmoled).apply();
   }

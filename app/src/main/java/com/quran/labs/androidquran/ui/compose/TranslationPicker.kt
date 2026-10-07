@@ -74,7 +74,7 @@ fun TranslationPicker(
         // no title: the pill the menu opens from already says "translations"
         MenuSection(
           entries = items.map { item ->
-            MenuEntry(item.name, selected = item.checked, keepOpen = true) { onToggle(item.filename) }
+            MenuEntry(item.name, keepOpen = true, toggled = item.checked) { onToggle(item.filename) }
           }
         ),
         MenuSection(
