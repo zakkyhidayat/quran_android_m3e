@@ -6,6 +6,8 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.util.AttributeSet
 import android.view.Menu
+import androidx.dynamicanimation.animation.DynamicAnimation
+import androidx.dynamicanimation.animation.SpringAnimation
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.MenuItem.OnMenuItemClickListener
@@ -76,6 +78,7 @@ class AyahToolBar @JvmOverloads constructor(
   private var itemSelectedListener: OnMenuItemClickListener? = null
   private var lastIndicator: SelectionIndicator? = null
   private var positionedHeight = 0
+  private var windowAtTop = false
 
   var isShowing = false
     private set
@@ -433,7 +436,7 @@ class AyahToolBar @JvmOverloads constructor(
       }
 
       setPosition(actualX, y)
-      updateDockIcon(internalPosition.pipPosition == SelectedAyahPlacementType.BOTTOM)
+      updateDockIcon(windowAtTop)
       if (needsLayout) {
         requestLayout()
       }
@@ -470,9 +473,12 @@ class AyahToolBar @JvmOverloads constructor(
       else -> roomAbove > roomBelow
     }
     val chosen = if (above) first else last
+    // an ayah that fills the page has no side to go to: the window lies over it, at the edge the
+    // dock asks for (the bottom, clear of the reading choices, unless it was sent to the top)
+    val atTop = if (crowded) dock == DOCK_TOP else above
+    windowAtTop = atTop
     var y = when {
-      // over the ayah, at the bottom, clear of the reading choices floating there
-      crowded -> parentHeight - height - bottomClearance
+      crowded -> if (atTop) gap.toFloat() else parentHeight - height - bottomClearance
       above -> first.top - height - gap / 2
       else -> last.bottom + gap / 2
     }
@@ -488,7 +494,7 @@ class AyahToolBar @JvmOverloads constructor(
       x = (parentWidth - sideMargin - width).toFloat()
     }
     val placement =
-      if (above) SelectedAyahPlacementType.BOTTOM else SelectedAyahPlacementType.TOP
+      if (atTop) SelectedAyahPlacementType.BOTTOM else SelectedAyahPlacementType.TOP
     // the arrow stays inside the rounded corners
     val pip = (midpoint - x).coerceIn(cornerRadius, width - cornerRadius - pipWidth)
     return com.quran.page.common.toolbar.dao.SelectionIndicatorPosition(
@@ -511,9 +517,49 @@ class AyahToolBar @JvmOverloads constructor(
   }
 
   private fun showMenu() {
+    val appearing = !isShowing
     showMenu(menu)
+    if (appearing) {
+      // hidden until the spring starts, so there is no frame of the window at full size
+      alpha = 0f
+      scaleX = 0.8f
+      scaleY = 0.8f
+    }
     visibility = VISIBLE
     isShowing = true
+    if (appearing) {
+      post { playAppear() }
+    }
+  }
+
+  /**
+   * The window grows out of the ayah it belongs to on a bouncy spring, and its buttons pop in one
+   * after the other.
+   */
+  private fun playAppear() {
+    pivotX = (pipOffset + pipWidth / 2f).coerceIn(0f, max(1, measuredWidth).toFloat())
+    pivotY = if (pipPosition == SelectedAyahPlacementType.TOP) 0f else measuredHeight.toFloat()
+    animate().cancel()
+    animate().alpha(1f).setDuration(130).start()
+    startSpring(this, DynamicAnimation.SCALE_X, 1f, 0.6f)
+    startSpring(this, DynamicAnimation.SCALE_Y, 1f, 0.6f)
+    for (i in 1 until menuLayout.childCount) {
+      val button = menuLayout.getChildAt(i)
+      button.scaleX = 0f
+      button.scaleY = 0f
+      button.postDelayed({
+        startSpring(button, DynamicAnimation.SCALE_X, 1f, 0.5f)
+        startSpring(button, DynamicAnimation.SCALE_Y, 1f, 0.5f)
+      }, 70L + i * 35L)
+    }
+  }
+
+  private fun startSpring(view: View, property: DynamicAnimation.ViewProperty, target: Float, damping: Float) {
+    SpringAnimation(view, property, target).apply {
+      spring.stiffness = 380f
+      spring.dampingRatio = damping
+      start()
+    }
   }
 
   private fun hideMenu() {
@@ -533,7 +579,7 @@ class AyahToolBar @JvmOverloads constructor(
   override fun onClick(v: View) {
     if (v.id == R.id.cab_dock) {
       // the button always offers the other side of the ayah than the one the window is on
-      dock = if (pipPosition == SelectedAyahPlacementType.BOTTOM) DOCK_BOTTOM else DOCK_TOP
+      dock = if (windowAtTop) DOCK_BOTTOM else DOCK_TOP
       onDockChanged(dock)
       return
     }

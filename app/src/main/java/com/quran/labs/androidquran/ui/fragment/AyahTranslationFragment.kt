@@ -78,6 +78,13 @@ class AyahTranslationFragment : AyahActionFragment(), TranslationScreen {
     return view
   }
 
+  /** The window's colors changed with the reading mode. */
+  fun refreshTheme() {
+    if (::translationView.isInitialized) {
+      translationView.refresh()
+    }
+  }
+
   override fun onResume() {
     // currently needs to be before we call super.onResume
     translationPresenter.bind(this)

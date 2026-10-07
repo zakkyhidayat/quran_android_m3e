@@ -43,6 +43,7 @@ import com.quran.labs.androidquran.common.ui.core.QuranTheme
 import com.quran.labs.androidquran.ui.compose.ReaderBarActions
 import com.quran.labs.androidquran.ui.compose.ReaderBarState
 import com.quran.labs.androidquran.ui.compose.AyahBadge
+import com.quran.labs.androidquran.ui.helpers.ReadingPalette
 import com.quran.labs.androidquran.ui.compose.MarkerPill
 import com.quran.labs.androidquran.ui.compose.ReaderModeBar
 import com.quran.labs.androidquran.ui.compose.ReaderView
@@ -202,6 +203,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
   ReadingBookmarkPresenter.Screen {
   private var lastPopupTime: Long = 0
   private val ayahLabel = androidx.compose.runtime.mutableStateOf("")
+  private val ayahPalette = androidx.compose.runtime.mutableStateOf(ReadingPalette.forMode("light"))
   private var markerJob: kotlinx.coroutines.Job? = null
   private var shouldReconnect = false
   private var showingTranslation = false
@@ -475,12 +477,8 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
         com.quran.labs.androidquran.common.toolbar.R.id.cab_play_from_here, false
       )
     }
-    // the floating ayah window wears the theme's colors and carries the translation
-    ayahToolBar.applyColors(
-      MaterialColors.getColor(ayahToolBar, com.google.android.material.R.attr.colorSurfaceContainerHigh),
-      MaterialColors.getColor(ayahToolBar, com.google.android.material.R.attr.colorOnSurface),
-      MaterialColors.getColor(ayahToolBar, androidx.appcompat.R.attr.colorPrimary)
-    )
+    // the floating ayah window wears the colors of the page it floats on, and carries the translation
+    applyAyahWindowTheme()
     // when the page itself is the translation, the window needs no second copy of it
     ayahToolBar.contentEnabled = { !showingTranslation }
     if (supportFragmentManager.findFragmentById(ayahToolBar.contentContainer.id) == null) {
@@ -495,7 +493,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
         setContent {
           QuranTheme {
             val label = ayahLabel.value
-            if (label.isNotEmpty()) AyahBadge(label)
+            if (label.isNotEmpty()) AyahBadge(label, ayahPalette.value)
           }
         }
       },
@@ -1078,6 +1076,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
         quranSettings.setReadingMode(mode)
         readerBar.readingMode = mode
         applyReadingBackground()
+        applyAyahWindowTheme()
         refreshQuranPages()
       },
       onSearch = { startActivity(Intent(this, SearchActivity::class.java)) },
@@ -1150,6 +1149,14 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       delay(2500)
       readerBar.marker = null
     }
+  }
+
+  private fun applyAyahWindowTheme() {
+    val palette = ReadingPalette.forMode(quranSettings.readingMode)
+    ayahPalette.value = palette
+    ayahToolBar.applyColors(palette.card, palette.ink, palette.accent)
+    (supportFragmentManager.findFragmentById(ayahToolBar.contentContainer.id) as? AyahTranslationFragment)
+      ?.refreshTheme()
   }
 
   /** The reading mode's paper color behind everything, so the strip under the page matches it. */

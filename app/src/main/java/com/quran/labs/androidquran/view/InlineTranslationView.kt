@@ -16,6 +16,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.annotation.StyleRes
 import androidx.core.content.ContextCompat
+import com.quran.labs.androidquran.ui.helpers.ReadingPalette
 import com.google.android.material.R as MaterialR
 import com.google.android.material.color.MaterialColors
 import com.quran.labs.androidquran.R
@@ -69,10 +70,10 @@ class InlineTranslationView @JvmOverloads constructor(
     ayahFontSize = settings.ayahTextSize
     translationFontSize = settings.translationTextSize
     textStyle = R.style.TranslationText
-    inlineAyahColor = ContextCompat.getColor(context, R.color.translation_translator_color)
-    ayahTextColor = MaterialColors.getColor(
-      context, MaterialR.attr.colorOnSurface, ContextCompat.getColor(context, R.color.text_primary)
-    )
+    // the window sits on the page's card, so its text takes the ink of the reading mode
+    val palette = ReadingPalette.forMode(settings.readingMode)
+    inlineAyahColor = palette.accent
+    ayahTextColor = palette.ink
   }
 
   fun refresh() {
