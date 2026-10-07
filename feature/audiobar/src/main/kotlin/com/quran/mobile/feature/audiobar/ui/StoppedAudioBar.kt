@@ -7,7 +7,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,17 +38,30 @@ internal fun StoppedAudioBar(
       Icon(QuranIcons.PlayArrow, contentDescription = "")
     }
 
-    TextButton(
-      modifier = Modifier.weight(1f),
-      onClick = { eventSink(AudioBarUiEvent.StoppedPlaybackEvent.ChangeQari) }
+    // the reciter is a pill, so it reads as something to choose rather than a plain label
+    Surface(
+      onClick = { eventSink(AudioBarUiEvent.StoppedPlaybackEvent.ChangeQari) },
+      shape = CircleShape,
+      color = MaterialTheme.colorScheme.secondaryContainer,
+      contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+      modifier = Modifier
+        .weight(1f)
+        .padding(horizontal = 4.dp, vertical = 8.dp)
+        .height(40.dp)
     ) {
-      Text(
-        text = stringResource(state.qariNameResource),
-        color = LocalQuranColors.current.defaultTextColor
-      )
-      Spacer(modifier = Modifier.weight(1f))
-      Icon(QuranIcons.ExpandMore, contentDescription = "", tint =
-        LocalQuranColors.current.defaultTextColor)
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(start = 16.dp, end = 8.dp)
+      ) {
+        Text(
+          text = stringResource(state.qariNameResource),
+          style = MaterialTheme.typography.labelLarge,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+          modifier = Modifier.weight(1f)
+        )
+        Icon(QuranIcons.ExpandMore, contentDescription = "")
+      }
     }
 
     if (state.enableRecording) {

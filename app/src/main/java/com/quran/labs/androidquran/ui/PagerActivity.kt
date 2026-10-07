@@ -505,6 +505,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       )
     )
     ayahToolBar.onDockChanged = { quranSettings.ayahWindowDock = it }
+    ayahToolBar.onPlayLongPress = { onShowQariList() }
     ayahToolBar.longPressLambda = { charSequence: CharSequence? ->
       makeText(this@PagerActivity, charSequence!!, Toast.LENGTH_SHORT).show()
     }

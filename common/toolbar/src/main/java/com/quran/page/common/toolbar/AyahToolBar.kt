@@ -626,7 +626,16 @@ class AyahToolBar @JvmOverloads constructor(
     }
   }
 
+  /** Holding the play button chooses the reciter, so it is one press away from the verse. */
+  var onPlayLongPress: (() -> Unit)? = null
+
   override fun onLongClick(v: View): Boolean {
+    if (v.id == R.id.cab_play_from_here) {
+      onPlayLongPress?.let {
+        it()
+        return true
+      }
+    }
     val item = menu.findItem(v.id)
     val title = item?.title
     if (title != null) {
