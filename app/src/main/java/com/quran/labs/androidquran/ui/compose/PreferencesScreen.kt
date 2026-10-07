@@ -189,6 +189,7 @@ fun PreferencesContent(
     verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
   ) {
     itemsIndexed(entries) { _, entry ->
+      Box(Modifier.expressiveAppear(rise = 20f, from = 0.97f)) {
       when (entry) {
         is Entry.Label -> SettingsLabel(entry.title.toString())
         is Entry.Hero -> SettingsHero(entry.preference, version)
@@ -198,6 +199,7 @@ fun PreferencesContent(
           version = version,
           onChanged = onChanged
         )
+      }
       }
     }
   }

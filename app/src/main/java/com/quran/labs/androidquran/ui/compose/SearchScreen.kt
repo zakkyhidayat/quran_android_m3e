@@ -187,7 +187,7 @@ private fun ResultsList(results: List<SearchResult>, onResultClick: (SearchResul
         colors = ListItemDefaults.segmentedColors(
           containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        modifier = Modifier.padding(horizontal = 16.dp),
+        modifier = Modifier.padding(horizontal = 16.dp).expressiveAppear(rise = 20f, from = 0.97f),
         supportingContent = { Text(result.location) }
       ) {
         Text(

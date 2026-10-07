@@ -36,7 +36,7 @@ fun DialogSurface(
     shape = MaterialTheme.shapes.extraLarge,
     color = MaterialTheme.colorScheme.surfaceContainerHigh,
     tonalElevation = 6.dp,
-    modifier = modifier.fillMaxWidth()
+    modifier = modifier.fillMaxWidth().expressiveAppear(rise = 40f, from = 0.9f)
   ) {
     Column(modifier = Modifier.padding(24.dp)) {
       if (title != null) {

@@ -1,6 +1,9 @@
 package com.quran.labs.androidquran.ui.compose
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.animation.Crossfade
@@ -106,6 +109,8 @@ fun QuranRowList(
     verticalArrangement = Arrangement.spacedBy(if (separateCards) 8.dp else ListItemDefaults.SegmentedGap)
   ) {
     itemsIndexed(rows) { index, row ->
+      // each row arrives on a spring as it scrolls into view
+      Box(Modifier.expressiveAppear()) {
       val enabled = !isEditable || row.isTappableWhenEditable()
       val click: () -> Unit = if (enabled) ({ onRowClick(index, row) }) else ({})
       val longClick: (() -> Unit)? =
@@ -137,6 +142,7 @@ fun QuranRowList(
             QuranRowItem(row, selected, shapes, tagMap, showTags, showDate, current, click, longClick)
           }
         }
+      }
       }
     }
   }
@@ -214,13 +220,15 @@ private fun CollectionHeader(
   onOpen: () -> Unit
 ) {
   // a section header like the others (flat, in the primary color), only with a chevron to fold it
+  val source = remember { MutableInteractionSource() }
   Surface(
     shape = MaterialTheme.shapes.large,
     color = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = 16.dp, vertical = 4.dp)
-      .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+      .pressScale(source, 0.97f)
+      .combinedClickable(interactionSource = source, indication = LocalIndication.current, onClick = onClick, onLongClick = onLongClick)
   ) {
     Row(
       modifier = Modifier
@@ -229,7 +237,11 @@ private fun CollectionHeader(
       verticalAlignment = Alignment.CenterVertically
     ) {
       if (row.isCollapsible) {
-        val rotation by animateFloatAsState(if (row.isCollapsed) 0f else 180f, label = "expand")
+        val rotation by animateFloatAsState(
+          if (row.isCollapsed) 0f else 180f,
+          animationSpec = spring(dampingRatio = 0.5f, stiffness = 420f),
+          label = "expand"
+        )
         Icon(
           imageVector = QuranIcons.ExpandMore,
           contentDescription = stringResource(

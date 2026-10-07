@@ -101,7 +101,7 @@ class QuranProgressDialog(context: Context) : ComponentDialog(context) {
       shape = MaterialTheme.shapes.extraLarge,
       color = MaterialTheme.colorScheme.surfaceContainerHigh,
       tonalElevation = 6.dp,
-      modifier = Modifier.fillMaxWidth()
+      modifier = Modifier.fillMaxWidth().expressiveAppear(rise = 40f, from = 0.9f)
     ) {
       Column(modifier = Modifier.padding(24.dp)) {
         titleText?.let {
