@@ -23,7 +23,8 @@ internal class TranslationViewRow @JvmOverloads constructor(
     spannableStringBuilder: SpannableStringBuilder,
     expandedFootnotes: List<Int>,
     collapsedFootnoteSpannableStyler: ((Int) -> SpannableString),
-    expandedFootnoteSpannableStyler: ((SpannableStringBuilder, Int, Int) -> SpannableStringBuilder)
+    expandedFootnoteSpannableStyler: ((SpannableStringBuilder, Int, Int) -> SpannableStringBuilder),
+    expandedFootnoteClickSpan: ((Int) -> Any)? = null
   ): CharSequence {
     return TranslationFootnoteHelper.footnoteCognizantText(
       data,
@@ -31,7 +32,8 @@ internal class TranslationViewRow @JvmOverloads constructor(
       spannableStringBuilder,
       expandedFootnotes,
       collapsedFootnoteSpannableStyler,
-      expandedFootnoteSpannableStyler
+      expandedFootnoteSpannableStyler,
+      expandedFootnoteClickSpan
     )
   }
 

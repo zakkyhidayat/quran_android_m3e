@@ -64,8 +64,8 @@ fun MarkerPill(marker: String?) {
   ) {
     Surface(
       shape = CircleShape,
-      color = MaterialTheme.colorScheme.inverseSurface,
-      contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+      color = MaterialTheme.colorScheme.secondaryContainer,
+      contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
       shadowElevation = 3.dp
     ) {
       Text(
@@ -83,8 +83,8 @@ private fun ModeRow(current: ReaderView, onSelect: (ReaderView) -> Unit) {
     shape = CircleShape,
     color = MaterialTheme.colorScheme.surfaceContainerHigh,
     tonalElevation = 3.dp,
-    shadowElevation = 6.dp,
-    modifier = Modifier.padding(8.dp)
+    shadowElevation = 4.dp,
+    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
   ) {
     Row(
       verticalAlignment = Alignment.CenterVertically,

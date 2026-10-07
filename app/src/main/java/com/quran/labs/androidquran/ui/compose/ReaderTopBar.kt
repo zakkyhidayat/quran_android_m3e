@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -76,8 +77,9 @@ class ReaderBarActions(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
+  val ink = readingInk(state.readingMode)
   TopAppBar(
-    title = { ReaderTitle(state) },
+    title = { ReaderTitle(state, ink) },
     navigationIcon = {
       IconButton(onClick = actions.onBack) {
         Icon(QuranIcons.ArrowBack, contentDescription = stringResource(R.string.menu_back_to_page))
@@ -89,23 +91,34 @@ fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
           imageVector = if (state.isBookmarked) HomeIcons.BookmarkFilled else QuranIcons.BookmarkBorder,
           contentDescription = stringResource(R.string.menu_bookmarks),
           tint = if (state.isBookmarked) {
-            MaterialTheme.colorScheme.primary
+            if (state.readingMode == Constants.READING_MODE_NIGHT) Color(0xFF7FDBB0) else Color(0xFF176B4D)
           } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
+            ink
           }
         )
       }
       ReaderOverflowMenu(state, actions)
     },
     colors = TopAppBarDefaults.topAppBarColors(
-      containerColor = MaterialTheme.colorScheme.surfaceContainer
+      containerColor = Color.Transparent,
+      scrolledContainerColor = Color.Transparent,
+      titleContentColor = ink,
+      navigationIconContentColor = ink,
+      actionIconContentColor = ink
     )
   )
 }
 
+/** The reading mode's ink: dark on light and sepia paper, light on the night background. */
+private fun readingInk(mode: String): Color = when (mode) {
+  Constants.READING_MODE_NIGHT -> Color(0xFFE3DED3)
+  Constants.READING_MODE_SEPIA -> Color(0xFF3B2F1E)
+  else -> Color(0xFF1F1D17)
+}
+
 /** The surah, then the page and juz in smaller type. */
 @Composable
-private fun ReaderTitle(state: ReaderBarState) {
+private fun ReaderTitle(state: ReaderBarState, ink: Color) {
   Column {
     Text(
       text = state.title,
@@ -116,7 +129,7 @@ private fun ReaderTitle(state: ReaderBarState) {
     Text(
       text = state.subtitle,
       style = MaterialTheme.typography.bodySmall,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      color = ink.copy(alpha = 0.72f),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )

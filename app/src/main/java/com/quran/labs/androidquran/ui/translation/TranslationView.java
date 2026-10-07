@@ -64,7 +64,7 @@ public class TranslationView extends FrameLayout implements View.OnClickListener
     // the last verse can scroll up past the floating reading choices
     translationRecycler.setClipToPadding(false);
     translationRecycler.setPadding(0, 0, 0,
-        (int) (72 * context.getResources().getDisplayMetrics().density));
+        (int) (96 * context.getResources().getDisplayMetrics().density));
     addView(translationRecycler, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
     translationRecycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
       boolean isDragging = false;

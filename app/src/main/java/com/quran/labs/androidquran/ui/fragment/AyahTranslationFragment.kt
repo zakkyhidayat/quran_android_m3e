@@ -6,7 +6,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.Gravity
 import android.widget.Button
+import android.widget.FrameLayout
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.ComposeView
 import android.widget.ProgressBar
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -19,10 +23,11 @@ import com.quran.labs.androidquran.presenter.translation.InlineTranslationPresen
 import com.quran.labs.androidquran.presenter.translation.InlineTranslationPresenter.TranslationScreen
 import com.quran.labs.androidquran.ui.PagerActivity
 import com.quran.labs.androidquran.ui.helpers.SlidingPagerAdapter
-import com.quran.labs.androidquran.ui.util.TranslationsSpinnerAdapter
+import com.quran.labs.androidquran.common.ui.core.QuranTheme
+import com.quran.labs.androidquran.ui.compose.TranslationPickItem
+import com.quran.labs.androidquran.ui.compose.TranslationPicker
 import com.quran.labs.androidquran.util.QuranSettings
 import com.quran.labs.androidquran.view.InlineTranslationView
-import com.quran.labs.androidquran.view.QuranSpinner
 import com.quran.mobile.di.AyahActionFragmentProvider
 import com.quran.mobile.translation.model.LocalTranslation
 import dev.zacsweers.metro.Inject
@@ -35,9 +40,10 @@ class AyahTranslationFragment : AyahActionFragment(), TranslationScreen {
   private lateinit var progressBar: ProgressBar
   private lateinit var translationView: InlineTranslationView
   private lateinit var emptyState: View
-  private lateinit var translator: QuranSpinner
+  private lateinit var translator: ComposeView
 
-  private var translationAdapter: TranslationsSpinnerAdapter? = null
+  private var currentTranslations: List<LocalTranslation> = emptyList()
+  private val pickerItems = mutableStateOf<List<TranslationPickItem>>(emptyList())
 
   @Inject
   lateinit var quranInfo: QuranInfo
@@ -83,8 +89,22 @@ class AyahTranslationFragment : AyahActionFragment(), TranslationScreen {
     // the picker lives in the window's action row, not under it
     val header = (activity as PagerActivity).ayahToolbarHeader
     header.removeAllViews()
-    translator = inflater.inflate(R.layout.translator_pill, header, false) as QuranSpinner
-    header.addView(translator)
+    translator = ComposeView(requireContext()).apply {
+      setContent {
+        QuranTheme {
+          TranslationPicker(
+            items = pickerItems.value,
+            onToggle = ::onTranslationToggled,
+            onMore = { (activity as? PagerActivity)?.startTranslationManager() }
+          )
+        }
+      }
+    }
+    header.addView(
+      translator,
+      FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        .apply { gravity = Gravity.CENTER_VERTICAL }
+    )
     translationView = view.findViewById(R.id.translation_view)
     progressBar = view.findViewById(R.id.progress)
     emptyState = view.findViewById(R.id.empty_state)
@@ -121,31 +141,31 @@ class AyahTranslationFragment : AyahActionFragment(), TranslationScreen {
       translator.visibility = View.GONE
       translationView.visibility = View.GONE
     } else {
-      val activeTranslationsFilesNames = quranSettings.activeTranslations
-
-      val adapter = translationAdapter
-      if (adapter == null) {
-        translationAdapter = TranslationsSpinnerAdapter(
-          activity,
-          R.layout.translation_ab_spinner_item,
-          translations.map { it.resolveTranslatorName() }.toTypedArray(),
-          translations,
-          activeTranslationsFilesNames,
-        ) { selectedItems: Set<String?>? ->
-          quranSettings.activeTranslations = selectedItems
-          // this is the refresh for when a translation is selected from the spinner
-          refreshView()
-        }
-        translator.adapter = translationAdapter
-      } else {
-        adapter.updateItems(
-          translations.map { it.resolveTranslatorName() }.toTypedArray(),
-          translations,
-          activeTranslationsFilesNames
-        )
-      }
+      currentTranslations = translations
+      updatePickerItems()
       refreshView()
     }
+  }
+
+  private fun updatePickerItems() {
+    val active = quranSettings.activeTranslations
+    pickerItems.value = currentTranslations.map {
+      TranslationPickItem(it.filename, it.resolveTranslatorName(), active.contains(it.filename))
+    }
+  }
+
+  /** Turns a translation on or off; one always stays on, so the last one cannot be turned off. */
+  private fun onTranslationToggled(filename: String) {
+    val selected = HashSet(quranSettings.activeTranslations)
+    if (!selected.remove(filename)) {
+      selected.add(filename)
+    }
+    if (selected.isEmpty()) {
+      return
+    }
+    quranSettings.activeTranslations = selected
+    updatePickerItems()
+    refreshView()
   }
 
   public override fun refreshView() {

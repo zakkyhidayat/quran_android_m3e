@@ -356,6 +356,10 @@
   <!-- sura metainfo -->
   <string name="makki">Makki</string>
   <string name="madani">Madani</string>
+  <plurals name="translations_on">
+    <item quantity="one">%d translation</item>
+    <item quantity="other">%d translations</item>
+  </plurals>
   <plurals name="verses">
     <item quantity="one">One verse</item>
     <item quantity="other">%s verses</item>

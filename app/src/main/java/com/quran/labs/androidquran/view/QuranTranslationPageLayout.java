@@ -42,8 +42,11 @@ public class QuranTranslationPageLayout extends QuranPageLayout {
     if (nightMode) {
       final int backgroundBrightness = quranSettings.getNightModeBackgroundBrightness();
       setBackgroundColor(Color.rgb(backgroundBrightness, backgroundBrightness, backgroundBrightness));
+    } else if (quranSettings.isSepiaMode()) {
+      // the same paper as the page and the bars around it
+      setBackgroundColor(0xFFF4E8CC);
     } else {
-      setBackgroundColor(Color.WHITE);
+      setBackgroundColor(0xFFFDFBEF);
     }
   }
 

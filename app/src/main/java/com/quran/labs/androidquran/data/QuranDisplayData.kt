@@ -79,6 +79,23 @@ class QuranDisplayData @Inject constructor(private val quranInfo: QuranInfo): Qu
       QuranUtils.getLocalizedNumber(quranInfo.getJuzForDisplayFromPage(page)))
   }
 
+  /** "Page 50 - Juz' 3 - Hizb 5": where you are, for the reader's top bar. */
+  fun getReaderSubtitle(context: Context, page: Int): String {
+    val parts = mutableListOf(
+      context.getString(R.string.quran_page) + ' ' + QuranUtils.getLocalizedNumber(page),
+      context.getString(R.string.quran_juz2) + ' ' +
+        QuranUtils.getLocalizedNumber(quranInfo.getJuzForDisplayFromPage(page))
+    )
+    // only the pages where a quarter starts say so, so look back for the one that is running
+    var start = page
+    while (start >= 1 && quranInfo.getRub3FromPage(start) == -1) start--
+    if (start >= 1) {
+      val hizb = quranInfo.getRub3FromPage(start) / 4 + 1
+      parts.add(context.getString(R.string.quran_hizb) + ' ' + QuranUtils.getLocalizedNumber(hizb))
+    }
+    return parts.joinToString(" · ")
+  }
+
   fun getJuzDisplayStringForPage(context: Context, page: Int): String {
     val description = context.getString(R.string.juz2_description)
     return String.format(description,

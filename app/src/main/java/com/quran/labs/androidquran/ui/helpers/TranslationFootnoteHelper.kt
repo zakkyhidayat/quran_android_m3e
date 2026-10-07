@@ -2,6 +2,7 @@ package com.quran.labs.androidquran.ui.helpers
 
 import android.text.SpannableString
 import android.text.SpannableStringBuilder
+import android.text.Spanned
 
 object TranslationFootnoteHelper {
 
@@ -11,7 +12,8 @@ object TranslationFootnoteHelper {
     spannableStringBuilder: SpannableStringBuilder,
     expandedFootnotes: List<Int>,
     collapsedFootnoteSpannableStyler: ((Int) -> SpannableString),
-    expandedFootnoteSpannableStyler: ((SpannableStringBuilder, Int, Int) -> SpannableStringBuilder)
+    expandedFootnoteSpannableStyler: ((SpannableStringBuilder, Int, Int) -> SpannableStringBuilder),
+    expandedFootnoteClickSpan: ((Int) -> Any)? = null
   ): CharSequence {
     return if (data != null) {
       val ranges = footnotes.sortedByDescending { it.last }
@@ -24,7 +26,11 @@ object TranslationFootnoteHelper {
             collapsedFootnoteSpannableStyler(number)
           )
         } else {
-          expandedFootnoteSpannableStyler(builder, range.first, range.last + 1)
+          val styled = expandedFootnoteSpannableStyler(builder, range.first, range.last + 1)
+          expandedFootnoteClickSpan?.let {
+            styled.setSpan(it(number), range.first, range.last + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+          }
+          styled
         }
       }
     } else {

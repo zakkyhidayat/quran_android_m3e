@@ -48,6 +48,7 @@ import com.quran.labs.androidquran.ui.compose.ReaderView
 import com.quran.labs.androidquran.ui.compose.ReaderTopBar
 import com.quran.labs.androidquran.ui.compose.ReaderTranslationItem
 import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -1069,7 +1070,12 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       val insets = windowInsets.getInsets(
         WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.displayCutout()
       )
-      pageArea.updatePadding(insets.left, 0, insets.right, insets.bottom)
+      pageArea.updatePadding(insets.left, 0, insets.right, 0)
+      // the page reaches the bottom edge behind the transparent navigation bar; only the floating
+      // choices keep clear of it
+      findViewById<View>(R.id.reader_modes).updateLayoutParams<FrameLayout.LayoutParams> {
+        bottomMargin = insets.bottom
+      }
       windowInsets
     }
 
@@ -1125,6 +1131,10 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       else -> 0xFFFDFBEF.toInt()
     }
     findViewById<View>(R.id.sliding_panel).setBackgroundColor(color)
+    // the bars sit on the paper, so their icons follow the paper rather than the app theme
+    val darkPaper = quranSettings.isNightMode
+    windowInsetsController.isAppearanceLightStatusBars = !darkPaper
+    windowInsetsController.isAppearanceLightNavigationBars = !darkPaper
   }
 
   /** The bottom choices: the page, or the translation view with or without the Arabic. */
@@ -1219,7 +1229,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
 
   private fun updateActionBarTitle(page: Int) {
     readerBar.title = quranDisplayData.getSuraNameFromPage(this, page, true)
-    readerBar.subtitle = quranDisplayData.getPageSubtitle(this, page)
+    readerBar.subtitle = quranDisplayData.getReaderSubtitle(this, page)
   }
 
   private fun refreshActionBarSpinner() {

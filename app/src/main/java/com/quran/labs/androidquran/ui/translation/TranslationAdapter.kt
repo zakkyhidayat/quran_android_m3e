@@ -383,13 +383,11 @@ internal class TranslationAdapter(
                   expandedFootnotes,
                   ::collapsedFootnoteSpan,
                   ::expandedFootnote
-                )
+                ) { number -> ExpandFootnoteSpan(number, ::collapseFootnote) }
               )
 
               when {
                 row.link != null && !expandHyperlink -> getAyahLink(row.link)
-                length > MAX_TAFSEER_LENGTH ->
-                  truncateTextIfNeeded(spannable, row.ayahInfo.ayahId, row.translationIndex)
                 else -> spannable
               }
             }
@@ -492,6 +490,17 @@ internal class TranslationAdapter(
       val data = data[position]
       val expanded = expandedFootnotes[data.ayahInfo] ?: listOf()
       expandedFootnotes[data.ayahInfo] = expanded + number
+      notifyItemChanged(position)
+    }
+  }
+
+  /** Tapping an open footnote folds it back to its number. */
+  private fun collapseFootnote(view: View, number: Int) {
+    val position = recyclerView.getChildAdapterPosition(view)
+    if (position != RecyclerView.NO_POSITION) {
+      val data = data[position]
+      val expanded = expandedFootnotes[data.ayahInfo] ?: listOf()
+      expandedFootnotes[data.ayahInfo] = expanded - number
       notifyItemChanged(position)
     }
   }
