@@ -6,6 +6,9 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -147,6 +150,65 @@ class HomeActions(
 class HomeJump(val label: String, val go: () -> Unit)
 
 class HomeExtraItem(@StringRes val titleResId: Int, val onClick: () -> Unit)
+
+/**
+ * A tab with no square ripple: a rounded pill sits behind the chosen tab's name and the pill gives
+ * way under the finger (it shrinks and rounds off) on a bouncy spring.
+ */
+@Composable
+private fun ExpressiveTab(title: String, selected: Boolean, onClick: () -> Unit) {
+  val source = remember { MutableInteractionSource() }
+  val pressed by source.collectIsPressedAsState()
+  val scale by animateFloatAsState(
+    targetValue = if (pressed) 0.9f else 1f,
+    animationSpec = spring(dampingRatio = 0.45f, stiffness = 520f),
+    label = "tabScale"
+  )
+  val corner by animateDpAsState(
+    targetValue = if (pressed) 10.dp else 18.dp,
+    animationSpec = spring(dampingRatio = 0.5f, stiffness = 520f),
+    label = "tabCorner"
+  )
+  val pillColor by animateColorAsState(
+    targetValue = when {
+      pressed -> MaterialTheme.colorScheme.secondaryContainer
+      selected -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f)
+      else -> Color.Transparent
+    },
+    animationSpec = spring(stiffness = 600f),
+    label = "tabPill"
+  )
+  val textColor by animateColorAsState(
+    if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+    label = "tabText"
+  )
+  Box(
+    contentAlignment = Alignment.Center,
+    modifier = Modifier
+      .heightIn(min = 48.dp)
+      .selectable(selected = selected, interactionSource = source, indication = null, role = Role.Tab, onClick = onClick)
+  ) {
+    Box(
+      contentAlignment = Alignment.Center,
+      modifier = Modifier
+        .graphicsLayer {
+          scaleX = scale
+          scaleY = scale
+        }
+        .height(34.dp)
+        .background(pillColor, RoundedCornerShape(corner))
+        .padding(horizontal = 14.dp)
+    ) {
+      Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+        color = textColor,
+        maxLines = 1
+      )
+    }
+  }
+}
 
 /**
  * The bar under the selected tab. It moves with your finger while you swipe between the tabs and
@@ -470,26 +532,15 @@ fun HomeScreen(
         ) {
           TabTitles.forEachIndexed { index, titleResId ->
             val selectedTab = pagerState.currentPage == index
-            Tab(
+            ExpressiveTab(
+              title = stringResource(titleResId),
               selected = selectedTab,
               onClick = {
                 scope.launch {
                   pagerState.animateScrollToPage(index, animationSpec = spring(dampingRatio = 0.8f, stiffness = 380f))
                 }
-              },
-              selectedContentColor = MaterialTheme.colorScheme.primary,
-              unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-            ) {
-              Text(
-                text = stringResource(titleResId),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = if (selectedTab) FontWeight.Bold else FontWeight.Medium,
-                maxLines = 1,
-                modifier = Modifier
-                  .heightIn(min = 48.dp)
-                  .wrapContentHeight(Alignment.CenterVertically)
-              )
-            }
+              }
+            )
           }
         }
         TabIndicator(pagerState, TabTitles.size, Modifier.align(Alignment.BottomStart))

@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -32,10 +33,16 @@ fun ExpressiveIconButton(
   onClick: () -> Unit,
   containerColor: Color,
   modifier: Modifier = Modifier,
+  shape: Shape? = null,
   content: @Composable () -> Unit
 ) {
   val source = remember { MutableInteractionSource() }
   val pressed by source.collectIsPressedAsState()
+  val wiggle by animateFloatAsState(
+    targetValue = if (pressed) -10f else 0f,
+    animationSpec = spring(dampingRatio = 0.35f, stiffness = 450f),
+    label = "wiggle"
+  )
   val corner by animateDpAsState(
     targetValue = if (pressed) 14.dp else 24.dp,
     animationSpec = spring(dampingRatio = 0.5f, stiffness = 520f),
@@ -53,8 +60,10 @@ fun ExpressiveIconButton(
       .graphicsLayer {
         scaleX = scale
         scaleY = scale
+        // a shaped button turns a little under the finger
+        rotationZ = if (shape != null) wiggle else 0f
       }
-      .clip(RoundedCornerShape(corner))
+      .clip(shape ?: RoundedCornerShape(corner))
       .background(containerColor)
       .clickable(
         interactionSource = source,
