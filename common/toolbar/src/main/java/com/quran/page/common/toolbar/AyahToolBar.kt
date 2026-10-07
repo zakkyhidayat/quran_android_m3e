@@ -5,6 +5,7 @@ import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.util.AttributeSet
+import android.view.Gravity
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -128,9 +129,10 @@ class AyahToolBar @JvmOverloads constructor(
     menuLayout = LinearLayout(context).apply {
       layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, toolBarHeight)
       layoutDirection = LAYOUT_DIRECTION_LTR
+      gravity = Gravity.CENTER_HORIZONTAL
     }
     headerContainer = FrameLayout(context).apply {
-      layoutParams = LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1f)
+      layoutParams = LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 0f)
     }
     menuLayout.addView(headerContainer)
     divider = View(context).apply {
@@ -193,7 +195,17 @@ class AyahToolBar @JvmOverloads constructor(
   /** How tall the window may get, from the room above or below the selected ayah. */
   private fun maxCardHeight(parentHeight: Int): Int {
     val indicator = lastIndicator
-    if (dock != DOCK_AUTO) return (parentHeight * 0.45f).toInt()
+    if (dock != DOCK_AUTO && indicator is SelectionIndicator.SelectedItemPosition) {
+      // the side asked for, when it has room for a useful window
+      val preferred = if (dock == DOCK_TOP) {
+        indicator.firstItem.top
+      } else {
+        parentHeight - indicator.lastItem.bottom
+      } - pipHeight - gap
+      if (preferred >= crowdedRoom * 0.6f && !isCrowded(indicator, parentHeight)) {
+        return preferred.toInt().coerceAtMost((parentHeight * 0.6f).toInt())
+      }
+    }
     if (indicator is SelectionIndicator.SelectedItemPosition && isCrowded(indicator, parentHeight)) {
       // the ayah fills the page: the window takes the lower part of the screen over it
       return (parentHeight * 0.45f).toInt()
@@ -318,11 +330,11 @@ class AyahToolBar @JvmOverloads constructor(
     updateBookmarkIcon()
   }
 
-  /** The dock button shows the edge it would move the window to: up when it is low, down when high. */
-  private fun updateDockIcon(atBottom: Boolean) {
+  /** The dock button shows the side it would move the window to: below when it is above the ayah, and the other way round. */
+  private fun updateDockIcon(aboveAyah: Boolean) {
     val item = menu.findItem(R.id.cab_dock) ?: return
-    item.setIcon(if (atBottom) R.drawable.ic_dock_top else R.drawable.ic_dock_bottom)
-    item.title = context.getString(if (atBottom) R.string.dock_window_top else R.string.dock_window_bottom)
+    item.setIcon(if (aboveAyah) R.drawable.ic_dock_bottom else R.drawable.ic_dock_top)
+    item.title = context.getString(if (aboveAyah) R.string.dock_window_bottom else R.string.dock_window_top)
     val button = findViewById<ImageButton>(R.id.cab_dock) ?: return
     button.setImageDrawable(item.icon)
     button.contentDescription = item.title
@@ -350,9 +362,6 @@ class AyahToolBar @JvmOverloads constructor(
       val showContent = contentEnabled()
       contentContainer.visibility = if (showContent) VISIBLE else GONE
       divider.visibility = if (showContent) VISIBLE else GONE
-      // the translation picker belongs with the translation: on a translation page the list's own
-      // title is where translations are turned on and off
-      headerContainer.visibility = if (showContent) VISIBLE else GONE
       lastIndicator = selectionIndicator
       requestLayout()
       updatePosition(selectionIndicator)
@@ -422,7 +431,7 @@ class AyahToolBar @JvmOverloads constructor(
       }
 
       setPosition(actualX, y)
-      updateDockIcon(y + height / 2f > parentView.height / 2f)
+      updateDockIcon(internalPosition.pipPosition == SelectedAyahPlacementType.BOTTOM)
       if (needsLayout) {
         requestLayout()
       }
@@ -446,18 +455,20 @@ class AyahToolBar @JvmOverloads constructor(
     val roomBelow = parentHeight - last.bottom
     // below first: the lines under the ayah are the ones still to be read
     val crowded = isCrowded(position, parentHeight)
+    val fitsAbove = roomAbove >= height + gap
+    val fitsBelow = roomBelow >= height + gap
     val above = when {
-      dock == DOCK_TOP -> true
-      dock == DOCK_BOTTOM -> false
       crowded -> false
+      // the side asked for, unless the window does not fit there: then the other side, so the
+      // ayah itself is never covered when one of the sides can hold the window
+      dock == DOCK_TOP -> fitsAbove || (!fitsBelow && roomAbove > roomBelow)
+      dock == DOCK_BOTTOM -> !(fitsBelow || (!fitsAbove && roomBelow >= roomAbove))
       roomBelow >= height + gap -> false
       roomAbove >= height + gap -> true
       else -> roomAbove > roomBelow
     }
     val chosen = if (above) first else last
     var y = when {
-      dock == DOCK_TOP -> gap.toFloat()
-      dock == DOCK_BOTTOM -> parentHeight - height - bottomClearance
       // over the ayah, at the bottom, clear of the reading choices floating there
       crowded -> parentHeight - height - bottomClearance
       above -> first.top - height - gap / 2
@@ -514,13 +525,8 @@ class AyahToolBar @JvmOverloads constructor(
 
   override fun onClick(v: View) {
     if (v.id == R.id.cab_dock) {
-      // the button always offers the other edge than the one the window is at
-      val atBottom = when (dock) {
-        DOCK_TOP -> false
-        DOCK_BOTTOM -> true
-        else -> translationY + measuredHeight / 2 > (parent as View).height / 2
-      }
-      dock = if (atBottom) DOCK_TOP else DOCK_BOTTOM
+      // the button always offers the other side of the ayah than the one the window is on
+      dock = if (pipPosition == SelectedAyahPlacementType.BOTTOM) DOCK_BOTTOM else DOCK_TOP
       onDockChanged(dock)
       return
     }

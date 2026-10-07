@@ -80,13 +80,14 @@ class ReaderBarActions(
 fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
   val ink = readingInk(state.readingMode)
   TopAppBar(
-    title = { ReaderTitle(state, ink, actions) },
+    title = { ReaderTitle(state, ink) },
     navigationIcon = {
       IconButton(onClick = actions.onBack) {
         Icon(QuranIcons.ArrowBack, contentDescription = stringResource(R.string.menu_back_to_page))
       }
     },
     actions = {
+      ReaderTranslationsButton(state, actions, ink)
       IconButton(
         onClick = actions.onBookmark,
         colors = IconButtonDefaults.iconButtonColors(
@@ -122,33 +123,16 @@ private fun readingInk(mode: String): Color = when (mode) {
   else -> Color(0xFF1F1D17)
 }
 
-/**
- * The surah, then the page, juz and hizb in smaller type. While reading translations the title
- * opens the list of translations, each one an on/off switch.
- */
+/** The surah, then the page, juz and hizb in smaller type. */
 @Composable
-private fun ReaderTitle(state: ReaderBarState, ink: Color, actions: ReaderBarActions) {
-  var pickerOpen by remember { mutableStateOf(false) }
-  val canPick = state.showingTranslation && state.translations.isNotEmpty()
-
-  Column(modifier = if (canPick) Modifier.clickable { pickerOpen = true } else Modifier) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Text(
-        text = state.title,
-        style = MaterialTheme.typography.titleLarge,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.weight(1f, fill = false)
-      )
-      if (canPick) {
-        Icon(
-          QuranIcons.ExpandMore,
-          contentDescription = stringResource(R.string.translations),
-          tint = ink,
-          modifier = Modifier.padding(start = 4.dp)
-        )
-      }
-    }
+private fun ReaderTitle(state: ReaderBarState, ink: Color) {
+  Column {
+    Text(
+      text = state.title,
+      style = MaterialTheme.typography.titleLarge,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
     Text(
       text = state.subtitle,
       style = MaterialTheme.typography.bodySmall,
@@ -157,12 +141,25 @@ private fun ReaderTitle(state: ReaderBarState, ink: Color, actions: ReaderBarAct
       overflow = TextOverflow.Ellipsis
     )
   }
+}
 
+/**
+ * The translation button, left of the bookmark, in the page view as well as the two translation
+ * views: a list of the translations, each one an on/off switch.
+ */
+@Composable
+private fun ReaderTranslationsButton(state: ReaderBarState, actions: ReaderBarActions, ink: Color) {
+  var open by remember { mutableStateOf(false) }
+  IconButton(
+    onClick = { open = true },
+    colors = IconButtonDefaults.iconButtonColors(containerColor = ink.copy(alpha = 0.08f))
+  ) {
+    Icon(HomeIcons.Translate, contentDescription = stringResource(R.string.translations))
+  }
   ExpressiveMenu(
-    expanded = pickerOpen,
-    onDismiss = { pickerOpen = false },
+    expanded = open,
+    onDismiss = { open = false },
     sections = listOf(
-      // no title: the chevron next to the surah already says what the list is
       MenuSection(
         entries = state.translations.map { item ->
           MenuEntry(item.name, keepOpen = true, toggled = item.checked) {
