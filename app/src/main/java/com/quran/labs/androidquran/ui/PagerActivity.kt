@@ -216,6 +216,9 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
   private lateinit var viewPager: ViewPager
   private lateinit var pagerAdapter: QuranPageAdapter
   private lateinit var ayahToolBar: AyahToolBar
+
+  /** Where the ayah window's translation picker goes. */
+  val ayahToolbarHeader: android.widget.FrameLayout get() = ayahToolBar.headerContainer
   private lateinit var slidingPanel: SlidingUpPanelLayout
   private lateinit var slidingPager: ViewPager
   private lateinit var slidingPagerAdapter: SlidingPagerAdapter

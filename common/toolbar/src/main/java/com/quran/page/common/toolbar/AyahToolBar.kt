@@ -49,6 +49,7 @@ class AyahToolBar @JvmOverloads constructor(
   private val divider: View
   private val toolBarPip: AyahToolBarPip
   private val toolBarHeight: Int
+  private val itemWidth: Int
   private val cardMaxWidth: Int
   private val sideMargin: Int
   private val gap: Int
@@ -56,6 +57,9 @@ class AyahToolBar @JvmOverloads constructor(
 
   /** Where the translation goes, under the actions. */
   val contentContainer: FrameLayout
+
+  /** The start of the action row, where the translation picker sits. */
+  val headerContainer: FrameLayout
 
   private var containerColor = ContextCompat.getColor(context, R.color.toolbar_background)
   private var contentColor = ContextCompat.getColor(context, R.color.toolbar_icon)
@@ -89,6 +93,7 @@ class AyahToolBar @JvmOverloads constructor(
   init {
     val resources = context.resources
     toolBarHeight = resources.getDimensionPixelSize(R.dimen.toolbar_height)
+    itemWidth = resources.getDimensionPixelSize(R.dimen.toolbar_item_width)
     pipHeight = resources.getDimensionPixelSize(R.dimen.toolbar_pip_height)
     pipWidth = resources.getDimensionPixelSize(R.dimen.toolbar_pip_width)
     cardMaxWidth = resources.getDimensionPixelSize(R.dimen.toolbar_card_max_width)
@@ -106,6 +111,10 @@ class AyahToolBar @JvmOverloads constructor(
       layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, toolBarHeight)
       layoutDirection = LAYOUT_DIRECTION_LTR
     }
+    headerContainer = FrameLayout(context).apply {
+      layoutParams = LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1f)
+    }
+    menuLayout.addView(headerContainer)
     divider = View(context).apply {
       layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 1)
       visibility = GONE
@@ -161,7 +170,7 @@ class AyahToolBar @JvmOverloads constructor(
   }
 
   private fun cardWidth(parentWidth: Int): Int =
-    max(toolBarHeight * 3, min(cardMaxWidth, parentWidth - 2 * sideMargin))
+    max(itemWidth * 4, min(cardMaxWidth, parentWidth - 2 * sideMargin))
 
   /** How tall the window may get, from the room above or below the selected ayah. */
   private fun maxCardHeight(parentHeight: Int): Int {
@@ -242,7 +251,8 @@ class AyahToolBar @JvmOverloads constructor(
       menu.findItem(R.id.cab_recite_from_here)?.apply { isVisible = true }
     }
 
-    menuLayout.removeAllViews()
+    // the first child is the header (the translation picker); the buttons come after it
+    while (menuLayout.childCount > 1) menuLayout.removeViewAt(1)
     val count = menu.size()
     for (i in 0 until count) {
       val item = menu.getItem(i)
@@ -266,7 +276,7 @@ class AyahToolBar @JvmOverloads constructor(
       )
       contentDescription = item.title
       id = item.itemId
-      layoutParams = LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1f)
+      layoutParams = LinearLayout.LayoutParams(itemWidth, LayoutParams.MATCH_PARENT)
       setOnClickListener(this@AyahToolBar)
       setOnLongClickListener(this@AyahToolBar)
     }

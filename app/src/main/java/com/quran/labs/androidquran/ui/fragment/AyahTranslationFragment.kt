@@ -61,6 +61,12 @@ class AyahTranslationFragment : AyahActionFragment(), TranslationScreen {
     (activity as? PagerActivity)?.pagerActivityComponent?.inject(this)
   }
 
+  override fun onDestroyView() {
+    // the picker belongs to the window's row, which outlives this view
+    (translator.parent as? android.view.ViewGroup)?.removeView(translator)
+    super.onDestroyView()
+  }
+
   override fun onDetach() {
     scope.cancel()
     super.onDetach()
@@ -74,7 +80,11 @@ class AyahTranslationFragment : AyahActionFragment(), TranslationScreen {
     val view = inflater.inflate(
       R.layout.translation_panel, container, false
     )
-    translator = view.findViewById(R.id.translator)
+    // the picker lives in the window's action row, not under it
+    val header = (activity as PagerActivity).ayahToolbarHeader
+    header.removeAllViews()
+    translator = inflater.inflate(R.layout.translator_pill, header, false) as QuranSpinner
+    header.addView(translator)
     translationView = view.findViewById(R.id.translation_view)
     progressBar = view.findViewById(R.id.progress)
     emptyState = view.findViewById(R.id.empty_state)

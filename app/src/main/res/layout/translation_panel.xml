@@ -6,21 +6,6 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-  <com.quran.labs.androidquran.view.QuranSpinner
-      android:id="@+id/translator"
-      android:layout_width="wrap_content"
-      android:layout_height="36dp"
-      android:layout_marginTop="8dp"
-      android:layout_marginLeft="12dp"
-      android:layout_marginStart="12dp"
-      android:minWidth="160dp"
-      android:background="@drawable/bg_translator_pill"
-      android:paddingLeft="0dp"
-      android:paddingRight="36dp"
-      android:paddingStart="0dp"
-      android:paddingEnd="36dp"
-      />
-
   <com.quran.labs.androidquran.view.InlineTranslationView
       android:id="@+id/translation_view"
       android:layout_width="match_parent"
