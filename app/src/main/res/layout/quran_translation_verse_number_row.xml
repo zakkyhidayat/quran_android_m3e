@@ -16,13 +16,13 @@
       android:textColor="@color/translation_verse_text_color"
       android:textSize="13sp" />
 
-  <!-- the actions of the selected verse, right beside its number: bookmark, link, share, copy, close -->
+  <!-- the actions of the selected verse, at the end of its number's row: bookmark, link, share, copy, close -->
   <LinearLayout
       android:id="@+id/verse_actions"
       android:layout_width="wrap_content"
       android:layout_height="36dp"
-      android:layout_gravity="center_vertical|start"
-      android:layout_marginStart="88dp"
+      android:layout_gravity="center_vertical|end"
+      android:layout_marginEnd="16dp"
       android:background="@drawable/bg_verse_actions"
       android:gravity="center_vertical"
       android:orientation="horizontal"

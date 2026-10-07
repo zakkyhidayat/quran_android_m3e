@@ -219,7 +219,8 @@ internal class TranslationAdapter(
       val start = highlightedStartPosition
       val count = highlightedRowCount
       recyclerView.handler.post {
-        notifyItemRangeChanged(start, count)
+        // a payload, so the rows are redrawn in place instead of crossfading (which flashes)
+        notifyItemRangeChanged(start, count, HIGHLIGHT_CHANGE)
       }
     }
     highlightedAyah = 0
@@ -477,7 +478,7 @@ internal class TranslationAdapter(
         holder.ayahNumber.setNightMode(isNightMode)
       }
     }
-    updateHighlight(row, holder)
+    updateHighlight(row, holder, animate = false)
   }
 
   private fun collapsedFootnoteSpan(number: Int): SpannableString {
@@ -571,7 +572,7 @@ internal class TranslationAdapter(
 
   override fun onBindViewHolder(holder: RowViewHolder, position: Int, payloads: List<Any>) {
     if (payloads.contains(HIGHLIGHT_CHANGE)) {
-      updateHighlight(data[position], holder)
+      updateHighlight(data[position], holder, animate = true)
     } else {
       super.onBindViewHolder(holder, position, payloads)
     }
@@ -596,13 +597,19 @@ internal class TranslationAdapter(
     return null
   }
 
-  private fun updateHighlight(row: TranslationViewRow, holder: RowViewHolder) {
+  private fun updateHighlight(row: TranslationViewRow, holder: RowViewHolder, animate: Boolean) {
     // toggle highlighting of the ayah, but not for sura headers and basmallah
     val isHighlighted = row.ayahInfo.ayahId == highlightedAyah
     holder.actions?.let { actions ->
       val show = isHighlighted && highlightType == HighlightTypes.SELECTION &&
         row.type == TranslationViewRow.Type.VERSE_NUMBER
-      actions.visibility = if (show) View.VISIBLE else View.GONE
+      val wasShown = actions.visibility == View.VISIBLE
+      if (show && !wasShown) {
+        actions.visibility = View.VISIBLE
+        if (animate) VerseActionsMotion.popIn(actions)
+      } else if (!show && wasShown) {
+        if (animate) VerseActionsMotion.popOut(actions) else actions.visibility = View.GONE
+      }
       if (show) {
         holder.bookmarkAction?.setImageResource(
           if (selectedBookmarked) {

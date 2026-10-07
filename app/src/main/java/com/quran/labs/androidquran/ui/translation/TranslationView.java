@@ -60,7 +60,10 @@ public class TranslationView extends FrameLayout implements View.OnClickListener
     RecyclerView translationRecycler = new RecyclerView(context);
     layoutManager = new LinearLayoutManager(context);
     translationRecycler.setLayoutManager(layoutManager);
-    translationRecycler.setItemAnimator(new DefaultItemAnimator());
+    // no crossfade when a row changes: selecting a verse redraws its rows in place, no flashing
+    final DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
+    itemAnimator.setSupportsChangeAnimations(false);
+    translationRecycler.setItemAnimator(itemAnimator);
     translationAdapter = new TranslationAdapter(context, translationRecycler, this, this, this);
     translationRecycler.setAdapter(translationAdapter);
     ScrollbarStyle.show(translationRecycler);
