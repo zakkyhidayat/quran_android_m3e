@@ -8,6 +8,8 @@
     whole palette at once.
   -->
   <style name="Base.Quran" parent="Theme.Material3Expressive.DayNight.NoActionBar">
+    <item name="alertDialogTheme">@style/QuranDialogTheme</item>
+    <item name="materialAlertDialogTheme">@style/QuranDialogTheme</item>
     <item name="colorPrimary">@color/quran_primary</item>
     <item name="colorOnPrimary">@color/quran_on_primary</item>
     <item name="colorPrimaryContainer">@color/quran_primary_container</item>
@@ -73,6 +75,7 @@
   </style>
 
   <style name="Base.QuranDialog" parent="Theme.Material3.DayNight.Dialog">
+    <item name="android:windowAnimationStyle">@style/QuranDialogAnimation</item>
     <item name="colorPrimary">@color/quran_primary</item>
     <item name="colorOnPrimary">@color/quran_on_primary</item>
     <item name="colorPrimaryContainer">@color/quran_primary_container</item>

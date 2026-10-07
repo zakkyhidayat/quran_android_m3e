@@ -68,8 +68,11 @@ fun ExpressiveMenu(
             entry.selected == true -> ({ Icon(QuranIcons.Check, contentDescription = null) })
             else -> null
           }
+          // the rows spring in one after the other as the menu opens
+          val rowModifier = Modifier.expressiveAppear(rise = 14f, from = 0.9f, delayMillis = 30L * (index + 1))
           if (entry.toggled != null) {
             DropdownMenuItem(
+              modifier = rowModifier,
               onClick = click,
               text = {
                 // every row as wide as the widest, with the switches in one column at the end
@@ -87,6 +90,7 @@ fun ExpressiveMenu(
             )
           } else if (entry.selected != null) {
             SelectableDropdownMenuItem(
+              modifier = rowModifier,
               selected = entry.selected,
               onClick = click,
               text = { Text(entry.label) },
@@ -102,6 +106,7 @@ fun ExpressiveMenu(
             )
           } else {
             DropdownMenuItem(
+              modifier = rowModifier,
               onClick = click,
               text = { Text(entry.label) },
               shape = shapes.shape,

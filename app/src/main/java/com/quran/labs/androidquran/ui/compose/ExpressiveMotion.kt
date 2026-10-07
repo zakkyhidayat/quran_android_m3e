@@ -16,9 +16,10 @@ import androidx.compose.ui.graphics.graphicsLayer
  * Something arriving on screen (a list row scrolling in, a dialog opening) rises a little and
  * settles on a bouncy spring while it fades in, instead of just being there.
  */
-fun Modifier.expressiveAppear(rise: Float = 28f, from: Float = 0.94f): Modifier = composed {
+fun Modifier.expressiveAppear(rise: Float = 28f, from: Float = 0.94f, delayMillis: Long = 0L): Modifier = composed {
   val progress = remember { Animatable(0f) }
   LaunchedEffect(Unit) {
+    if (delayMillis > 0) kotlinx.coroutines.delay(delayMillis)
     progress.animateTo(1f, spring(dampingRatio = 0.62f, stiffness = 420f))
   }
   graphicsLayer {

@@ -29,6 +29,12 @@
 
   <style name="QuranDialogTheme" parent="ThemeOverlay.Material3.Dialog.Alert">
     <item name="android:backgroundDimAmount">0.3</item>
+    <item name="android:windowAnimationStyle">@style/QuranDialogAnimation</item>
+  </style>
+
+  <style name="QuranDialogAnimation" parent="@android:style/Animation.Dialog">
+    <item name="android:windowEnterAnimation">@anim/dialog_enter</item>
+    <item name="android:windowExitAnimation">@anim/dialog_exit</item>
   </style>
 
   <style name="TranslationText">
