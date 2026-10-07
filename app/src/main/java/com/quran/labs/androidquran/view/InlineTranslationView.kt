@@ -117,12 +117,15 @@ class InlineTranslationView @JvmOverloads constructor(
     params.setMargins(leftRightMargin, topBottomMargin, leftRightMargin, topBottomMargin)
     val suraNumber = ayah.sura
     val ayahNumber = ayah.ayah
-    val ayahHeader = TextView(context)
-    ayahHeader.setTextColor(ayahTextColor)
-    ayahHeader.textSize = ayahFontSize.toFloat()
-    ayahHeader.setTypeface(null, Typeface.BOLD)
-    ayahHeader.text = context.resources.getString(R.string.sura_ayah, suraNumber, ayahNumber)
-    linearLayout.addView(ayahHeader, params)
+    // one ayah is named in the window's row; several need their own names to tell them apart
+    if ((this.ayat?.size ?: 0) > 1) {
+      val ayahHeader = TextView(context)
+      ayahHeader.setTextColor(ayahTextColor)
+      ayahHeader.textSize = ayahFontSize.toFloat()
+      ayahHeader.setTypeface(null, Typeface.BOLD)
+      ayahHeader.text = context.resources.getString(R.string.sura_ayah, suraNumber, ayahNumber)
+      linearLayout.addView(ayahHeader, params)
+    }
     val ayahView = TextView(context)
     ayahView.setTextAppearance(context, textStyle)
     ayahView.setTextColor(ayahTextColor)

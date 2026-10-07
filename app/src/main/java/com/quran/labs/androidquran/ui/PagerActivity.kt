@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.quran.labs.androidquran.common.ui.core.QuranTheme
 import com.quran.labs.androidquran.ui.compose.ReaderBarActions
 import com.quran.labs.androidquran.ui.compose.ReaderBarState
+import com.quran.labs.androidquran.ui.compose.AyahBadge
 import com.quran.labs.androidquran.ui.compose.MarkerPill
 import com.quran.labs.androidquran.ui.compose.ReaderModeBar
 import com.quran.labs.androidquran.ui.compose.ReaderView
@@ -200,6 +201,7 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
   ActivityCompat.OnRequestPermissionsResultCallback, AudioPresenterScreen,
   ReadingBookmarkPresenter.Screen {
   private var lastPopupTime: Long = 0
+  private val ayahLabel = androidx.compose.runtime.mutableStateOf("")
   private var markerJob: kotlinx.coroutines.Job? = null
   private var shouldReconnect = false
   private var showingTranslation = false
@@ -487,6 +489,21 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
         .commit()
     }
     ayahToolBar.dock = quranSettings.ayahWindowDock
+    ayahToolbarHeader.addView(
+      ComposeView(this).apply {
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+          QuranTheme {
+            val label = ayahLabel.value
+            if (label.isNotEmpty()) AyahBadge(label)
+          }
+        }
+      },
+      FrameLayout.LayoutParams(
+        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+        Gravity.START or Gravity.CENTER_VERTICAL
+      )
+    )
     ayahToolBar.onDockChanged = { quranSettings.ayahWindowDock = it }
     ayahToolBar.longPressLambda = { charSequence: CharSequence? ->
       makeText(this@PagerActivity, charSequence!!, Toast.LENGTH_SHORT).show()
@@ -744,12 +761,25 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     }
 
     if (haveSelection) {
+      ayahLabel.value = ayahLabelFor(ayahSelection)
       val startPosition = startPosition(ayahSelection)
       updateLocalTranslations(startPosition)
       onClearAyahModeBackCallback.isEnabled = selectionStart != null
     } else {
       endAyahMode()
       onClearAyahModeBackCallback.isEnabled = false
+    }
+  }
+
+  /** "2:11", "2:11-13" or "2:286-3:1": what the selection is called in the window's row. */
+  private fun ayahLabelFor(selection: AyahSelection): String {
+    val start = selection.startSuraAyah() ?: return ""
+    val end = selection.endSuraAyah() ?: start
+    val first = getString(R.string.sura_ayah, start.sura, start.ayah)
+    return when {
+      end == start -> first
+      end.sura == start.sura -> "$first\u2013${end.ayah}"
+      else -> "$first\u2013" + getString(R.string.sura_ayah, end.sura, end.ayah)
     }
   }
 
@@ -1275,6 +1305,9 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
   }
 
   private fun refreshTranslationPages() {
+    // the translation in the ayah window follows the switches too
+    (supportFragmentManager.findFragmentById(ayahToolBar.contentContainer.id) as? AyahTranslationFragment)
+      ?.refreshView()
     val pos = viewPager.currentItem - 1
     for (count in 0..2) {
       if (pos + count < 0) {

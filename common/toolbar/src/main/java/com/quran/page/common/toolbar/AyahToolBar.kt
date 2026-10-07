@@ -5,7 +5,6 @@ import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.util.AttributeSet
-import android.view.Gravity
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -129,10 +128,9 @@ class AyahToolBar @JvmOverloads constructor(
     menuLayout = LinearLayout(context).apply {
       layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, toolBarHeight)
       layoutDirection = LAYOUT_DIRECTION_LTR
-      gravity = Gravity.CENTER_HORIZONTAL
     }
     headerContainer = FrameLayout(context).apply {
-      layoutParams = LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 0f)
+      layoutParams = LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1f)
     }
     menuLayout.addView(headerContainer)
     divider = View(context).apply {
