@@ -14,6 +14,11 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -119,6 +124,8 @@ class HomeActions(
   val onSearch: (String) -> Unit,
   val resolveJump: (String) -> HomeJump?,
   val onLastPage: () -> Unit,
+  /** Where else the continue button can take you: the reading bookmarks, the start of the surah. */
+  val loadShortcuts: suspend () -> List<HomeJump> = { emptyList() },
   val onJumpToPage: () -> Unit,
   val onSettings: () -> Unit,
   val onHelp: () -> Unit,
@@ -311,8 +318,38 @@ fun HomeScreen(
           animationSpec = spring(dampingRatio = 0.45f, stiffness = 520f),
           label = "fabScale"
         )
+        // a long press opens the other places it can take you
+        var shortcuts by remember { mutableStateOf<List<HomeJump>>(emptyList()) }
+        var shortcutsOpen by remember { mutableStateOf(false) }
+        var longPressed by remember { mutableStateOf(false) }
+        val haptics = LocalHapticFeedback.current
+        LaunchedEffect(fabSource) {
+          fabSource.interactions.collectLatest { interaction ->
+            if (interaction is PressInteraction.Press) {
+              delay(450)
+              val found = actions.loadShortcuts()
+              if (found.isNotEmpty()) {
+                longPressed = true
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                shortcuts = found
+                shortcutsOpen = true
+              }
+            }
+          }
+        }
+        ExpressiveMenu(
+          expanded = shortcutsOpen,
+          onDismiss = { shortcutsOpen = false },
+          sections = listOf(
+            MenuSection(
+              entries = shortcuts.map { jump -> MenuEntry(jump.label, HomeIcons.BookmarkFilled, onClick = jump.go) }
+            )
+          )
+        )
         ExtendedFloatingActionButton(
-          onClick = actions.onLastPage,
+          onClick = {
+            if (longPressed) longPressed = false else actions.onLastPage()
+          },
           shape = RoundedCornerShape(fabCorner),
           interactionSource = fabSource,
           icon = { Icon(QuranIcons.MenuBook, contentDescription = null) },

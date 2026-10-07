@@ -205,6 +205,8 @@
   <string name="prefs_landscape_orientation_summary_on">Always use landscape mode</string>
   <string name="prefs_landscape_orientation_summary_off">Always use portrait mode</string>
   <string name="prefs_reading_mode_title">Reading mode</string>
+  <string name="fab_start_of_sura">Start of %1$s</string>
+  <string name="fab_reading_bookmark">%1$s · p. %2$s</string>
   <string name="reader_view_page">Page</string>
   <string name="reader_view_both">Arabic and translation</string>
   <string name="reader_view_translation">Translation only</string>

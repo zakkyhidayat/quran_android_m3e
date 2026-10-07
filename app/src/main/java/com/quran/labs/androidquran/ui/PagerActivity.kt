@@ -38,6 +38,8 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.platform.ComposeView
+import androidx.dynamicanimation.animation.DynamicAnimation
+import androidx.dynamicanimation.animation.SpringAnimation
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.quran.labs.androidquran.common.ui.core.QuranTheme
 import com.quran.labs.androidquran.ui.compose.ReaderBarActions
@@ -1178,6 +1180,40 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
 
   /** The bottom choices: the page, or the translation view with or without the Arabic. */
   private fun onReaderView(view: ReaderView) {
+    val before = readerBar.view
+    onReaderViewChosen(view)
+    if (readerBar.view != before) {
+      animateViewSwitch(before)
+    }
+  }
+
+  /**
+   * The page area swells in on springs when the reading view changes: it rises and grows from a
+   * little smaller, and comes from the side the new view sits on (the page is the first of the three).
+   */
+  private fun animateViewSwitch(from: ReaderView) {
+    val density = resources.displayMetrics.density
+    val direction = if (readerBar.view.ordinal >= from.ordinal) 1f else -1f
+    viewPager.animate().cancel()
+    viewPager.alpha = 0f
+    viewPager.scaleX = 0.94f
+    viewPager.scaleY = 0.94f
+    viewPager.translationX = 36 * density * direction
+    viewPager.animate().alpha(1f).setDuration(200).start()
+    listOf(
+      DynamicAnimation.SCALE_X to 1f,
+      DynamicAnimation.SCALE_Y to 1f,
+      DynamicAnimation.TRANSLATION_X to 0f
+    ).forEach { (property, target) ->
+      SpringAnimation(viewPager, property, target).apply {
+        spring.stiffness = 380f
+        spring.dampingRatio = 0.62f
+        start()
+      }
+    }
+  }
+
+  private fun onReaderViewChosen(view: ReaderView) {
     when (view) {
       ReaderView.PAGE -> if (showingTranslation) switchToQuran()
       ReaderView.BOTH, ReaderView.TRANSLATION -> {

@@ -47,6 +47,9 @@ import com.quran.mobile.feature.sync.QuranSyncManager
 import com.quran.labs.androidquran.common.ui.core.QuranTheme
 import com.quran.labs.androidquran.ui.compose.HomeActions
 import com.quran.labs.androidquran.ui.compose.HomeJump
+import com.quran.data.model.bookmark.AyahReadingBookmark
+import com.quran.data.model.bookmark.PageReadingBookmark
+import com.quran.labs.androidquran.common.ui.core.ReadingBookmarkSlots
 import com.quran.labs.androidquran.ui.compose.HomeExtraItem
 import com.quran.labs.androidquran.ui.compose.HomeScreen
 import com.quran.labs.androidquran.SearchActivity
@@ -372,6 +375,7 @@ class QuranActivity : AppCompatActivity(),
     },
     onSignIn = { startActivity(Intent(this, QuranSyncActivity::class.java)) },
     onLastPage = ::jumpToLastPage,
+    loadShortcuts = ::loadFabShortcuts,
     onJumpToPage = ::gotoPageDialog,
     onSettings = { startActivity(Intent(this, QuranPreferenceActivity::class.java)) },
     onHelp = { startActivity(Intent(this, HelpActivity::class.java)) },
@@ -387,6 +391,36 @@ class QuranActivity : AppCompatActivity(),
         showedTranslationUpgradeDialog
     )
     super.onSaveInstanceState(outState)
+  }
+
+  /** The other places the continue button can take you: your reading bookmarks and the start of the surah you are in. */
+  private suspend fun loadFabShortcuts(): List<HomeJump> {
+    val shortcuts = mutableListOf<HomeJump>()
+    readingBookmarksDao.readingBookmarks().forEach { bookmark ->
+      val name = ReadingBookmarkSlots.displayName(this, bookmark)
+      when (bookmark) {
+        is PageReadingBookmark -> shortcuts += HomeJump(
+          getString(R.string.fab_reading_bookmark, name, QuranUtils.getLocalizedNumber(bookmark.page))
+        ) { jumpTo(bookmark.page) }
+        is AyahReadingBookmark -> {
+          val page = quranInfo.getPageFromSuraAyah(bookmark.sura, bookmark.ayah)
+          shortcuts += HomeJump(
+            getString(R.string.fab_reading_bookmark, name, QuranUtils.getLocalizedNumber(page))
+          ) { jumpToAndHighlight(page, bookmark.sura, bookmark.ayah) }
+        }
+        else -> {}
+      }
+    }
+    val last = latestPage()
+    if (last != Constants.NO_PAGE) {
+      val sura = quranDisplayData.safelyGetSuraOnPage(last)
+      val start = quranInfo.getPageNumberForSura(sura)
+      if (sura > 0 && start != last) {
+        val suraName = quranDisplayData.getSuraName(this, sura, wantPrefix = false, wantTranslation = false)
+        shortcuts += HomeJump(getString(R.string.fab_start_of_sura, suraName)) { jumpTo(start) }
+      }
+    }
+    return shortcuts
   }
 
   private fun jumpToLastPage() {
