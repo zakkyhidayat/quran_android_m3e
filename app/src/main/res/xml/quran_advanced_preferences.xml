@@ -25,6 +25,7 @@
 
   <Preference
       android:key="@string/prefs_export_csv"
+      app:isPreferenceVisible="false"
       android:summary="@string/prefs_export_csv_summary"
       android:title="@string/prefs_export_csv_title"
       app:iconSpaceReserved="false"/>
