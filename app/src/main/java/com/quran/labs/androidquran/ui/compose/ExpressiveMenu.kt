@@ -3,6 +3,7 @@ package com.quran.labs.androidquran.ui.compose
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuItem
@@ -71,8 +72,12 @@ fun ExpressiveMenu(
             DropdownMenuItem(
               onClick = click,
               text = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                  Text(entry.label, modifier = Modifier.weight(1f, fill = false))
+                // every row as wide as the widest, with the switches in one column at the end
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  modifier = Modifier.widthIn(min = 232.dp)
+                ) {
+                  Text(entry.label, modifier = Modifier.weight(1f))
                   Spacer(Modifier.width(16.dp))
                   Switch(checked = entry.toggled, onCheckedChange = null)
                 }
