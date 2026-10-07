@@ -350,6 +350,9 @@ class AyahToolBar @JvmOverloads constructor(
       val showContent = contentEnabled()
       contentContainer.visibility = if (showContent) VISIBLE else GONE
       divider.visibility = if (showContent) VISIBLE else GONE
+      // the translation picker belongs with the translation: on a translation page the list's own
+      // title is where translations are turned on and off
+      headerContainer.visibility = if (showContent) VISIBLE else GONE
       lastIndicator = selectionIndicator
       requestLayout()
       updatePosition(selectionIndicator)
