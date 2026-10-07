@@ -81,9 +81,9 @@ internal class TranslationAdapter(
             it.value.type == TranslationViewRow.Type.VERSE_NUMBER
       }
 
-      // find out where to position the popup based on the center of the box
+      // where the verse is on screen, so the window can sit beside it instead of on it
       versePosition?.let {
-        positionForViewHolderIndex(versePosition.index)
+        boundsForRows(versePosition.index, highlightedEndPosition - 1)
       }
     } else {
       null
@@ -91,12 +91,37 @@ internal class TranslationAdapter(
   }
 
   fun getSelectedVersePopupPosition(sura: Int, ayah: Int): IntArray? {
-    val (startPosition, _) = adapterInfoForAyah(sura, ayah)
+    val (startPosition, count) = adapterInfoForAyah(sura, ayah)
     return if (startPosition > -1) {
-      positionForViewHolderIndex(startPosition)
+      boundsForRows(startPosition, startPosition + count - 1)
     } else {
       null
     }
+  }
+
+  /**
+   * [x of the verse number pill, top, bottom] of the rows from [first] to [last], in the list's
+   * coordinates. A row that has scrolled off sends its edge past the screen, so a verse that
+   * runs off the screen is still known to run off it.
+   */
+  private fun boundsForRows(first: Int, last: Int): IntArray? {
+    val firstHolder = recyclerView.findViewHolderForAdapterPosition(first)
+    val lastHolder = recyclerView.findViewHolderForAdapterPosition(last)
+    var top = Int.MAX_VALUE
+    var bottom = Int.MIN_VALUE
+    for (i in first..last) {
+      val holder = recyclerView.findViewHolderForAdapterPosition(i) ?: continue
+      top = minOf(top, holder.itemView.top)
+      bottom = maxOf(bottom, holder.itemView.bottom)
+    }
+    if (top == Int.MAX_VALUE) {
+      return null
+    }
+    if (firstHolder == null) top = -recyclerView.height
+    if (lastHolder == null) bottom = recyclerView.height * 2
+    val pill = positionForViewHolderIndex(first)
+    val x = pill?.get(0) ?: (24 * context.resources.displayMetrics.density).toInt()
+    return intArrayOf(x, top, bottom)
   }
 
   private fun positionForViewHolderIndex(index: Int): IntArray? {

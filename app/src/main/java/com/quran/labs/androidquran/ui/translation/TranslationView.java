@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.quran.data.model.SuraAyah;
 import com.quran.data.model.highlight.HighlightType;
 import com.quran.data.model.selection.SelectionIndicator;
+import com.quran.data.model.selection.SelectionRectangle;
 import com.quran.labs.androidquran.common.LocalTranslationDisplaySort;
 import com.quran.labs.androidquran.common.QuranAyahInfo;
 import com.quran.labs.androidquran.common.TranslationMetadata;
@@ -303,12 +304,11 @@ public class TranslationView extends FrameLayout implements View.OnClickListener
     getLocationOnScreen(positionOnScreen);
     final int xOffset = positionOnScreen[0];
 
-    return new SelectionIndicator.SelectedPointPosition(
-        xOffset + versePopupPosition[0],
-        versePopupPosition[1],
-        0f,
-        0f
-    );
+    // the whole verse, so the window goes above or below it and not over it
+    final float x = xOffset + versePopupPosition[0];
+    final SelectionRectangle verse =
+        new SelectionRectangle(x - 1f, versePopupPosition[1], x + 1f, versePopupPosition[2]);
+    return new SelectionIndicator.SelectedItemPosition(verse, verse, 0f, 0f);
   }
 
   /**
@@ -319,10 +319,11 @@ public class TranslationView extends FrameLayout implements View.OnClickListener
    */
   private void updateAyahToolBarPosition() {
     final SelectionIndicator position = getToolbarPosition();
-    if (position instanceof SelectionIndicator.SelectedPointPosition) {
-      final SelectionIndicator.SelectedPointPosition selectedPointPosition =
-          (SelectionIndicator.SelectedPointPosition) position;
-      if (selectedPointPosition.getY() > getHeight() || selectedPointPosition.getY() < 0) {
+    if (position instanceof SelectionIndicator.SelectedItemPosition) {
+      final SelectionIndicator.SelectedItemPosition verse =
+          (SelectionIndicator.SelectedItemPosition) position;
+      // the verse has scrolled out of sight altogether
+      if (verse.getFirstItem().getTop() > getHeight() || verse.getLastItem().getBottom() < 0) {
         hideMenu();
       } else {
         pageController.onScrollChanged(0);
