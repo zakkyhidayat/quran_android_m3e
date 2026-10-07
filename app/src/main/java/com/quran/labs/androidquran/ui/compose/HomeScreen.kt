@@ -43,6 +43,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.ListItemDefaults
@@ -231,6 +236,21 @@ fun HomeScreen(
   val navigationBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
   // leave room under the lists for the continue-reading button
   val listPadding = PaddingValues(top = 4.dp, bottom = navigationBarPadding + 80.dp)
+  val fabLabel = if (suraState.lastReadPage != 0) {
+    stringResource(
+      R.string.continue_reading_page,
+      QuranUtils.getLocalizedNumber(suraState.lastReadPage),
+      QuranUtils.getLocalizedNumber(suraState.lastReadSura) + ":" +
+        QuranUtils.getLocalizedNumber(suraState.lastReadAyah)
+    )
+  } else {
+    stringResource(R.string.start_reading)
+  }
+  val fabDescription = if (suraState.lastReadPage != 0) {
+    stringResource(R.string.continue_reading_description, fabLabel)
+  } else {
+    fabLabel
+  }
   // the continue button shrinks to its icon while a list is being scrolled down, then comes back
   val activeList = when (pagerState.currentPage) {
     0 -> suraListState
@@ -253,24 +273,22 @@ fun HomeScreen(
           onClick = actions.onLastPage,
           icon = { Icon(QuranIcons.MenuBook, contentDescription = null) },
           text = {
-            Text(
-              if (suraState.lastReadPage != 0) {
-                stringResource(
-                  R.string.continue_reading_page,
-                  QuranUtils.getLocalizedNumber(suraState.lastReadPage),
-                  QuranUtils.getLocalizedNumber(suraState.lastReadSura) + ":" +
-                    QuranUtils.getLocalizedNumber(suraState.lastReadAyah)
-                )
-              } else {
-                stringResource(R.string.start_reading)
-              }
+            // the button is as wide as the longest label there can be (page 604, 114:6), so it
+            // keeps the same width and place whatever is shown in it
+            val longest = stringResource(
+              R.string.continue_reading_page,
+              QuranUtils.getLocalizedNumber(604),
+              QuranUtils.getLocalizedNumber(114) + ":" + QuranUtils.getLocalizedNumber(6)
             )
+            Box(contentAlignment = Alignment.Center) {
+              Text(longest, maxLines = 1, modifier = Modifier.alpha(0f).clearAndSetSemantics {})
+              Text(fabLabel, maxLines = 1)
+            }
           },
           expanded = fabExpanded,
-          // one width for every page and ayah, and for "Start reading", so the button never shifts
           modifier = Modifier
             .padding(bottom = navigationBarPadding)
-            .then(if (fabExpanded) Modifier.widthIn(min = 252.dp) else Modifier)
+            .semantics { contentDescription = fabDescription }
         )
       }
     },
