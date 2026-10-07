@@ -205,6 +205,9 @@
   <string name="prefs_landscape_orientation_summary_on">Always use landscape mode</string>
   <string name="prefs_landscape_orientation_summary_off">Always use portrait mode</string>
   <string name="prefs_reading_mode_title">Reading mode</string>
+  <string name="reader_view_page">Page</string>
+  <string name="reader_view_both">Arabic and translation</string>
+  <string name="reader_view_translation">Translation only</string>
   <string name="reading_mode_light">Light</string>
   <string name="reading_mode_sepia">Sepia</string>
   <string name="reading_mode_night">Night</string>

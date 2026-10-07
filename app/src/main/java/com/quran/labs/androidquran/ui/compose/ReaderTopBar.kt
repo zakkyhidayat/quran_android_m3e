@@ -42,13 +42,21 @@ class ReaderBarState {
   var showingTranslation by mutableStateOf(false)
   var translations by mutableStateOf<List<ReaderTranslationItem>>(emptyList())
   var readingMode by mutableStateOf(Constants.READING_MODE_LIGHT)
+  var arabicShown by mutableStateOf(true)
+
+  /** Page, or the translation view with or without the Arabic above each translation. */
+  val view: ReaderView
+    get() = when {
+      !showingTranslation -> ReaderView.PAGE
+      arabicShown -> ReaderView.BOTH
+      else -> ReaderView.TRANSLATION
+    }
 }
 
 /** What the reader's top bar can trigger. The activity owns what each of these does. */
 class ReaderBarActions(
   val onBack: () -> Unit,
   val onBookmark: () -> Unit,
-  val onToggleTranslation: () -> Unit,
   val onTranslationChecked: (filename: String) -> Unit,
   val onMoreTranslations: () -> Unit,
   val onReadingMode: (mode: String) -> Unit,
@@ -82,15 +90,6 @@ fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
           } else {
             MaterialTheme.colorScheme.onSurfaceVariant
           }
-        )
-      }
-      IconButton(onClick = actions.onToggleTranslation) {
-        Icon(
-          imageVector = if (state.showingTranslation) QuranIcons.MenuBook else HomeIcons.Translate,
-          contentDescription = stringResource(
-            if (state.showingTranslation) R.string.menu_back_to_page else R.string.menu_translation
-          ),
-          tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
       }
       ReaderOverflowMenu(state, actions)
@@ -167,11 +166,11 @@ private fun ReaderOverflowMenu(state: ReaderBarState, actions: ReaderBarActions)
     )
   }
   val modes = listOf(
-    Constants.READING_MODE_LIGHT to R.string.reading_mode_light,
-    Constants.READING_MODE_SEPIA to R.string.reading_mode_sepia,
-    Constants.READING_MODE_NIGHT to R.string.reading_mode_night
-  ).map { (mode, label) ->
-    MenuEntry(stringResource(label), selected = state.readingMode == mode) { actions.onReadingMode(mode) }
+    Triple(Constants.READING_MODE_LIGHT, R.string.reading_mode_light, HomeIcons.LightMode),
+    Triple(Constants.READING_MODE_SEPIA, R.string.reading_mode_sepia, HomeIcons.Contrast),
+    Triple(Constants.READING_MODE_NIGHT, R.string.reading_mode_night, HomeIcons.DarkMode)
+  ).map { (mode, label, icon) ->
+    MenuEntry(stringResource(label), icon, selected = state.readingMode == mode) { actions.onReadingMode(mode) }
   }
   ExpressiveMenu(
     expanded = expanded,

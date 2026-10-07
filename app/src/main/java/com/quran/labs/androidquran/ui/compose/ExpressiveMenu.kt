@@ -18,7 +18,8 @@ import com.quran.labs.androidquran.common.ui.core.QuranIcons
 
 /**
  * One row of an [ExpressiveMenu]. A non-null [selected] makes it a choice (like a sort order or a
- * reading mode) that shows a check while it is the current one.
+ * reading mode): the current one takes the green container, and shows a check unless it has an
+ * icon of its own.
  */
 class MenuEntry(
   val label: String,
@@ -55,8 +56,8 @@ fun ExpressiveMenu(
             entry.onClick()
           }
           val leading: @Composable (() -> Unit)? = when {
-            entry.selected == true -> ({ Icon(QuranIcons.Check, contentDescription = null) })
             entry.icon != null -> ({ Icon(entry.icon, contentDescription = null) })
+            entry.selected == true -> ({ Icon(QuranIcons.Check, contentDescription = null) })
             else -> null
           }
           if (entry.selected != null) {

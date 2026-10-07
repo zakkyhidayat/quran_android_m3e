@@ -95,12 +95,13 @@ public class AyahNumberView extends View {
   protected void onDraw(Canvas canvas) {
     // a pill, the shape Material 3 uses for small labels
     float radius = boxHeight / 2f;
-    canvas.drawRoundRect(padding, padding, padding + boxWidth, padding + boxHeight, radius, radius, boxPaint);
+    final int left = getPaddingLeft() + padding;
+    canvas.drawRoundRect(left, padding, left + boxWidth, padding + boxHeight, radius, radius, boxPaint);
     if (this.textLayout != null) {
       int startY = padding + ((boxHeight - this.textLayout.getHeight()) / 2);
-      canvas.translate(padding, startY);
+      canvas.translate(left, startY);
       this.textLayout.draw(canvas);
-      canvas.translate(padding, -startY);
+      canvas.translate(-left, -startY);
     }
   }
 }

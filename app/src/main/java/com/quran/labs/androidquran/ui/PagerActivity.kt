@@ -42,6 +42,8 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.quran.labs.androidquran.common.ui.core.QuranTheme
 import com.quran.labs.androidquran.ui.compose.ReaderBarActions
 import com.quran.labs.androidquran.ui.compose.ReaderBarState
+import com.quran.labs.androidquran.ui.compose.ReaderModeBar
+import com.quran.labs.androidquran.ui.compose.ReaderView
 import com.quran.labs.androidquran.ui.compose.ReaderTopBar
 import com.quran.labs.androidquran.ui.compose.ReaderTranslationItem
 import androidx.core.view.isVisible
@@ -1038,14 +1040,6 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
         finish()
       },
       onBookmark = { showReadingBookmarkSheet(ReadingBookmarkTarget.Page(currentPage)) },
-      onToggleTranslation = {
-        if (showingTranslation) {
-          switchToQuran()
-        } else if (translations != null) {
-          quranEventLogger.switchToTranslationMode(translations!!.size)
-          switchToTranslation()
-        }
-      },
       onTranslationChecked = ::onTranslationChecked,
       onMoreTranslations = ::startTranslationManager,
       onReadingMode = { mode ->
@@ -1079,8 +1073,38 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       windowInsets
     }
 
+    findViewById<ComposeView>(R.id.reader_modes).apply {
+      setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+      setContent { QuranTheme { ReaderModeBar(readerBar.view, ::onReaderView) } }
+    }
+    // when the audio bar is up it takes the bottom of the page, so the choices sit above it
+    audioStatusBar.addOnLayoutChangeListener { v, _, top, _, bottom, _, _, _, _ ->
+      findViewById<View>(R.id.reader_modes).translationY =
+        if (v.isVisible) -(bottom - top).toFloat() else 0f
+    }
+
     readerBar.readingMode = quranSettings.readingMode
+    readerBar.arabicShown = quranSettings.wantArabicInTranslationView()
     readerBar.showingTranslation = showingTranslation
+  }
+
+  /** The bottom choices: the page, or the translation view with or without the Arabic. */
+  private fun onReaderView(view: ReaderView) {
+    when (view) {
+      ReaderView.PAGE -> if (showingTranslation) switchToQuran()
+      ReaderView.BOTH, ReaderView.TRANSLATION -> {
+        val arabic = view == ReaderView.BOTH
+        if (arabic != quranSettings.wantArabicInTranslationView()) {
+          quranSettings.setAyahBeforeTranslation(arabic)
+          readerBar.arabicShown = arabic
+          if (showingTranslation) refreshTranslationPages()
+        }
+        if (!showingTranslation && translations != null) {
+          quranEventLogger.switchToTranslationMode(translations!!.size)
+          switchToTranslation()
+        }
+      }
+    }
   }
 
   /** Called when what the bar shows (translation mode, translation list) may have changed. */
@@ -1196,7 +1220,10 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
     activeTranslationsFilesNames = selected
     quranSettings.activeTranslations = selected
     rebuildTranslationItems()
+    refreshTranslationPages()
+  }
 
+  private fun refreshTranslationPages() {
     val pos = viewPager.currentItem - 1
     for (count in 0..2) {
       if (pos + count < 0) {

@@ -183,14 +183,14 @@ private fun SectionLabel(row: QuranRow) {
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .heightIn(min = 48.dp)
-      .padding(start = 28.dp, end = 28.dp, top = 16.dp, bottom = 4.dp),
+      .heightIn(min = 40.dp)
+      .padding(start = 28.dp, end = 28.dp, top = 12.dp, bottom = 0.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Text(
       text = row.text.orEmpty(),
-      style = MaterialTheme.typography.titleLarge,
-      color = MaterialTheme.colorScheme.onSurface,
+      style = MaterialTheme.typography.titleMedium,
+      color = MaterialTheme.colorScheme.primary,
       modifier = Modifier.weight(1f)
     )
     if (trailing != 0) {
@@ -213,22 +213,19 @@ private fun CollectionHeader(
   onLongClick: (() -> Unit)?,
   onOpen: () -> Unit
 ) {
+  // a section header like the others (flat, in the primary color), only with a chevron to fold it
   Surface(
     shape = MaterialTheme.shapes.large,
-    color = if (selected) {
-      MaterialTheme.colorScheme.secondaryContainer
-    } else {
-      MaterialTheme.colorScheme.surfaceContainerHigh
-    },
+    color = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
     modifier = Modifier
       .fillMaxWidth()
-      .padding(horizontal = 16.dp, vertical = 8.dp)
+      .padding(horizontal = 16.dp, vertical = 4.dp)
       .combinedClickable(onClick = onClick, onLongClick = onLongClick)
   ) {
     Row(
       modifier = Modifier
-        .heightIn(min = 56.dp)
-        .padding(start = 20.dp),
+        .heightIn(min = 48.dp)
+        .padding(start = 12.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
       if (row.isCollapsible) {
@@ -248,7 +245,7 @@ private fun CollectionHeader(
       Text(
         text = row.text.orEmpty(),
         style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onSurface,
+        color = MaterialTheme.colorScheme.primary,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.weight(1f)

@@ -25,6 +25,14 @@
         android:id="@+id/quran_pager"
         />
 
+    <!-- Page, Arabic and translation, Translation only: floats at the bottom centre -->
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/reader_modes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="0dp" />
+
     <com.quran.page.common.toolbar.AyahToolBar
         android:id="@+id/ayah_toolbar"
         android:layout_width="wrap_content"
