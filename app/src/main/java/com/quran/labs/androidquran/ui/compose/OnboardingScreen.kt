@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -128,6 +129,7 @@ class OnboardingState {
   var amoled by mutableStateOf(false)
   var dynamicColor by mutableStateOf(false)
   var dualPage by mutableStateOf(false)
+  var splitTranslation by mutableStateOf(false)
   var dualPageAvailable by mutableStateOf(false)
   var arabic by mutableStateOf(false)
   var dyslexicFont by mutableStateOf(false)
@@ -144,6 +146,7 @@ class OnboardingActions(
   val onAmoled: (Boolean) -> Unit,
   val onDynamicColor: (Boolean) -> Unit,
   val onDualPage: (Boolean) -> Unit,
+  val onSplitTranslation: (Boolean) -> Unit,
   val onArabic: (Boolean) -> Unit,
   val onDyslexicFont: (Boolean) -> Unit,
   val onArabicBeforeTranslation: (Boolean) -> Unit,
@@ -533,6 +536,45 @@ private fun PagesDownloadCard(pages: PagesDownload, onDownload: () -> Unit) {
   }
 }
 
+/**
+ * Asking for the pages outside of the first-run setup (they went missing, or were skipped before):
+ * a page of its own, with the progress right in it, instead of a dialog over a dimmed screen.
+ */
+@Composable
+fun PagesDownloadScreen(state: OnboardingState, onDownload: () -> Unit, onSkip: () -> Unit) {
+  Scaffold(
+    containerColor = MaterialTheme.colorScheme.surface,
+    contentWindowInsets = WindowInsets(0)
+  ) { padding ->
+    Column(
+      horizontalAlignment = Alignment.CenterHorizontally,
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(padding)
+        .verticalScroll(rememberScrollState())
+        .statusBarsPadding()
+        .navigationBarsPadding()
+        .padding(horizontal = 24.dp)
+    ) {
+      StepHeader(Step.DATA, centered = true)
+      Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+          .widthIn(max = 560.dp)
+          .fillMaxWidth()
+          .padding(top = 28.dp, bottom = 24.dp)
+      ) {
+        PagesDownloadCard(state.pages, onDownload)
+        if (state.pages == PagesDownload.NotStarted || state.pages is PagesDownload.Failed) {
+          TextButton(onClick = onSkip, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            Text(stringResource(R.string.onboarding_skip))
+          }
+        }
+      }
+    }
+  }
+}
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ProgressRow(progress: Int?, label: String) {
@@ -677,7 +719,11 @@ private fun DualPageChoice(state: OnboardingState, actions: OnboardingActions) {
     ) {
       if (!state.dualPage) Spacer(Modifier.weight(0.5f))
       PaperPage(basmalah, Modifier.weight(1f))
-      if (state.dualPage) PaperPage(null, Modifier.weight(1f)) else Spacer(Modifier.weight(0.5f))
+      when {
+        state.dualPage && state.splitTranslation -> TranslationPaper(Modifier.weight(1f))
+        state.dualPage -> PaperPage(null, Modifier.weight(1f))
+        else -> Spacer(Modifier.weight(0.5f))
+      }
     }
   }
   SwitchCard(
@@ -686,6 +732,43 @@ private fun DualPageChoice(state: OnboardingState, actions: OnboardingActions) {
     checked = state.dualPage,
     onCheckedChange = actions.onDualPage
   )
+  SwitchCard(
+    title = stringResource(R.string.prefs_split_page_and_translation_title),
+    summary = stringResource(R.string.onboarding_split_summary),
+    checked = state.splitTranslation && state.dualPage,
+    enabled = state.dualPage,
+    onCheckedChange = actions.onSplitTranslation
+  )
+}
+
+/** The second half of the spread when the translation takes the place of the second page. */
+@Composable
+private fun TranslationPaper(modifier: Modifier) {
+  val ink = MaterialTheme.colorScheme.onSurface
+  Column(
+    verticalArrangement = Arrangement.spacedBy(6.dp),
+    modifier = modifier
+      .fillMaxHeight()
+      .clipToBounds()
+      .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(10.dp))
+      .padding(horizontal = 12.dp, vertical = 10.dp)
+  ) {
+    Box(
+      Modifier
+        .width(44.dp)
+        .height(14.dp)
+        .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(7.dp))
+    )
+    listOf(1f, 0.94f, 0.98f, 0.5f, 1f, 0.92f, 0.96f).forEachIndexed { i, fraction ->
+      Box(
+        Modifier
+          .fillMaxWidth(fraction)
+          .height(5.dp)
+          .padding(top = if (i == 4) 4.dp else 0.dp)
+          .background(ink.copy(alpha = 0.4f), RoundedCornerShape(3.dp))
+      )
+    }
+  }
 }
 
 /** One page of paper: the Basmalah when there is one on the phone, then lines of text. */

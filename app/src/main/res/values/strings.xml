@@ -491,6 +491,7 @@
   <string name="onboarding_theme_body">Follow your phone, or always use light or dark.</string>
   <string name="onboarding_dual_title">Two pages at once</string>
   <string name="onboarding_dual_body">Turn your phone sideways to read two pages side by side, like an open mushaf.</string>
+  <string name="onboarding_split_summary">With two pages, show the translation next to the page instead of a second page.</string>
   <string name="onboarding_dual_summary">Only when the phone is held sideways. It may download an extra set of page images that fit the wider screen.</string>
   <string name="prefs_auto_backup_title">Back up bookmarks daily</string>
   <string name="prefs_auto_backup_summary">Once a day, your bookmarks are saved to one backup file in the app’s files folder, replacing the previous one.</string>

@@ -25,6 +25,7 @@ import com.quran.labs.androidquran.presenter.translation.TranslationManagerPrese
 import com.quran.labs.androidquran.ui.TranslationDownloads
 import com.quran.labs.androidquran.ui.compose.OnboardingActions
 import com.quran.labs.androidquran.ui.compose.OnboardingScreen
+import com.quran.labs.androidquran.ui.compose.PagesDownloadScreen
 import com.quran.labs.androidquran.ui.compose.OnboardingState
 import com.quran.labs.androidquran.ui.compose.PageStyleItem
 import com.quran.labs.androidquran.ui.compose.PagesDownload
@@ -119,7 +120,7 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
   private lateinit var quranSettings: QuranSettings
 
   private var errorDialog: AlertDialog? = null
-  private var promptForDownloadDialog: AlertDialog? = null
+  private var showingDownloadScreen = false
   private var permissionsDialog: AlertDialog? = null
   private var downloadReceiver: DefaultDownloadReceiver? = null
   private var quranDataStatus: QuranDataStatus? = null
@@ -152,7 +153,7 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
             downloadReceiver,
             IntentFilter(action)
         )
-    downloadReceiver.setListener(if (showingOnboarding) onboardingListener else this)
+    downloadReceiver.setListener(if (showingOnboarding || showingDownloadScreen) onboardingListener else this)
     this.downloadReceiver = downloadReceiver
 
     disposable = Single.timer(100, MILLISECONDS)
@@ -196,8 +197,6 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
       downloadReceiver = null
     }
 
-    promptForDownloadDialog?.dismiss()
-    promptForDownloadDialog = null
     if (showingOnboarding) {
       translationDownloads.stop()
     }
@@ -495,46 +494,45 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
     startService(intent)
   }
 
+  /**
+   * The pages are not on the phone and the setup is done: show the download as a page of its own,
+   * with its progress inside it, rather than a dialog over a dimmed screen.
+   */
   private fun promptForDownload() {
     val dataStatus = quranDataStatus ?: return
-    val message = if (dataStatus.needPortrait()) {
-      R.string.downloadPrompt
-    } else if (quranScreenInfo.isDualPageMode && dataStatus.needLandscape()) {
-      R.string.downloadTabletPrompt
-    } else if (dataStatus.patchParam?.isNotEmpty() == true) {
-      R.string.downloadImportantPrompt
-    } else {
-      R.string.downloadPrompt
-    }
-
-    val dialog = AlertDialog.Builder(this)
-    dialog.setMessage(message)
-    dialog.setCancelable(false)
-    dialog.setPositiveButton(
-        R.string.downloadPrompt_ok
-    ) { dialog1: DialogInterface, _: Int ->
-      dialog1.dismiss()
-      promptForDownloadDialog = null
-      quranSettings.setShouldFetchPages(true)
-      downloadQuranImages(true)
-    }
-    dialog.setNegativeButton(
-        R.string.downloadPrompt_no
-    ) { dialog12: DialogInterface, _: Int ->
-      dialog12.dismiss()
-      promptForDownloadDialog = null
-      val isPatch = dataStatus.patchParam?.isNotEmpty() == true
-      if (isPatch) {
-        // for patches, we have the pages, so we can just show the list no problem
-        runListView()
+    val state = onboardingState
+    if (state.pages !is PagesDownload.Downloading && state.pages !is PagesDownload.Unpacking) {
+      state.pages = if (downloadReceiver?.didReceiveBroadcast() == true) {
+        PagesDownload.Waiting
       } else {
-        runListViewWithoutPages()
+        PagesDownload.NotStarted
       }
     }
-    val promptForDownloadDialog = dialog.create()
-    promptForDownloadDialog.setTitle(R.string.downloadPrompt_title)
-    promptForDownloadDialog.show()
-    this.promptForDownloadDialog = promptForDownloadDialog
+    if (showingDownloadScreen) return
+    showingDownloadScreen = true
+    downloadReceiver?.setListener(onboardingListener)
+
+    setContent {
+      QuranTheme {
+        PagesDownloadScreen(
+          state = state,
+          onDownload = {
+            state.pages = PagesDownload.Waiting
+            quranSettings.setShouldFetchPages(true)
+            downloadQuranImages(true)
+          },
+          onSkip = {
+            val isPatch = dataStatus.patchParam?.isNotEmpty() == true
+            if (isPatch) {
+              // for patches, we have the pages, so we can just show the list no problem
+              runListView()
+            } else {
+              runListViewWithoutPages()
+            }
+          }
+        )
+      }
+    }
   }
 
   private fun runListViewWithoutPages() {
@@ -630,6 +628,7 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
     state.theme = quranSettings.currentTheme()
     state.amoled = quranSettings.useAmoled()
     state.dualPageAvailable = quranScreenInfo.isDualPageMode
+    state.splitTranslation = quranSettings.isQuranSplitWithTranslation()
     state.dualPage = QuranUtils.isDualPagesInLandscape(this, quranScreenInfo)
     state.dynamicColor = QuranThemeSettings.isDynamicColorAvailable && quranSettings.useDynamicColors()
     state.arabic = QuranUtils.getCurrentLocale().language == "ar"
@@ -656,6 +655,10 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
         onDualPage = { enabled ->
           onboardingState.dualPage = enabled
           quranSettings.setDualPageMode(enabled)
+        },
+        onSplitTranslation = { enabled ->
+          onboardingState.splitTranslation = enabled
+          quranSettings.setQuranSplitWithTranslation(enabled)
         },
         onArabic = ::setArabic,
         onDyslexicFont = { enabled ->
@@ -859,6 +862,8 @@ class QuranDataActivity : AppCompatActivity(), SimpleDownloadListener, OnRequest
       markPagesDownloaded()
       onboardingState.pages = PagesDownload.Done
       refreshPageStyles()
+      // outside of the setup nothing else is waiting on the user, so carry on to the Quran
+      if (showingDownloadScreen) runListView()
     }
 
     override fun handleDownloadFailure(errId: Int) {

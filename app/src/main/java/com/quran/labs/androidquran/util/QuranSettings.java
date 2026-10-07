@@ -243,6 +243,10 @@ public class QuranSettings {
         .apply();
   }
 
+  public void setQuranSplitWithTranslation(boolean enabled) {
+    prefs.edit().putBoolean(Constants.PREF_SPLIT_PAGE_AND_TRANSLATION, enabled).apply();
+  }
+
   public boolean isQuranSplitWithTranslation() {
     return prefs.getBoolean(Constants.PREF_SPLIT_PAGE_AND_TRANSLATION, false);
   }
