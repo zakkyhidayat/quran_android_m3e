@@ -4,7 +4,7 @@
   <dimen name="icon_page_indicator_height">3dp</dimen>
   <dimen name="translation_left_right_margin">20dp</dimen>
   <dimen name="translation_top_bottom_margin">10dp</dimen>
-  <dimen name="translation_footer_spacer">48dp</dimen>
+  <dimen name="translation_footer_spacer">4dp</dimen>
   <dimen name="juz_overlay_text_size">12sp</dimen>
   <dimen name="page_margin_small">7dp</dimen>
   <dimen name="page_margin_large">11dp</dimen>

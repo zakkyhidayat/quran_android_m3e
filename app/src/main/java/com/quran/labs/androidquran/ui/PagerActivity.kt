@@ -116,6 +116,7 @@ import com.quran.labs.androidquran.ui.helpers.QuranDisplayHelper
 import com.quran.labs.androidquran.ui.helpers.QuranNavigator
 import com.quran.labs.androidquran.ui.helpers.QuranPage
 import com.quran.labs.androidquran.ui.helpers.QuranPageAdapter
+import com.quran.labs.androidquran.ui.fragment.AyahTranslationFragment
 import com.quran.labs.androidquran.ui.helpers.SlidingPagerAdapter
 import com.quran.labs.androidquran.ui.listener.AudioBarListener
 import com.quran.labs.androidquran.ui.readingbookmark.createReadingBookmarkToastView
@@ -462,6 +463,19 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       ayahToolBar.setMenuItemVisibility(
         com.quran.labs.androidquran.common.toolbar.R.id.cab_play_from_here, false
       )
+    }
+    // the floating ayah window wears the theme's colors and carries the translation
+    ayahToolBar.applyColors(
+      MaterialColors.getColor(ayahToolBar, com.google.android.material.R.attr.colorSurfaceContainerHigh),
+      MaterialColors.getColor(ayahToolBar, com.google.android.material.R.attr.colorOnSurface),
+      MaterialColors.getColor(ayahToolBar, androidx.appcompat.R.attr.colorPrimary)
+    )
+    // when the page itself is the translation, the window needs no second copy of it
+    ayahToolBar.contentEnabled = { !showingTranslation }
+    if (supportFragmentManager.findFragmentById(ayahToolBar.contentContainer.id) == null) {
+      supportFragmentManager.beginTransaction()
+        .replace(ayahToolBar.contentContainer.id, AyahTranslationFragment())
+        .commit()
     }
     ayahToolBar.longPressLambda = { charSequence: CharSequence? ->
       makeText(this@PagerActivity, charSequence!!, Toast.LENGTH_SHORT).show()
@@ -1642,9 +1656,6 @@ class PagerActivity : AppCompatActivity(), AudioBarListener, OnBookmarkTagsUpdat
       val itemId = item.itemId
       if (itemId == com.quran.labs.androidquran.common.toolbar.R.id.cab_bookmark_ayah) {
         showAyahBookmarkSheet(startSuraAyah)
-      } else if (itemId == com.quran.labs.androidquran.common.toolbar.R.id.cab_translate_ayah) {
-        sliderPage =
-          slidingPagerAdapter.getPagePosition(SlidingPagerAdapter.TRANSLATION_PAGE)
       } else if (itemId == com.quran.labs.androidquran.common.toolbar.R.id.cab_play_from_here) {
         quranEventLogger.logAudioPlayback(
           QuranEventLogger.AudioPlaybackSource.AYAH,

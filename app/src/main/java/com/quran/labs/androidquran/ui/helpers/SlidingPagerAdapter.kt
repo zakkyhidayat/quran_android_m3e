@@ -3,9 +3,23 @@ package com.quran.labs.androidquran.ui.helpers
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.quran.labs.androidquran.ui.fragment.AyahPlaybackFragment
-import com.quran.labs.androidquran.ui.fragment.AyahTranslationFragment
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import com.quran.labs.androidquran.view.IconPageIndicator
 import com.quran.mobile.di.AyahActionFragmentProvider
+
+private class EmptyAyahPanel : Fragment() {
+  override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
+    View(inflater.context)
+}
+
+private object TranslationSlot : AyahActionFragmentProvider {
+  override val order = SlidingPagerAdapter.TRANSLATION_PAGE
+  override val iconResId = com.quran.labs.androidquran.common.toolbar.R.drawable.ic_translation
+  override fun newAyahActionFragment(): Fragment = EmptyAyahPanel()
+}
 
 class SlidingPagerAdapter(
   fm: FragmentManager,
@@ -18,7 +32,9 @@ class SlidingPagerAdapter(
 
   init {
     // Add the core ayah action panels
-    pages.add(AyahTranslationFragment.Provider)
+    // the translation moved into the floating ayah window; this slot only keeps the page numbers
+    // of the other panels where they were
+    pages.add(TranslationSlot)
     if (includeAudioPanel) {
       pages.add(AyahPlaybackFragment.Provider)
     }

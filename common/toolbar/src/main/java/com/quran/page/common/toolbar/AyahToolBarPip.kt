@@ -33,6 +33,11 @@ class AyahToolBarPip @JvmOverloads constructor(
     }
   }
 
+  fun setColor(color: Int) {
+    paint.color = color
+    invalidate()
+  }
+
   fun ensurePosition(position: SelectedAyahPlacementType) {
     this.position = position
     updatePoints()

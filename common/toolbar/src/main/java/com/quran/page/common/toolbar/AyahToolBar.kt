@@ -1,6 +1,9 @@
 package com.quran.page.common.toolbar
 
 import android.content.Context
+import android.content.res.ColorStateList
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.util.AttributeSet
 import android.view.Menu
 import android.view.MenuInflater
@@ -10,6 +13,7 @@ import android.view.View
 import android.view.View.OnClickListener
 import android.view.View.OnLongClickListener
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import androidx.appcompat.widget.PopupMenu
@@ -22,7 +26,14 @@ import com.quran.page.common.toolbar.di.AyahToolBarInjector
 import com.quran.page.common.toolbar.extension.toInternalPosition
 import dev.zacsweers.metro.Inject
 import kotlin.math.max
+import kotlin.math.min
 
+/**
+ * The floating window that opens on the ayah you select: one row of actions (bookmark, share the
+ * link, share the text, copy, play) and, under it, whatever [contentContainer] holds - the
+ * translation. It sits above the ayah when there is room there and below it otherwise, so it
+ * does not cover the ayah that was tapped, and a small arrow points back at the ayah.
+ */
 class AyahToolBar @JvmOverloads constructor(
   context: Context,
   attrs: AttributeSet? = null,
@@ -32,16 +43,31 @@ class AyahToolBar @JvmOverloads constructor(
   private var menu: Menu
   private val pipWidth: Int
   private val pipHeight: Int
-  private val itemWidth: Int
   private val ayahMenu = R.menu.ayah_menu
+  private val card: LinearLayout
   private val menuLayout: LinearLayout
+  private val divider: View
   private val toolBarPip: AyahToolBarPip
-  private val toolBarTotalHeight: Int
+  private val toolBarHeight: Int
+  private val cardMaxWidth: Int
+  private val sideMargin: Int
+  private val gap: Int
+  private val cornerRadius: Float
+
+  /** Where the translation goes, under the actions. */
+  val contentContainer: FrameLayout
+
+  private var containerColor = ContextCompat.getColor(context, R.color.toolbar_background)
+  private var contentColor = ContextCompat.getColor(context, R.color.toolbar_icon)
+  private var accentColor = contentColor
+  private var bookmarked = false
 
   private var pipOffset = 0f
   private var pipPosition: SelectedAyahPlacementType
   private var currentMenu: Menu? = null
   private var itemSelectedListener: OnMenuItemClickListener? = null
+  private var lastIndicator: SelectionIndicator? = null
+  private var positionedHeight = 0
 
   var isShowing = false
     private set
@@ -52,6 +78,9 @@ class AyahToolBar @JvmOverloads constructor(
   var lastMeasuredWidth = 0
   var lastSelectionShouldPadForCutout = false
 
+  /** Whether the translation shows in the window; off while the page itself is the translation. */
+  var contentEnabled: () -> Boolean = { true }
+
   var insets: Insets = Insets.NONE
 
   @Inject
@@ -59,25 +88,36 @@ class AyahToolBar @JvmOverloads constructor(
 
   init {
     val resources = context.resources
-    itemWidth = resources.getDimensionPixelSize(R.dimen.toolbar_item_width)
-    val toolBarHeight = resources.getDimensionPixelSize(R.dimen.toolbar_height)
+    toolBarHeight = resources.getDimensionPixelSize(R.dimen.toolbar_height)
     pipHeight = resources.getDimensionPixelSize(R.dimen.toolbar_pip_height)
     pipWidth = resources.getDimensionPixelSize(R.dimen.toolbar_pip_width)
-    val backgroundColor = ContextCompat.getColor(context, R.color.toolbar_background)
+    cardMaxWidth = resources.getDimensionPixelSize(R.dimen.toolbar_card_max_width)
+    sideMargin = resources.getDimensionPixelSize(R.dimen.toolbar_side_margin)
+    gap = resources.getDimensionPixelSize(R.dimen.toolbar_gap)
+    cornerRadius = resources.getDimension(R.dimen.toolbar_corner_radius)
 
-    toolBarTotalHeight = resources.getDimensionPixelSize(R.dimen.toolbar_total_height)
-
-    menuLayout = LinearLayout(context).apply {
-      layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, toolBarHeight)
-      // a floating toolbar: rounded, with the ripples kept inside the corners
-      background = android.graphics.drawable.GradientDrawable().apply {
-        cornerRadius = resources.getDimension(R.dimen.toolbar_corner_radius)
-        setColor(backgroundColor)
-      }
+    card = LinearLayout(context).apply {
+      orientation = LinearLayout.VERTICAL
+      // rounded, with the ripples and the translation kept inside the corners
       clipToOutline = true
+      layoutDirection = LAYOUT_DIRECTION_LTR
     }
-    menuLayout.layoutDirection = LAYOUT_DIRECTION_LTR
-    addView(menuLayout)
+    menuLayout = LinearLayout(context).apply {
+      layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, toolBarHeight)
+      layoutDirection = LAYOUT_DIRECTION_LTR
+    }
+    divider = View(context).apply {
+      layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 1)
+      visibility = GONE
+    }
+    contentContainer = FrameLayout(context).apply {
+      layoutParams = LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+      id = R.id.ayah_toolbar_content
+    }
+    card.addView(menuLayout)
+    card.addView(divider)
+    card.addView(contentContainer)
+    addView(card)
 
     pipPosition = SelectedAyahPlacementType.BOTTOM
     toolBarPip = AyahToolBarPip(context)
@@ -90,7 +130,22 @@ class AyahToolBar @JvmOverloads constructor(
     menu = PopupMenu(this.context, this).menu
     val inflater = MenuInflater(this.context)
     inflater.inflate(ayahMenu, menu)
+    applyColors(containerColor, contentColor, accentColor)
     showMenu(menu)
+  }
+
+  /** The window's colors: its surface, the icons and text on it, and the accent (a bookmark). */
+  fun applyColors(container: Int, content: Int, accent: Int) {
+    containerColor = container
+    contentColor = content
+    accentColor = accent
+    card.background = GradientDrawable().apply {
+      cornerRadius = this@AyahToolBar.cornerRadius
+      setColor(container)
+    }
+    divider.setBackgroundColor((content and 0x00FFFFFF) or 0x1F000000)
+    toolBarPip.setColor(container)
+    showMenu(menu, force = true)
   }
 
   override fun onAttachedToWindow() {
@@ -105,24 +160,55 @@ class AyahToolBar @JvmOverloads constructor(
     super.onDetachedFromWindow()
   }
 
+  private fun cardWidth(parentWidth: Int): Int =
+    max(toolBarHeight * 3, min(cardMaxWidth, parentWidth - 2 * sideMargin))
+
+  /** How tall the window may get, from the room above or below the selected ayah. */
+  private fun maxCardHeight(parentHeight: Int): Int {
+    val indicator = lastIndicator
+    val room = if (indicator is SelectionIndicator.SelectedItemPosition) {
+      max(indicator.firstItem.top, parentHeight - indicator.lastItem.bottom) - pipHeight - gap
+    } else {
+      parentHeight / 2
+    }.toInt()
+    return room.coerceIn(toolBarHeight + 3 * gap, (parentHeight * 0.6f).toInt())
+  }
+
+  override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+    val parentView = parent as? View
+    val parentWidth = parentView?.width ?: MeasureSpec.getSize(widthMeasureSpec)
+    val parentHeight = parentView?.height ?: MeasureSpec.getSize(heightMeasureSpec)
+    val width = cardWidth(parentWidth)
+    card.measure(
+      MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+      MeasureSpec.makeMeasureSpec(maxCardHeight(parentHeight), MeasureSpec.AT_MOST)
+    )
+    measureChild(
+      toolBarPip,
+      MeasureSpec.makeMeasureSpec(pipWidth, MeasureSpec.EXACTLY),
+      MeasureSpec.makeMeasureSpec(pipHeight, MeasureSpec.EXACTLY)
+    )
+    setMeasuredDimension(width, card.measuredHeight + toolBarPip.measuredHeight)
+  }
+
   override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
     val totalWidth = measuredWidth
     val pipWidth = toolBarPip.measuredWidth
     val pipHeight = toolBarPip.measuredHeight
-    val menuWidth = menuLayout.measuredWidth
-    val menuHeight = menuLayout.measuredHeight
+    val menuWidth = card.measuredWidth
+    val menuHeight = card.measuredHeight
     var pipLeft = pipOffset.toInt()
     if (pipLeft + pipWidth > totalWidth) {
       pipLeft = totalWidth / 2 - pipWidth / 2
     }
 
-    // overlap the pip and toolbar by 1px to avoid occasional gap
+    // overlap the pip and the window by 1px to avoid occasional gap
     if (pipPosition == SelectedAyahPlacementType.TOP) {
       toolBarPip.layout(pipLeft, 0, pipLeft + pipWidth, pipHeight + 1)
-      menuLayout.layout(0, pipHeight, menuWidth, pipHeight + menuHeight)
+      card.layout(0, pipHeight, menuWidth, pipHeight + menuHeight)
     } else {
       toolBarPip.layout(pipLeft, menuHeight - 1, pipLeft + pipWidth, menuHeight + pipHeight)
-      menuLayout.layout(0, 0, menuWidth, menuHeight)
+      card.layout(0, 0, menuWidth, menuHeight)
     }
 
     // handle first layout of toolbar
@@ -135,34 +221,20 @@ class AyahToolBar @JvmOverloads constructor(
       }
       lastMeasuredWidth = totalWidth
     }
-  }
 
-  override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-    measureChild(menuLayout, widthMeasureSpec, heightMeasureSpec)
-    val width = menuLayout.measuredWidth
-    var height = menuLayout.measuredHeight
-    measureChild(
-      toolBarPip,
-      MeasureSpec.makeMeasureSpec(pipWidth, MeasureSpec.EXACTLY),
-      MeasureSpec.makeMeasureSpec(pipHeight, MeasureSpec.EXACTLY)
-    )
-    height += toolBarPip.measuredHeight
-    setMeasuredDimension(
-      resolveSize(width, widthMeasureSpec),
-      resolveSize(height, heightMeasureSpec)
-    )
+    // the translation arrives after the window is first placed, which changes its height, and
+    // with it which side of the ayah it fits on
+    val indicator = lastIndicator
+    if (isShowing && indicator != null && positionedHeight != measuredHeight) {
+      positionedHeight = measuredHeight
+      post { updatePosition(indicator) }
+    }
   }
 
   private fun showMenu(menu: Menu, force: Boolean = false) {
     if (currentMenu === menu && !force) {
       // no need to re-draw
       return
-    }
-
-    // disable sharing for warsh and qaloon
-    val menuItem = menu.findItem(R.id.cab_share_ayah)
-    if (menuItem != null && flavor == "qaloon") {
-      menuItem.isVisible = false
     }
 
     // If recitation is enabled, show it in the menu
@@ -180,29 +252,39 @@ class AyahToolBar @JvmOverloads constructor(
       }
     }
     currentMenu = menu
+    updateBookmarkIcon()
   }
 
   private fun getMenuItemView(item: MenuItem): View {
     return ImageButton(context).apply {
       setImageDrawable(item.icon)
-      setBackgroundResource(R.drawable.toolbar_button)
+      imageTintList = ColorStateList.valueOf(
+        if (item.itemId == R.id.cab_bookmark_ayah && bookmarked) accentColor else contentColor
+      )
+      background = RippleDrawable(
+        ColorStateList.valueOf((contentColor and 0x00FFFFFF) or 0x33000000), null, null
+      )
+      contentDescription = item.title
       id = item.itemId
-      layoutParams = LayoutParams(itemWidth, LayoutParams.MATCH_PARENT)
+      layoutParams = LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1f)
       setOnClickListener(this@AyahToolBar)
       setOnLongClickListener(this@AyahToolBar)
     }
   }
 
-  // relying on getWidth() may give us the width of a shorter
-  // submenu instead of the actual menu
-  private val toolBarWidth: Int
-    get() = menu.size() * itemWidth
-
   fun setBookmarked(bookmarked: Boolean) {
+    this.bookmarked = bookmarked
     val bookmarkItem = menu.findItem(R.id.cab_bookmark_ayah)
-    bookmarkItem.setIcon(if (bookmarked) R.drawable.ic_favorite else R.drawable.ic_not_favorite)
-    val bookmarkButton = findViewById<ImageButton>(R.id.cab_bookmark_ayah)
-    bookmarkButton?.setImageDrawable(bookmarkItem.icon)
+    bookmarkItem.setIcon(if (bookmarked) R.drawable.ic_bookmark else R.drawable.ic_bookmark_border)
+    updateBookmarkIcon()
+  }
+
+  private fun updateBookmarkIcon() {
+    val bookmarkItem = menu.findItem(R.id.cab_bookmark_ayah) ?: return
+    val bookmarkButton = findViewById<ImageButton>(R.id.cab_bookmark_ayah) ?: return
+    bookmarkButton.setImageDrawable(bookmarkItem.icon)
+    bookmarkButton.imageTintList =
+      ColorStateList.valueOf(if (bookmarked) accentColor else contentColor)
   }
 
   override fun onSelectionChanged(selectionIndicator: SelectionIndicator, reset: Boolean) {
@@ -212,8 +294,14 @@ class AyahToolBar @JvmOverloads constructor(
 
     if (selectionIndicator is SelectionIndicator.None ||
         selectionIndicator is SelectionIndicator.ScrollOnly) {
+      lastIndicator = null
       hideMenu()
     } else {
+      val showContent = contentEnabled()
+      contentContainer.visibility = if (showContent) VISIBLE else GONE
+      divider.visibility = if (showContent) VISIBLE else GONE
+      lastIndicator = selectionIndicator
+      requestLayout()
       updatePosition(selectionIndicator)
       showMenu()
     }
@@ -225,9 +313,13 @@ class AyahToolBar @JvmOverloads constructor(
 
   private fun updatePosition(position: SelectionIndicator) {
     val parentView = parent as View
-    val internalPosition = position.toInternalPosition(
-      parentView.width, parentView.height, toolBarWidth, toolBarTotalHeight
-    )
+    val width = card.measuredWidth.takeIf { it > 0 } ?: cardWidth(parentView.width)
+    val height = measuredHeight.takeIf { it > 0 } ?: (toolBarHeight + pipHeight)
+    val internalPosition = if (position is SelectionIndicator.SelectedItemPosition) {
+      place(position, parentView.width, parentView.height, width, height)
+    } else {
+      position.toInternalPosition(parentView.width, parentView.height, width, height)
+    }
 
     if (internalPosition != null) {
       val needsLayout =
@@ -270,6 +362,49 @@ class AyahToolBar @JvmOverloads constructor(
         requestLayout()
       }
     }
+  }
+
+  /**
+   * Below the ayah when it fits there, otherwise above it, otherwise on whichever side has more
+   * room - never on top of the ayah when one of the sides can hold it.
+   */
+  private fun place(
+    position: SelectionIndicator.SelectedItemPosition,
+    parentWidth: Int,
+    parentHeight: Int,
+    width: Int,
+    height: Int
+  ): com.quran.page.common.toolbar.dao.SelectionIndicatorPosition {
+    val first = position.firstItem
+    val last = position.lastItem
+    val roomAbove = first.top
+    val roomBelow = parentHeight - last.bottom
+    // below first: the lines under the ayah are the ones still to be read
+    val above = when {
+      roomBelow >= height + gap -> false
+      roomAbove >= height + gap -> true
+      else -> roomAbove > roomBelow
+    }
+    val chosen = if (above) first else last
+    var y = if (above) first.top - height - gap / 2 else last.bottom + gap / 2
+    y = y.coerceIn(0f, max(0f, parentHeight - height.toFloat()))
+    y += position.yScroll
+
+    val midpoint = chosen.centerX()
+    var x = midpoint - (width / 2)
+    if (x < sideMargin) {
+      x = sideMargin.toFloat()
+    }
+    if (x + width > parentWidth - sideMargin) {
+      x = (parentWidth - sideMargin - width).toFloat()
+    }
+    val placement =
+      if (above) SelectedAyahPlacementType.BOTTOM else SelectedAyahPlacementType.TOP
+    // the arrow stays inside the rounded corners
+    val pip = (midpoint - x).coerceIn(cornerRadius, width - cornerRadius - pipWidth)
+    return com.quran.page.common.toolbar.dao.SelectionIndicatorPosition(
+      x + position.xScroll, y, pip, placement
+    )
   }
 
   private fun setPosition(x: Float, y: Float) {

@@ -35,7 +35,6 @@ class AyahTranslationFragment : AyahActionFragment(), TranslationScreen {
   private lateinit var progressBar: ProgressBar
   private lateinit var translationView: InlineTranslationView
   private lateinit var emptyState: View
-  private lateinit var translationControls: View
   private lateinit var translator: QuranSpinner
 
   private var translationAdapter: TranslationsSpinnerAdapter? = null
@@ -79,20 +78,8 @@ class AyahTranslationFragment : AyahActionFragment(), TranslationScreen {
     translationView = view.findViewById(R.id.translation_view)
     progressBar = view.findViewById(R.id.progress)
     emptyState = view.findViewById(R.id.empty_state)
-    translationControls = view.findViewById(R.id.controls)
-
-    val next = translationControls.findViewById<View>(R.id.next_ayah)
-    next.setOnClickListener(onClickListener)
-    val prev = translationControls.findViewById<View>(R.id.previous_ayah)
-    prev.setOnClickListener(onClickListener)
     val getTranslations = view.findViewById<Button>(R.id.get_translations_button)
     getTranslations.setOnClickListener(onClickListener)
-
-    ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
-      val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-      translationView.updatePadding(bottom = navBarInsets.bottom)
-      insets
-    }
 
     return view
   }
@@ -113,8 +100,6 @@ class AyahTranslationFragment : AyahActionFragment(), TranslationScreen {
     if (activity is PagerActivity) {
       when (v.id) {
         R.id.get_translations_button -> activity.startTranslationManager()
-        R.id.next_ayah -> readingEventPresenter.selectNextAyah()
-        R.id.previous_ayah -> readingEventPresenter.selectPreviousAyah()
       }
     }
   }
@@ -123,7 +108,6 @@ class AyahTranslationFragment : AyahActionFragment(), TranslationScreen {
     if (translations.isEmpty()) {
       progressBar.visibility = View.GONE
       emptyState.visibility = View.VISIBLE
-      translationControls.visibility = View.GONE
       translator.visibility = View.GONE
       translationView.visibility = View.GONE
     } else {
@@ -174,7 +158,6 @@ class AyahTranslationFragment : AyahActionFragment(), TranslationScreen {
     progressBar.visibility = View.GONE
     if (verses.isNotEmpty()) {
       emptyState.visibility = View.GONE
-      translationControls.visibility = View.VISIBLE
       translator.visibility = View.VISIBLE
       translationView.visibility = View.VISIBLE
       translationView.setAyahs(translations, verses)
