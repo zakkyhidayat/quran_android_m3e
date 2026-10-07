@@ -42,6 +42,8 @@ import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.rememberSliderState
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -540,7 +542,11 @@ private fun ColorSchemePreferenceItem(
   )
 }
 
-/** A choice among a few short options (system / light / dark, say), shown as segmented buttons. */
+/**
+ * A choice among a few short options (system / light / dark, say), shown as segmented buttons
+ * that are tall enough to hit easily. The row isn't a clickable list item itself, so a tap can
+ * only mean one of the buttons.
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SegmentedPreferenceItem(
@@ -551,37 +557,49 @@ private fun SegmentedPreferenceItem(
 ) {
   val entries = preference.entries.orEmpty()
   val values = preference.entryValues.orEmpty()
+  // the preference isn't Compose state, so the selection is kept here and kept in step on a tap
+  var current by remember(preference) { mutableStateOf(preference.value) }
 
-  SettingsItem(
-    title = preference.title,
-    summary = null,
-    enabled = preference.isEnabled,
-    shapes = shapes,
-    modifier = modifier,
-    onClick = {},
-    supporting = {
-      Column {
-        preference.summary?.takeIf { it.isNotEmpty() }?.let { Text(it.toString()) }
-        SingleChoiceSegmentedButtonRow(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 12.dp, bottom = 4.dp)
-        ) {
-          entries.forEachIndexed { index, entry ->
-            val value = values.getOrNull(index)?.toString() ?: return@forEachIndexed
-            SegmentedButton(
-              selected = value == preference.value,
-              onClick = {
-                if (preference.callChangeListener(value)) preference.value = value
-                onChanged()
-              },
-              shape = SegmentedButtonDefaults.itemShape(index, entries.size),
-              enabled = preference.isEnabled,
-              label = { Text(entry.toString(), maxLines = 1) }
-            )
-          }
+  Surface(
+    shape = shapes.shape,
+    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    modifier = modifier.fillMaxWidth()
+  ) {
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+      Text(
+        text = preference.title?.toString().orEmpty(),
+        style = MaterialTheme.typography.titleMedium
+      )
+      preference.summary?.takeIf { it.isNotEmpty() }?.let {
+        Text(
+          it.toString(),
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+      }
+      SingleChoiceSegmentedButtonRow(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(top = 12.dp)
+      ) {
+        entries.forEachIndexed { index, entry ->
+          val value = values.getOrNull(index)?.toString() ?: return@forEachIndexed
+          SegmentedButton(
+            selected = value == current,
+            onClick = {
+              if (preference.callChangeListener(value)) {
+                preference.value = value
+                current = value
+              }
+              onChanged()
+            },
+            shape = SegmentedButtonDefaults.itemShape(index, entries.size),
+            enabled = preference.isEnabled,
+            modifier = Modifier.heightIn(min = 56.dp),
+            label = { Text(entry.toString(), maxLines = 1, softWrap = false) }
+          )
         }
       }
     }
-  )
+  }
 }

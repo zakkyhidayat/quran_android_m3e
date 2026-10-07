@@ -269,14 +269,6 @@ fun HomeScreen(
   } else {
     fabLabel
   }
-  // the continue button shrinks to its icon while a list is being scrolled down, then comes back
-  val activeList = when (pagerState.currentPage) {
-    0 -> suraListState
-    1 -> juzListState
-    2 -> hizbListState
-    else -> null
-  }
-  val fabExpanded = activeList == null || !activeList.lastScrolledForward || !activeList.canScrollBackward
 
   Scaffold(
     modifier = Modifier.nestedScroll(searchScrollBehavior.nestedScrollConnection),
@@ -312,7 +304,6 @@ fun HomeScreen(
               Text(fabLabel, maxLines = 1)
             }
           },
-          expanded = fabExpanded,
           modifier = Modifier
             .padding(bottom = navigationBarPadding)
             .semantics { contentDescription = fabDescription }

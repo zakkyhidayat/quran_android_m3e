@@ -22,8 +22,8 @@
     <item>@string/reading_mode_night</item>
   </string-array>
   <array name="themes">
-    <item>System default</item>
-    <item>Light</item>
-    <item>Dark</item>
+    <item>@string/onboarding_theme_system</item>
+    <item>@string/onboarding_theme_light</item>
+    <item>@string/onboarding_theme_dark</item>
   </array>
 </resources>
