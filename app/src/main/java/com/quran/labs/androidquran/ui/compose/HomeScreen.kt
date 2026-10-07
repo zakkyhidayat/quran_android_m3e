@@ -1,6 +1,11 @@
 package com.quran.labs.androidquran.ui.compose
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.AnimatedVisibility
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.Alignment
@@ -236,6 +241,14 @@ fun HomeScreen(
   val navigationBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
   // leave room under the lists for the continue-reading button
   val listPadding = PaddingValues(top = 4.dp, bottom = navigationBarPadding + 80.dp)
+  // the button waits until it knows what to say and where the navigation bar is, so it appears
+  // once, in its place, rather than in a wrong one for a split second
+  var insetsSettled by remember { mutableStateOf(false) }
+  LaunchedEffect(Unit) {
+    delay(250)
+    insetsSettled = true
+  }
+  val fabReady = suraState.lastReadLoaded && (navigationBarPadding > 0.dp || insetsSettled)
   val fabLabel = if (suraState.lastReadPage != 0) {
     stringResource(
       R.string.continue_reading_page,
@@ -268,7 +281,11 @@ fun HomeScreen(
       .only(WindowInsetsSides.Horizontal),
     snackbarHost = { SnackbarHost(snackbarHostState) },
     floatingActionButton = {
-      if (!selecting && !isSearchOpen) {
+      AnimatedVisibility(
+        visible = !selecting && !isSearchOpen && fabReady,
+        enter = fadeIn() + scaleIn(),
+        exit = fadeOut() + scaleOut()
+      ) {
         ExtendedFloatingActionButton(
           onClick = actions.onLastPage,
           icon = { Icon(QuranIcons.MenuBook, contentDescription = null) },

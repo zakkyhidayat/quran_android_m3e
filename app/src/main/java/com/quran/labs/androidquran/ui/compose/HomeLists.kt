@@ -44,6 +44,10 @@ class SuraListState(
   var lastReadSura by mutableIntStateOf(0)
     private set
 
+  /** False until the page last read has been looked up, so the button doesn't show a guess. */
+  var lastReadLoaded by mutableStateOf(false)
+    private set
+
   /** The first ayah on the page last read. */
   var lastReadAyah by mutableIntStateOf(0)
     private set
@@ -54,6 +58,7 @@ class SuraListState(
 
   /** Follows the page last read, so the highlighted surah changes as soon as you read another. */
   fun onLatestPage(page: Int) {
+    lastReadLoaded = true
     lastReadPage = if (page == Constants.NO_PAGE) 0 else page
     lastReadAyah = if (page == Constants.NO_PAGE) 0 else runCatching { quranInfo.getFirstAyahOnPage(page) }.getOrDefault(0)
     lastReadSura = if (page == Constants.NO_PAGE) 0 else quranDisplayData.safelyGetSuraOnPage(page)
@@ -80,6 +85,7 @@ class SuraListState(
     readingBookmarks = placed(readingBookmarksDao.readingBookmarks())
     rows = buildRows()
     val recentPage = latestPage()
+    lastReadLoaded = true
     lastReadPage = if (recentPage == Constants.NO_PAGE) 0 else recentPage
     lastReadAyah = if (recentPage == Constants.NO_PAGE) 0 else runCatching { quranInfo.getFirstAyahOnPage(recentPage) }.getOrDefault(0)
     lastReadSura = if (recentPage == Constants.NO_PAGE) 0 else quranDisplayData.safelyGetSuraOnPage(recentPage)
