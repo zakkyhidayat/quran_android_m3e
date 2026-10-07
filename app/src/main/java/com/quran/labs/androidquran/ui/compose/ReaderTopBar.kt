@@ -11,9 +11,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialShapes
-import androidx.compose.material3.toShape
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.runtime.LaunchedEffect
@@ -82,7 +81,7 @@ class ReaderBarActions(
  * The reader's top bar: always visible above the page, with the surah, the page and where you are
  * in the Quran, and the actions you reach for while reading.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
   val ink = readingInk(state.readingMode)
@@ -95,9 +94,10 @@ fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
     },
     actions = {
       ReaderTranslationsButton(state, actions, ink)
+      Spacer(Modifier.width(6.dp))
       ExpressiveIconButton(
         onClick = actions.onBookmark,
-        shape = MaterialShapes.Clover4Leaf.toShape(),
+        segment = ButtonSegment.END,
         containerColor = if (state.isBookmarked) Color(0xFF176B4D).copy(alpha = 0.2f) else ink.copy(alpha = 0.08f)
       ) {
         // the icon pops when the bookmark is set
@@ -125,7 +125,10 @@ fun ReaderTopBar(state: ReaderBarState, actions: ReaderBarActions) {
           }
         )
       }
+      // the menu stands apart from the pair, so the split reads at a glance
+      Spacer(Modifier.width(12.dp))
       ReaderOverflowMenu(state, actions, ink)
+      Spacer(Modifier.width(4.dp))
     },
     colors = TopAppBarDefaults.topAppBarColors(
       containerColor = Color.Transparent,
@@ -173,7 +176,7 @@ private fun ReaderTranslationsButton(state: ReaderBarState, actions: ReaderBarAc
   var open by remember { mutableStateOf(false) }
   ExpressiveIconButton(
     onClick = { open = true },
-    shape = MaterialShapes.Cookie6Sided.toShape(),
+    segment = ButtonSegment.START,
     containerColor = ink.copy(alpha = 0.08f)
   ) {
     Icon(HomeIcons.Translate, contentDescription = stringResource(R.string.translations), tint = ink)
@@ -201,7 +204,6 @@ private fun ReaderOverflowMenu(state: ReaderBarState, actions: ReaderBarActions,
   var expanded by remember { mutableStateOf(false) }
   ExpressiveIconButton(
     onClick = { expanded = true },
-    shape = MaterialShapes.Square.toShape(),
     containerColor = ink.copy(alpha = 0.08f)
   ) {
     Icon(

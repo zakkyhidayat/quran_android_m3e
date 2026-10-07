@@ -6,6 +6,10 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
@@ -152,70 +156,16 @@ class HomeJump(val label: String, val go: () -> Unit)
 class HomeExtraItem(@StringRes val titleResId: Int, val onClick: () -> Unit)
 
 /**
- * A tab with no square ripple: a rounded pill sits behind the chosen tab's name and the pill gives
- * way under the finger (it shrinks and rounds off) on a bouncy spring.
- */
-@Composable
-private fun ExpressiveTab(title: String, selected: Boolean, onClick: () -> Unit) {
-  val source = remember { MutableInteractionSource() }
-  val pressed by source.collectIsPressedAsState()
-  val scale by animateFloatAsState(
-    targetValue = if (pressed) 0.9f else 1f,
-    animationSpec = spring(dampingRatio = 0.45f, stiffness = 520f),
-    label = "tabScale"
-  )
-  val corner by animateDpAsState(
-    targetValue = if (pressed) 10.dp else 18.dp,
-    animationSpec = spring(dampingRatio = 0.5f, stiffness = 520f),
-    label = "tabCorner"
-  )
-  val pillColor by animateColorAsState(
-    targetValue = when {
-      pressed -> MaterialTheme.colorScheme.secondaryContainer
-      selected -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f)
-      else -> Color.Transparent
-    },
-    animationSpec = spring(stiffness = 600f),
-    label = "tabPill"
-  )
-  val textColor by animateColorAsState(
-    if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-    label = "tabText"
-  )
-  Box(
-    contentAlignment = Alignment.Center,
-    modifier = Modifier
-      .heightIn(min = 48.dp)
-      .selectable(selected = selected, interactionSource = source, indication = null, role = Role.Tab, onClick = onClick)
-  ) {
-    Box(
-      contentAlignment = Alignment.Center,
-      modifier = Modifier
-        .graphicsLayer {
-          scaleX = scale
-          scaleY = scale
-        }
-        .height(34.dp)
-        .background(pillColor, RoundedCornerShape(corner))
-        .padding(horizontal = 14.dp)
-    ) {
-      Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-        color = textColor,
-        maxLines = 1
-      )
-    }
-  }
-}
-
-/**
  * The bar under the selected tab. It moves with your finger while you swipe between the tabs and
  * stretches out in the middle of the way, then settles at its tab.
  */
 @Composable
-private fun TabIndicator(pagerState: PagerState, tabCount: Int, modifier: Modifier = Modifier) {
+private fun TabIndicator(
+  pagerState: PagerState,
+  tabCount: Int,
+  labelWidths: Map<Int, Float>,
+  modifier: Modifier = Modifier
+) {
   val color = MaterialTheme.colorScheme.primary
   Box(
     modifier = modifier
@@ -226,8 +176,13 @@ private fun TabIndicator(pagerState: PagerState, tabCount: Int, modifier: Modifi
         val progress = pagerState.currentPage + pagerState.currentPageOffsetFraction
         val within = progress - floor(progress)
         val stretch = 1f - abs(2f * within - 1f)
-        val baseWidth = 40.dp.toPx()
-        val width = baseWidth + 28.dp.toPx() * stretch
+        // as wide as the label of the tab it is under, as the Material 3 primary tab asks
+        val from = pagerState.currentPage.coerceIn(0, tabCount - 1)
+        val to = (from + 1).coerceAtMost(tabCount - 1)
+        val fromWidth = labelWidths[from] ?: 40.dp.toPx()
+        val toWidth = labelWidths[to] ?: fromWidth
+        val baseWidth = fromWidth + (toWidth - fromWidth) * within
+        val width = baseWidth + 20.dp.toPx() * stretch
         val center = progress * tabWidth + tabWidth / 2f
         drawRoundRect(
           color = color,
@@ -523,6 +478,7 @@ fun HomeScreen(
             scrollBehavior = searchScrollBehavior
           )
         }
+        val labelWidths = remember { mutableStateMapOf<Int, Float>() }
         Box {
         PrimaryTabRow(
           selectedTabIndex = pagerState.currentPage,
@@ -532,18 +488,32 @@ fun HomeScreen(
         ) {
           TabTitles.forEachIndexed { index, titleResId ->
             val selectedTab = pagerState.currentPage == index
-            ExpressiveTab(
-              title = stringResource(titleResId),
+            Tab(
               selected = selectedTab,
               onClick = {
                 scope.launch {
                   pagerState.animateScrollToPage(index, animationSpec = spring(dampingRatio = 0.8f, stiffness = 380f))
                 }
-              }
-            )
+              },
+              // the state layer is a rounded pill rather than a square
+              modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp).clip(RoundedCornerShape(20.dp)),
+              selectedContentColor = MaterialTheme.colorScheme.primary,
+              unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ) {
+              Text(
+                text = stringResource(titleResId),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = if (selectedTab) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1,
+                onTextLayout = { labelWidths[index] = it.size.width.toFloat() },
+                modifier = Modifier
+                  .heightIn(min = 40.dp)
+                  .wrapContentHeight(Alignment.CenterVertically)
+              )
+            }
           }
         }
-        TabIndicator(pagerState, TabTitles.size, Modifier.align(Alignment.BottomStart))
+        TabIndicator(pagerState, TabTitles.size, labelWidths, Modifier.align(Alignment.BottomStart))
         }
       }
     }
@@ -722,12 +692,16 @@ private fun SelectionBar(
 @Composable
 private fun OverflowMenu(actions: HomeActions) {
   var expanded by remember { mutableStateOf(false) }
-  IconButton(onClick = { expanded = true }) {
+  ExpressiveIconButton(
+    onClick = { expanded = true },
+    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+  ) {
     Icon(
       HomeIcons.MoreVert,
       contentDescription = stringResource(androidx.appcompat.R.string.abc_action_menu_overflow_description)
     )
   }
+  Spacer(Modifier.width(8.dp))
   val main = listOf(
     MenuEntry(stringResource(R.string.menu_settings), HomeIcons.Settings, onClick = actions.onSettings)
   )
@@ -747,9 +721,13 @@ private fun OverflowMenu(actions: HomeActions) {
 private fun BookmarkOptionsMenu(bookmarks: BookmarksState) {
   var expanded by remember { mutableStateOf(false) }
 
-  IconButton(onClick = { expanded = true }) {
+  ExpressiveIconButton(
+    onClick = { expanded = true },
+    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+  ) {
     Icon(HomeIcons.Sort, contentDescription = stringResource(R.string.menu_sort))
   }
+  Spacer(Modifier.width(6.dp))
   ExpressiveMenu(
     expanded = expanded,
     onDismiss = { expanded = false },

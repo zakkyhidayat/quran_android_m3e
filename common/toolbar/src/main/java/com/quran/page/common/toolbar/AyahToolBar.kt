@@ -123,7 +123,11 @@ class AyahToolBar @JvmOverloads constructor(
     bottomClearance = 96 * resources.displayMetrics.density
     cornerRadius = resources.getDimension(R.dimen.toolbar_corner_radius)
 
+    // the window casts a shadow, so its parent must not cut it off
+    clipChildren = false
+    clipToPadding = false
     card = LinearLayout(context).apply {
+      elevation = 14 * resources.displayMetrics.density
       orientation = LinearLayout.VERTICAL
       // rounded, with the ripples and the translation kept inside the corners
       clipToOutline = true
