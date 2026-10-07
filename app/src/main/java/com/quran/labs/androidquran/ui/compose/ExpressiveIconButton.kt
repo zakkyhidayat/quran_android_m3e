@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -56,7 +57,8 @@ fun ExpressiveIconButton(
   Box(
     contentAlignment = Alignment.Center,
     modifier = modifier
-      .size(48.dp)
+      .padding(horizontal = 2.dp)
+      .size(44.dp)
       .graphicsLayer {
         scaleX = scale
         scaleY = scale
