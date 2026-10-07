@@ -154,7 +154,7 @@ class QuranActivity : AppCompatActivity(),
   lateinit var juzListPresenter: JuzListPresenter
 
   private val suraListState by lazy {
-    SuraListState(this, quranInfo, quranDisplayData, settings, readingBookmarksDao, quranRowFactory)
+    SuraListState(this, quranInfo, quranDisplayData, settings)
   }
   private val juzListState by lazy {
     JuzListState(this, quranInfo, quranDisplayData, juzListPresenter)

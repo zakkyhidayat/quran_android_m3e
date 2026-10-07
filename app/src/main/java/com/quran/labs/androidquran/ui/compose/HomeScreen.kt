@@ -161,9 +161,6 @@ fun HomeScreen(
   val lifecycle = LocalLifecycleOwner.current.lifecycle
 
   LaunchedEffect(suraState) {
-    lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { suraState.observeReadingBookmarks() }
-  }
-  LaunchedEffect(suraState) {
     lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
       // the list stays where it is (the top on a fresh start); the surah last read is highlighted
       suraState.onResume(latestPage)
@@ -328,6 +325,12 @@ fun HomeScreen(
           AppBarWithSearch(
             state = searchBarState,
             windowInsets = WindowInsets(0, 0, 0, 0),
+            // the bar keeps its colors while it scrolls away, rather than shifting to a lighter tint
+            colors = SearchBarDefaults.appBarWithSearchColors(
+              appBarContainerColor = MaterialTheme.colorScheme.surface,
+              scrolledAppBarContainerColor = MaterialTheme.colorScheme.surface,
+              scrolledSearchBarContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            ),
             inputField = searchField,
             actions = {
               if (pagerState.currentPage == BOOKMARKS_TAB) {

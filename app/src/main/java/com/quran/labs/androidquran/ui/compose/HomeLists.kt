@@ -23,20 +23,13 @@ import com.quran.labs.androidquran.util.QuranUtils
 import com.quran.labs.androidquran.view.JuzView
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-/**
- * The surah tab's state: the 114 surahs in one list, with the reading bookmarks (if any) pinned
- * above them.
- */
+/** The surah tab's state: the 114 surahs in one list. Reading bookmarks live in the bookmarks tab. */
 class SuraListState(
   private val context: Context,
   private val quranInfo: QuranInfo,
   private val quranDisplayData: QuranDisplayData,
-  private val quranSettings: QuranSettings,
-  private val readingBookmarksDao: ReadingBookmarksDao,
-  private val quranRowFactory: QuranRowFactory
+  private val quranSettings: QuranSettings
 ) {
-  private var readingBookmarks: List<ReadingBookmark> = emptyList()
-
   var rows by mutableStateOf<List<QuranRow>>(buildRows())
     private set
 
@@ -64,37 +57,18 @@ class SuraListState(
     lastReadSura = if (page == Constants.NO_PAGE) 0 else quranDisplayData.safelyGetSuraOnPage(page)
   }
 
-  /** Keeps the pinned reading bookmarks current; run it while the screen is started. */
-  suspend fun observeReadingBookmarks() {
-    readingBookmarksDao.readingBookmarksFlow()
-      .distinctUntilChanged()
-      .collect { updated ->
-        val placed = placed(updated)
-        if (readingBookmarks != placed) {
-          readingBookmarks = placed
-          rows = buildRows()
-        }
-      }
-  }
-
   /**
    * Refreshes the rows when the screen comes back (the surah name setting may have changed) and
    * notes which surah was read last, so its row can be highlighted.
    */
   suspend fun onResume(latestPage: suspend () -> Int) {
-    readingBookmarks = placed(readingBookmarksDao.readingBookmarks())
     rows = buildRows()
     // which surah was read last is set by onLatestPage, once the list is on screen, so that the
     // change can be seen happening
   }
 
   private fun buildRows(): List<QuranRow> {
-    val elements = ArrayList<QuranRow>(SURAS_COUNT + readingBookmarkOffset())
-
-    if (readingBookmarks.isNotEmpty()) {
-      elements += quranRowFactory.fromReadingBookmarkHeader(context, readingBookmarks.size)
-      readingBookmarks.forEach { elements += quranRowFactory.fromReadingBookmark(context, it) }
-    }
+    val elements = ArrayList<QuranRow>(SURAS_COUNT)
 
     // the list is the surahs, so "Surah" in front of every name only repeats itself
     val wantPrefix = false
@@ -110,13 +84,6 @@ class SuraListState(
     return elements
   }
 
-  private fun placed(readingBookmarks: List<ReadingBookmark>): List<ReadingBookmark> =
-    readingBookmarks
-      .filterNot { it is EmptyReadingBookmark }
-      .sortedBy { it.slot }
-
-  private fun readingBookmarkOffset(): Int =
-    if (readingBookmarks.isEmpty()) 0 else readingBookmarks.size + 1
 }
 
 /** The juz tab's state: every juz as a header followed by its eight quarters. */
